@@ -42,6 +42,8 @@
       min-height: 0;
       display: flex;
       flex-direction: column;
+      /* Disable browser pinch; board zoom is handled in JS */
+      touch-action: pan-x pan-y;
     }
 
     .side {
@@ -351,6 +353,8 @@
       box-shadow: inset 0 0 40px rgba(100, 70, 30, 0.25);
       cursor: grab;
       user-select: none;
+      /* One-finger pan stays native; pinch-zoom is handled in JS */
+      touch-action: pan-x pan-y;
     }
 
     .scroller.dragging { cursor: grabbing; }
@@ -1027,6 +1031,62 @@
       const delta = (event.deltaY > 0 ? -ZOOM_WHEEL : ZOOM_WHEEL) * steps;
       setBoardZoom(boardZoom + delta, { x: event.clientX, y: event.clientY });
     }, { passive: false });
+
+    let pinch = null;
+
+    function pinchDistance(touches) {
+      const dx = touches[1].clientX - touches[0].clientX;
+      const dy = touches[1].clientY - touches[0].clientY;
+      return Math.hypot(dx, dy);
+    }
+
+    function pinchMidpoint(touches) {
+      return {
+        x: (touches[0].clientX + touches[1].clientX) / 2,
+        y: (touches[0].clientY + touches[1].clientY) / 2,
+      };
+    }
+
+    function midpointOverScroller(mid) {
+      const box = scroller().getBoundingClientRect();
+      return mid.x >= box.left && mid.x <= box.right && mid.y >= box.top && mid.y <= box.bottom;
+    }
+
+    document.addEventListener("touchstart", (event) => {
+      if (event.touches.length !== 2) {
+        if (event.touches.length < 2) pinch = null;
+        return;
+      }
+      const mid = pinchMidpoint(event.touches);
+      if (!midpointOverScroller(mid)) {
+        pinch = null;
+        return;
+      }
+      pinch = {
+        dist: pinchDistance(event.touches),
+        zoom: boardZoom,
+      };
+    }, { passive: true });
+
+    document.addEventListener("touchmove", (event) => {
+      if (!pinch || event.touches.length !== 2) return;
+      const dist = pinchDistance(event.touches);
+      if (!(pinch.dist > 0) || !(dist > 0)) return;
+      event.preventDefault();
+      setBoardZoom(pinch.zoom * (dist / pinch.dist), pinchMidpoint(event.touches));
+    }, { passive: false });
+
+    document.addEventListener("touchend", (event) => {
+      if (event.touches.length < 2) pinch = null;
+    }, { passive: true });
+
+    document.addEventListener("touchcancel", () => {
+      pinch = null;
+    }, { passive: true });
+
+    // Safari page pinch; keep board zoom as the only zoom gesture.
+    document.addEventListener("gesturestart", (event) => event.preventDefault(), { passive: false });
+    document.addEventListener("gesturechange", (event) => event.preventDefault(), { passive: false });
 
     document.addEventListener("mouseover", (event) => {
       showGhost(event.target.closest("[data-preview-rot]"));
