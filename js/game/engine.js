@@ -40,12 +40,40 @@ export class Game {
   }
 
   canPlaceAnywhere(tile) {
+    if (!tile || !tile.edges) return false;
     for (const cell of openCells(this.board)) {
       for (let rot = 0; rot < 4; rot++) {
         if (canPlace(this.board, cell.x, cell.y, rotateEdges(tile.edges, rot))) return true;
       }
     }
     return false;
+  }
+
+  /**
+   * Heal stuck hands: unplaceable current must be pendingDiscard.
+   * Also resume a missing pull after restore / interrupted end.
+   * Returns true when state changed.
+   */
+  reconcileHand() {
+    if (this.finished || this.pendingMeeple) return false;
+    if (this.current) {
+      if (!this.canPlaceAnywhere(this.current)) {
+        if (this.pendingDiscard) return false;
+        this.pendingDiscard = true;
+        this.rotation = 0;
+        return true;
+      }
+      if (this.pendingDiscard) {
+        this.pendingDiscard = false;
+        return true;
+      }
+      return false;
+    }
+    if (this.pendingDiscard) {
+      this.pendingDiscard = false;
+    }
+    this.pull();
+    return true;
   }
 
   pull() {
@@ -58,8 +86,9 @@ export class Game {
         this.current = tile;
         return false;
       }
-      this.current = tile;
+      // Unplaceable — pause for confirm (including the final deck tile).
       this.pendingDiscard = true;
+      this.current = tile;
       return true;
     }
     this.finishGame();
@@ -67,6 +96,9 @@ export class Game {
   }
 
   finishGame() {
+    this.pendingDiscard = false;
+    this.pendingMeeple = null;
+    this.current = null;
     if (this.finalScored) {
       this.finished = true;
       this.rankingOpen = true;

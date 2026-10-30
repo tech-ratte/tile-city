@@ -3,7 +3,7 @@ const KEY = "tile-city-lang";
 const dict = {
   en: {
     homeTitle: "Tile City",
-    homeLead: "Build roads and cities, place meeples, and score the board — in your browser.",
+    homeLead: "A tile-laying game of expanding roads and cities to score points.",
     play: "Play",
     rules: "Rules",
     home: "Home",
@@ -194,7 +194,7 @@ const dict = {
   },
   ja: {
     homeTitle: "Tile City",
-    homeLead: "道と都市を広げ、ミープルを置き、ブラウザで得点を競うタイル配置ゲーム。",
+    homeLead: "道と都市を広げて得点を競うタイル配置ゲーム。",
     play: "遊ぶ",
     rules: "ルール",
     home: "ホーム",

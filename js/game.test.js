@@ -709,6 +709,50 @@ assert.strictEqual(dead.canPlaceAnywhere(dead.discards[1]), false);
   assert.strictEqual(game.finished, false);
 }
 
+// Softlock heal: last unplaceable tile in hand without pendingDiscard.
+{
+  const stuck = createGame(mulberry32(16));
+  stuck.board.clear();
+  stuck.board.set("0,0", Object.assign(makeTile("C"), { rot: 0 }));
+  stuck.deck = [];
+  stuck.discards = [];
+  stuck.current = makeTile("U");
+  stuck.pendingDiscard = false;
+  stuck.finished = false;
+  stuck.finalScored = false;
+  stuck.rankingOpen = false;
+  assert.strictEqual(stuck.canPlaceAnywhere(stuck.current), false);
+  assert.strictEqual(stuck.reconcileHand(), true);
+  assert.strictEqual(stuck.pendingDiscard, true);
+  assert.strictEqual(stuck.current.id, "U");
+  assert.strictEqual(stuck.acknowledgeDiscard(), true);
+  assert.strictEqual(stuck.finished, true);
+  assert.strictEqual(stuck.current, null);
+  assert.deepStrictEqual(stuck.discards.map((tile) => tile.id), ["U"]);
+}
+
+// Last deck tile unplaceable → discard confirm → game ends.
+{
+  const last = createGame(mulberry32(17));
+  last.board.clear();
+  last.board.set("0,0", Object.assign(makeTile("C"), { rot: 0 }));
+  last.deck = [makeTile("U")];
+  last.discards = [];
+  last.current = null;
+  last.finished = false;
+  last.finalScored = false;
+  last.rankingOpen = false;
+  assert.strictEqual(last.pull(), true);
+  assert.strictEqual(last.pendingDiscard, true);
+  assert.strictEqual(last.current.id, "U");
+  assert.strictEqual(last.deck.length, 0);
+  assert.strictEqual(last.acknowledgeDiscard(), true);
+  assert.strictEqual(last.finished, true);
+  assert.strictEqual(last.pendingDiscard, false);
+  assert.strictEqual(last.current, null);
+  assert.deepStrictEqual(last.discards.map((tile) => tile.id), ["U"]);
+}
+
 for (let seed = 1; seed <= 12; seed++) {
   const game = createGame(mulberry32(seed));
   let guard = 0;

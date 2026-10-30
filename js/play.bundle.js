@@ -79,10 +79,10 @@
     { id: "X", name: "\u5341\u5B57\u8DEF", count: 1, edges: ["R", "R", "R", "R"], cities: [], roads: [["N"], ["E"], ["S"], ["W"]], monastery: false }
   ];
   var MARKUP = {
-    A: '<i class="road to-s"></i><span class="monastery"><i class="cross"></i><i class="roof"></i><i class="body"></i></span>',
-    B: '<span class="monastery"><i class="cross"></i><i class="roof"></i><i class="body"></i></span>',
-    C: '<i class="city fill"></i><i class="keep"></i><i class="pennant p-c" title="\u65D7"></i>',
-    D: '<i class="city cap n"></i><i class="road h"></i>',
+    A: '<i class="road to-s"></i><span class="monastery"><i class="wing left"></i><i class="wing right"></i><i class="cross"></i><i class="roof"></i><i class="body"></i></span>',
+    B: '<span class="monastery"><i class="wing left"></i><i class="wing right"></i><i class="cross"></i><i class="roof"></i><i class="body"></i></span>',
+    C: '<i class="city fill"></i><i class="pennant p-c" title="\u65D7"></i>',
+    D: '<i class="city cap n shallow"></i><i class="road h"></i>',
     E: '<i class="city cap n"></i>',
     F: '<i class="city bar h"></i><i class="pennant p-bar" title="\u65D7"></i>',
     G: '<i class="city bar h"></i>',
@@ -90,7 +90,7 @@
     I: '<i class="city cap n gap-w"></i><i class="city cap w gap-n"></i>',
     J: '<i class="city cap n"></i><i class="bend se edge"></i><i class="bend se line"></i>',
     K: '<i class="city cap n"></i><i class="bend sw edge"></i><i class="bend sw line"></i>',
-    L: '<i class="city cap n"></i><i class="road h-e"></i><i class="road h-w"></i><i class="road v-s"></i><i class="village"></i>',
+    L: '<i class="city cap n shallow"></i><i class="road h-e"></i><i class="road h-w"></i><i class="road v-s"></i><i class="village"></i>',
     M: '<i class="city elbow ne"></i><i class="pennant p-ne" title="\u65D7"></i>',
     N: '<i class="city elbow ne"></i>',
     O: '<i class="city elbow nw"></i><i class="bend se edge"></i><i class="bend se line"></i><i class="pennant p-nw" title="\u65D7"></i>',
@@ -119,10 +119,10 @@
       { id: "city-0", kind: "city", index: 0, x: 0.5, y: 0.5 }
     ],
     D: [
-      { id: "city-0", kind: "city", index: 0, x: 0.5, y: 0.18 },
+      { id: "city-0", kind: "city", index: 0, x: 0.5, y: 0.14 },
       { id: "road-0", kind: "road", index: 0, x: 0.5, y: 0.5 },
       // Gap under the city tip joins left/right above the road into one field.
-      { id: "field-0", kind: "field", index: 0, x: 0.2, y: 0.38 },
+      { id: "field-0", kind: "field", index: 0, x: 0.2, y: 0.36 },
       { id: "field-1", kind: "field", index: 1, x: 0.5, y: 0.8 }
     ],
     E: [
@@ -164,14 +164,14 @@
       { id: "field-1", kind: "field", index: 1, x: 0.16, y: 0.84 }
     ],
     L: [
-      { id: "city-0", kind: "city", index: 0, x: 0.5, y: 0.16 },
+      { id: "city-0", kind: "city", index: 0, x: 0.5, y: 0.14 },
       { id: "road-0", kind: "road", index: 0, x: 0.78, y: 0.5 },
       { id: "road-1", kind: "road", index: 1, x: 0.5, y: 0.78 },
       { id: "road-2", kind: "road", index: 2, x: 0.22, y: 0.5 },
       { id: "field-0", kind: "field", index: 0, x: 0.86, y: 0.86 },
       { id: "field-1", kind: "field", index: 1, x: 0.14, y: 0.86 },
       // Northern strip field: outer NE pocket (top corners are city).
-      { id: "field-2", kind: "field", index: 2, x: 0.86, y: 0.16 }
+      { id: "field-2", kind: "field", index: 2, x: 0.86, y: 0.14 }
     ],
     M: [
       { id: "city-0", kind: "city", index: 0, x: 0.68, y: 0.24 },
@@ -899,12 +899,39 @@
       return rotateEdges(this.current.edges, rot == null ? this.rotation : rot);
     }
     canPlaceAnywhere(tile) {
+      if (!tile || !tile.edges) return false;
       for (const cell of openCells(this.board)) {
         for (let rot = 0; rot < 4; rot++) {
           if (canPlace(this.board, cell.x, cell.y, rotateEdges(tile.edges, rot))) return true;
         }
       }
       return false;
+    }
+    /**
+     * Heal stuck hands: unplaceable current must be pendingDiscard.
+     * Also resume a missing pull after restore / interrupted end.
+     * Returns true when state changed.
+     */
+    reconcileHand() {
+      if (this.finished || this.pendingMeeple) return false;
+      if (this.current) {
+        if (!this.canPlaceAnywhere(this.current)) {
+          if (this.pendingDiscard) return false;
+          this.pendingDiscard = true;
+          this.rotation = 0;
+          return true;
+        }
+        if (this.pendingDiscard) {
+          this.pendingDiscard = false;
+          return true;
+        }
+        return false;
+      }
+      if (this.pendingDiscard) {
+        this.pendingDiscard = false;
+      }
+      this.pull();
+      return true;
     }
     pull() {
       this.current = null;
@@ -916,14 +943,17 @@
           this.current = tile;
           return false;
         }
-        this.current = tile;
         this.pendingDiscard = true;
+        this.current = tile;
         return true;
       }
       this.finishGame();
       return false;
     }
     finishGame() {
+      this.pendingDiscard = false;
+      this.pendingMeeple = null;
+      this.current = null;
       if (this.finalScored) {
         this.finished = true;
         this.rankingOpen = true;
@@ -1180,6 +1210,7 @@
     game2.standings = Array.isArray(data.standings) ? data.standings.slice() : players.map((_, index) => index);
     game2.finalScored = !!data.finalScored;
     game2.rankingOpen = !!data.rankingOpen;
+    if (!game2.finished) game2.reconcileHand();
     return game2;
   }
 
@@ -1232,7 +1263,7 @@
   var dict = {
     en: {
       homeTitle: "Tile City",
-      homeLead: "Build roads and cities, place meeples, and score the board \u2014 in your browser.",
+      homeLead: "A tile-laying game of expanding roads and cities to score points.",
       play: "Play",
       rules: "Rules",
       home: "Home",
@@ -1420,7 +1451,7 @@
     },
     ja: {
       homeTitle: "Tile City",
-      homeLead: "\u9053\u3068\u90FD\u5E02\u3092\u5E83\u3052\u3001\u30DF\u30FC\u30D7\u30EB\u3092\u7F6E\u304D\u3001\u30D6\u30E9\u30A6\u30B6\u3067\u5F97\u70B9\u3092\u7AF6\u3046\u30BF\u30A4\u30EB\u914D\u7F6E\u30B2\u30FC\u30E0\u3002",
+      homeLead: "\u9053\u3068\u90FD\u5E02\u3092\u5E83\u3052\u3066\u5F97\u70B9\u3092\u7AF6\u3046\u30BF\u30A4\u30EB\u914D\u7F6E\u30B2\u30FC\u30E0\u3002",
       play: "\u904A\u3076",
       rules: "\u30EB\u30FC\u30EB",
       home: "\u30DB\u30FC\u30E0",
@@ -1936,12 +1967,12 @@
     const color = game.players[game.pendingMeeple.player].id;
     const slots = game.meepleSlots();
     const spots = slots.map(
-      (slot) => '<button type="button" class="meeple-spot ' + color + " " + slot.kind + '" data-meeple-slot="' + slot.id + '" style="left:' + slot.x * 100 + "%;top:" + slot.y * 100 + '%" aria-label="' + t2("placeMeeple") + '"></button>'
+      (slot) => '<button type="button" class="meeple-spot spot-' + slot.kind + '" data-meeple-slot="' + slot.id + '" style="left:' + slot.x * 100 + "%;top:" + slot.y * 100 + '%" aria-label="' + t2("placeMeeple") + '"><i class="meeple ' + color + '" aria-hidden="true"></i></button>'
     ).join("");
     const stock = game.meeples[game.pendingMeeple.player];
     const prompt = slots.length ? t2("pickMeeple") : stock <= 0 ? t2("noMeeplesLeft") : t2("noOpenSpot");
     marks.push(
-      '<div class="meeple-layer"><p class="meeple-prompt">' + prompt + "</p>" + spots + '<button type="button" id="skip-meeple">' + t2("skip") + '</button><button type="button" id="undo-place" aria-label="' + t2("undoPlace") + '" title="' + t2("undoPlace") + '">\u21A9</button></div>'
+      '<div class="meeple-layer"><p class="meeple-prompt">' + prompt + "</p>" + spots + '<button type="button" id="skip-meeple">' + t2("skip") + '</button><button type="button" id="undo-place" aria-label="' + t2("undoPlace") + '" title="' + t2("undoPlace") + '"><svg class="undo-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M12.5 8C9.85 8 7.45 9 5.6 10.6L2 7v9h9l-3.62-3.62C8.77 11.22 10.54 10.5 12.5 10.5c3.54 0 6.55 2.31 7.6 5.5l2.37-.78C21.08 11.03 17.15 8 12.5 8z"/></svg></button></div>'
     );
     return marks.join("");
   }
@@ -2120,6 +2151,7 @@
   }
   function render(opts) {
     opts = opts || {};
+    game.reconcileHand();
     const anchor = opts.keep ? captureAnchor() : null;
     paintSide();
     paintGrid();

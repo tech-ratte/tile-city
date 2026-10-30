@@ -35,7 +35,7 @@ var TileCityI18n = (() => {
   var dict = {
     en: {
       homeTitle: "Tile City",
-      homeLead: "Build roads and cities, place meeples, and score the board \u2014 in your browser.",
+      homeLead: "A tile-laying game of expanding roads and cities to score points.",
       play: "Play",
       rules: "Rules",
       home: "Home",
@@ -223,7 +223,7 @@ var TileCityI18n = (() => {
     },
     ja: {
       homeTitle: "Tile City",
-      homeLead: "\u9053\u3068\u90FD\u5E02\u3092\u5E83\u3052\u3001\u30DF\u30FC\u30D7\u30EB\u3092\u7F6E\u304D\u3001\u30D6\u30E9\u30A6\u30B6\u3067\u5F97\u70B9\u3092\u7AF6\u3046\u30BF\u30A4\u30EB\u914D\u7F6E\u30B2\u30FC\u30E0\u3002",
+      homeLead: "\u9053\u3068\u90FD\u5E02\u3092\u5E83\u3052\u3066\u5F97\u70B9\u3092\u7AF6\u3046\u30BF\u30A4\u30EB\u914D\u7F6E\u30B2\u30FC\u30E0\u3002",
       play: "\u904A\u3076",
       rules: "\u30EB\u30FC\u30EB",
       home: "\u30DB\u30FC\u30E0",

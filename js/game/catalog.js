@@ -27,10 +27,10 @@ export const TYPES = [
 
 
 export const MARKUP = {
-  A: '<i class="road to-s"></i><span class="monastery"><i class="cross"></i><i class="roof"></i><i class="body"></i></span>',
-  B: '<span class="monastery"><i class="cross"></i><i class="roof"></i><i class="body"></i></span>',
-  C: '<i class="city fill"></i><i class="keep"></i><i class="pennant p-c" title="旗"></i>',
-  D: '<i class="city cap n"></i><i class="road h"></i>',
+  A: '<i class="road to-s"></i><span class="monastery"><i class="wing left"></i><i class="wing right"></i><i class="cross"></i><i class="roof"></i><i class="body"></i></span>',
+  B: '<span class="monastery"><i class="wing left"></i><i class="wing right"></i><i class="cross"></i><i class="roof"></i><i class="body"></i></span>',
+  C: '<i class="city fill"></i><i class="pennant p-c" title="旗"></i>',
+  D: '<i class="city cap n shallow"></i><i class="road h"></i>',
   E: '<i class="city cap n"></i>',
   F: '<i class="city bar h"></i><i class="pennant p-bar" title="旗"></i>',
   G: '<i class="city bar h"></i>',
@@ -38,7 +38,7 @@ export const MARKUP = {
   I: '<i class="city cap n gap-w"></i><i class="city cap w gap-n"></i>',
   J: '<i class="city cap n"></i><i class="bend se edge"></i><i class="bend se line"></i>',
   K: '<i class="city cap n"></i><i class="bend sw edge"></i><i class="bend sw line"></i>',
-  L: '<i class="city cap n"></i><i class="road h-e"></i><i class="road h-w"></i><i class="road v-s"></i><i class="village"></i>',
+  L: '<i class="city cap n shallow"></i><i class="road h-e"></i><i class="road h-w"></i><i class="road v-s"></i><i class="village"></i>',
   M: '<i class="city elbow ne"></i><i class="pennant p-ne" title="旗"></i>',
   N: '<i class="city elbow ne"></i>',
   O: '<i class="city elbow nw"></i><i class="bend se edge"></i><i class="bend se line"></i><i class="pennant p-nw" title="旗"></i>',
@@ -73,10 +73,10 @@ export const MEEPLE_LAYOUTS = {
     { id: "city-0", kind: "city", index: 0, x: 0.5, y: 0.5 },
   ],
   D: [
-    { id: "city-0", kind: "city", index: 0, x: 0.5, y: 0.18 },
+    { id: "city-0", kind: "city", index: 0, x: 0.5, y: 0.14 },
     { id: "road-0", kind: "road", index: 0, x: 0.5, y: 0.5 },
     // Gap under the city tip joins left/right above the road into one field.
-    { id: "field-0", kind: "field", index: 0, x: 0.2, y: 0.38 },
+    { id: "field-0", kind: "field", index: 0, x: 0.2, y: 0.36 },
     { id: "field-1", kind: "field", index: 1, x: 0.5, y: 0.8 },
   ],
   E: [
@@ -118,14 +118,14 @@ export const MEEPLE_LAYOUTS = {
     { id: "field-1", kind: "field", index: 1, x: 0.16, y: 0.84 },
   ],
   L: [
-    { id: "city-0", kind: "city", index: 0, x: 0.5, y: 0.16 },
+    { id: "city-0", kind: "city", index: 0, x: 0.5, y: 0.14 },
     { id: "road-0", kind: "road", index: 0, x: 0.78, y: 0.5 },
     { id: "road-1", kind: "road", index: 1, x: 0.5, y: 0.78 },
     { id: "road-2", kind: "road", index: 2, x: 0.22, y: 0.5 },
     { id: "field-0", kind: "field", index: 0, x: 0.86, y: 0.86 },
     { id: "field-1", kind: "field", index: 1, x: 0.14, y: 0.86 },
     // Northern strip field: outer NE pocket (top corners are city).
-    { id: "field-2", kind: "field", index: 2, x: 0.86, y: 0.16 },
+    { id: "field-2", kind: "field", index: 2, x: 0.86, y: 0.14 },
   ],
   M: [
     { id: "city-0", kind: "city", index: 0, x: 0.68, y: 0.24 },

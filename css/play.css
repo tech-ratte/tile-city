@@ -819,14 +819,14 @@ html, body { height: 100%; overflow: hidden; }
     }
 
     .slot.hint-now {
-      background: rgba(40, 220, 110, 0.5);
-      box-shadow: inset 0 0 0 2px #3dff8a, 0 0 16px rgba(40, 255, 140, 0.55);
+      background: rgba(16, 90, 48, 0.55);
+      box-shadow: inset 0 0 0 2px #3dff8a, 0 0 16px rgba(40, 255, 140, 0.5);
       cursor: pointer;
     }
 
     .slot.hint-now:hover {
-      background: rgba(60, 255, 140, 0.5);
-      box-shadow: inset 0 0 0 2px #b6ffd4, 0 0 22px rgba(60, 255, 150, 0.85);
+      background: rgba(24, 120, 64, 0.58);
+      box-shadow: inset 0 0 0 2px #b6ffd4, 0 0 22px rgba(60, 255, 150, 0.75);
     }
 
     .slot.hint-now:focus-visible {
@@ -894,55 +894,59 @@ html, body { height: 100%; overflow: hidden; }
       outline: none;
     }
 
-    .meeple-spot::after {
-      content: "";
-      display: block;
-      width: 52%;
-      height: 64%;
-      flex: none;
-      background: var(--spot-c, #dff3ff);
+    /* Placement marks: compact classic silhouette (unchanged size) */
+    .meeple-spot .meeple {
+      width: 62%;
+      height: 78%;
+      background-image: none;
+      background-color: var(--meeple-fill, #f4f7fb);
       clip-path: polygon(
-        32% 0, 68% 0, 68% 16%, 90% 30%, 100% 30%, 100% 46%,
-        76% 46%, 74% 58%, 96% 100%, 60% 100%, 50% 74%,
-        40% 100%, 4% 100%, 26% 58%, 24% 46%, 0 46%, 0 30%,
-        10% 30%, 32% 16%
+        32% 0%,
+        68% 0%,
+        68% 14%,
+        84% 28%,
+        84% 42%,
+        68% 42%,
+        66% 54%,
+        82% 100%,
+        58% 100%,
+        50% 78%,
+        42% 100%,
+        18% 100%,
+        34% 54%,
+        32% 42%,
+        16% 42%,
+        16% 28%,
+        32% 14%
       );
       filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.45));
     }
 
-    .meeple-spot.red { --spot-c: #ff5d78; }
-    .meeple-spot.blue { --spot-c: #49c4ff; }
-    .meeple-spot.green { --spot-c: #3dff9a; }
-    .meeple-spot.yellow { --spot-c: #ffe14a; }
-    .meeple-spot.orange { --spot-c: #ff9a3d; }
-    .meeple-spot.purple { --spot-c: #7c3aed; }
-    .meeple-spot.white { --spot-c: #f4f7fb; }
-    .meeple-spot.brown { --spot-c: #a67c52; }
+    /* spot-* avoids clashing with tile feature classes (.city / .road / .monastery) */
+    .meeple-spot.spot-city { --spot-ring: #e03a25; }
+    .meeple-spot.spot-road { --spot-ring: #f0c96e; }
+    .meeple-spot.spot-field { --spot-ring: #7ec22e; }
+    .meeple-spot.spot-monastery { --spot-ring: #f5e6c8; }
 
-    .meeple-spot.city { --spot-ring: #e03a25; }
-    .meeple-spot.road { --spot-ring: #f0c96e; }
-    .meeple-spot.field { --spot-ring: #7ec22e; }
-    .meeple-spot.monastery { --spot-ring: #f5e6c8; }
-
-    .meeple-spot.field::after {
+    .meeple-spot.spot-field .meeple {
       transform: rotate(90deg);
     }
 
     .slot .meeple-pin {
       position: absolute;
       z-index: 7;
-      width: 22%;
-      height: 28%;
+      width: 30%;
+      height: 40%;
       transform: translate(-50%, -50%);
       pointer-events: none;
     }
 
+    /* Same SVG design as rules; pin size only is larger */
     .slot .meeple-pin .meeple.on-tile {
       position: absolute;
       inset: 0;
       width: 100%;
       height: 100%;
-      filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.45));
     }
 
     .slot .meeple-pin .meeple.on-tile.field-meeple {
@@ -1014,12 +1018,12 @@ html, body { height: 100%; overflow: hidden; }
       top: 50%;
       transform: translateY(-50%);
       z-index: 22;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
       width: 36px;
       height: 36px;
       padding: 0;
-      font: inherit;
-      font-size: 20px;
-      line-height: 1;
       color: #dfffee;
       background: rgba(10, 16, 28, 0.88);
       border: 1px solid rgba(140, 255, 210, 0.45);
@@ -1027,6 +1031,12 @@ html, body { height: 100%; overflow: hidden; }
       cursor: pointer;
       box-shadow: 0 0 12px rgba(80, 255, 180, 0.12);
       pointer-events: auto;
+    }
+
+    #undo-place .undo-icon {
+      width: 20px;
+      height: 20px;
+      display: block;
     }
 
     #undo-place:hover { border-color: #d6ff6a; color: #f4ffd2; }

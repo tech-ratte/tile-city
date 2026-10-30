@@ -144,15 +144,67 @@
       background-image: none;
     }
 
-    .swatch-field { background: var(--field); }
+    .swatch-field {
+      background-color: var(--field);
+      background-image: radial-gradient(
+        circle at 30% 40%,
+        rgba(255, 255, 255, 0.12) 0 0.55px,
+        transparent 1px
+      );
+      background-size: 10px 10px;
+    }
     .swatch-road { background: var(--road); box-shadow: inset 0 0 0 2px var(--road-line); }
-    .swatch-city { background: var(--city); }
+    .swatch-city {
+      background-color: var(--city);
+      background-image: radial-gradient(
+        circle at 30% 40%,
+        rgba(255, 230, 180, 0.12) 0 0.5px,
+        transparent 0.95px
+      );
+      background-size: 10px 10px;
+      box-shadow: inset 0 0 0 2px rgba(90, 28, 18, 0.55);
+    }
+
     .swatch-pennant {
       width: 14px;
-      height: 16px;
-      background: #1f4f8a;
-      border: 0;
-      clip-path: polygon(0 0, 100% 0, 100% 68%, 50% 100%, 0 68%);
+      height: 18px;
+      background:
+        repeating-linear-gradient(
+          90deg,
+          rgba(255, 220, 140, 0.22) 0 1px,
+          transparent 1px 3px
+        ),
+        linear-gradient(180deg, #3e6fb8 0%, #1f4a8c 55%, #163872 100%);
+      border: 1.5px solid #c9a44a;
+      border-radius: 1px 1px 0 0;
+      position: relative;
+      clip-path: none;
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.18);
+    }
+
+    .swatch-pennant::before {
+      content: "";
+      position: absolute;
+      left: -2px;
+      right: -2px;
+      top: -2px;
+      height: 3px;
+      background: linear-gradient(90deg, #e8d59a, #b8924a);
+      border-radius: 1px;
+    }
+
+    .swatch-pennant::after {
+      content: "";
+      position: absolute;
+      left: 1px;
+      right: 1px;
+      bottom: -3px;
+      height: 3px;
+      background: repeating-linear-gradient(
+        90deg,
+        #c9a44a 0 1.5px,
+        transparent 1.5px 3px
+      );
     }
 
     .demos {
@@ -292,8 +344,10 @@
     .rules li { margin: 6px 0; }
 
     .meeples {
-      display: flex;
-      gap: 18px;
+      display: grid;
+      grid-template-columns: repeat(8, max-content);
+      gap: 14px 20px;
+      justify-content: start;
       padding: 0;
       list-style: none;
       margin: 12px 0 0;
@@ -302,33 +356,67 @@
     .meeples li {
       display: flex;
       align-items: center;
-      gap: 8px;
+      justify-content: center;
     }
 
+    @media (max-width: 720px) {
+      .meeples {
+        grid-template-columns: repeat(4, max-content);
+        gap: 16px 22px;
+      }
+    }
+
+    /*
+      Per-color SVG: thick near-black stroke under fill + highlight wash.
+      (clip-path / mask rims were painting too thin in practice)
+    */
     .meeple {
-      width: 28px;
-      height: 34px;
-      background: var(--c);
-      clip-path: polygon(
-        32% 0, 68% 0, 68% 16%, 90% 30%, 100% 30%, 100% 46%,
-        76% 46%, 74% 58%, 96% 100%, 60% 100%, 50% 74%,
-        40% 100%, 4% 100%, 26% 58%, 24% 46%, 0 46%, 0 30%,
-        10% 30%, 32% 16%
-      );
-      filter: drop-shadow(0 1px 0 rgba(0, 0, 0, 0.3));
+      --meeple-svg: none;
+      display: block;
+      flex: none;
+      width: 25px;
+      height: 36px;
+      background-color: transparent;
+      background-image: var(--meeple-svg);
+      background-repeat: no-repeat;
+      background-position: center;
+      background-size: contain;
+      clip-path: none;
+      filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.45));
     }
 
-    .meeple.red { --c: #ff5d78; }
-    .meeple.blue { --c: #49c4ff; }
-    .meeple.green { --c: #3dff9a; }
-    .meeple.yellow { --c: #ffe14a; }
-    .meeple.orange { --c: #ff9a3d; }
-    .meeple.purple { --c: #7c3aed; }
-    .meeple.white {
-      --c: #f4f7fb;
-      filter: drop-shadow(0 0 0.6px #111) drop-shadow(0 1px 0 rgba(0, 0, 0, 0.35));
+    .meeple.red {
+      --meeple-fill: #ff5d78;
+      --meeple-svg: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-18 -18 136 136'%3E%3Cdefs%3E%3ClinearGradient id='h' x1='20%25' y1='8%25' x2='80%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%23fff' stop-opacity='.55'/%3E%3Cstop offset='40%25' stop-color='%23fff' stop-opacity='0'/%3E%3Cstop offset='100%25' stop-color='%23000' stop-opacity='.32'/%3E%3C/linearGradient%3E%3C/defs%3E%3Cpath fill='%23ff5d78' stroke='%23120806' stroke-width='30' stroke-linejoin='round' paint-order='stroke fill' d='M43 0H57V14L72 28H77V41H64L62 55L76 100H55L50 79L45 100H24L38 55L36 41H23V28H28L43 14Z'/%3E%3Cpath fill='url(%23h)' d='M43 0H57V14L72 28H77V41H64L62 55L76 100H55L50 79L45 100H24L38 55L36 41H23V28H28L43 14Z'/%3E%3C/svg%3E");
     }
-    .meeple.brown { --c: #a67c52; }
+    .meeple.blue {
+      --meeple-fill: #49c4ff;
+      --meeple-svg: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-18 -18 136 136'%3E%3Cdefs%3E%3ClinearGradient id='h' x1='20%25' y1='8%25' x2='80%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%23fff' stop-opacity='.55'/%3E%3Cstop offset='40%25' stop-color='%23fff' stop-opacity='0'/%3E%3Cstop offset='100%25' stop-color='%23000' stop-opacity='.32'/%3E%3C/linearGradient%3E%3C/defs%3E%3Cpath fill='%2349c4ff' stroke='%23120806' stroke-width='30' stroke-linejoin='round' paint-order='stroke fill' d='M43 0H57V14L72 28H77V41H64L62 55L76 100H55L50 79L45 100H24L38 55L36 41H23V28H28L43 14Z'/%3E%3Cpath fill='url(%23h)' d='M43 0H57V14L72 28H77V41H64L62 55L76 100H55L50 79L45 100H24L38 55L36 41H23V28H28L43 14Z'/%3E%3C/svg%3E");
+    }
+    .meeple.green {
+      --meeple-fill: #3dff9a;
+      --meeple-svg: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-18 -18 136 136'%3E%3Cdefs%3E%3ClinearGradient id='h' x1='20%25' y1='8%25' x2='80%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%23fff' stop-opacity='.55'/%3E%3Cstop offset='40%25' stop-color='%23fff' stop-opacity='0'/%3E%3Cstop offset='100%25' stop-color='%23000' stop-opacity='.32'/%3E%3C/linearGradient%3E%3C/defs%3E%3Cpath fill='%233dff9a' stroke='%23120806' stroke-width='30' stroke-linejoin='round' paint-order='stroke fill' d='M43 0H57V14L72 28H77V41H64L62 55L76 100H55L50 79L45 100H24L38 55L36 41H23V28H28L43 14Z'/%3E%3Cpath fill='url(%23h)' d='M43 0H57V14L72 28H77V41H64L62 55L76 100H55L50 79L45 100H24L38 55L36 41H23V28H28L43 14Z'/%3E%3C/svg%3E");
+    }
+    .meeple.yellow {
+      --meeple-fill: #ffe14a;
+      --meeple-svg: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-18 -18 136 136'%3E%3Cdefs%3E%3ClinearGradient id='h' x1='20%25' y1='8%25' x2='80%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%23fff' stop-opacity='.5'/%3E%3Cstop offset='40%25' stop-color='%23fff' stop-opacity='0'/%3E%3Cstop offset='100%25' stop-color='%23000' stop-opacity='.28'/%3E%3C/linearGradient%3E%3C/defs%3E%3Cpath fill='%23ffe14a' stroke='%23120806' stroke-width='30' stroke-linejoin='round' paint-order='stroke fill' d='M43 0H57V14L72 28H77V41H64L62 55L76 100H55L50 79L45 100H24L38 55L36 41H23V28H28L43 14Z'/%3E%3Cpath fill='url(%23h)' d='M43 0H57V14L72 28H77V41H64L62 55L76 100H55L50 79L45 100H24L38 55L36 41H23V28H28L43 14Z'/%3E%3C/svg%3E");
+    }
+    .meeple.orange {
+      --meeple-fill: #ff9a3d;
+      --meeple-svg: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-18 -18 136 136'%3E%3Cdefs%3E%3ClinearGradient id='h' x1='20%25' y1='8%25' x2='80%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%23fff' stop-opacity='.55'/%3E%3Cstop offset='40%25' stop-color='%23fff' stop-opacity='0'/%3E%3Cstop offset='100%25' stop-color='%23000' stop-opacity='.32'/%3E%3C/linearGradient%3E%3C/defs%3E%3Cpath fill='%23ff9a3d' stroke='%23120806' stroke-width='30' stroke-linejoin='round' paint-order='stroke fill' d='M43 0H57V14L72 28H77V41H64L62 55L76 100H55L50 79L45 100H24L38 55L36 41H23V28H28L43 14Z'/%3E%3Cpath fill='url(%23h)' d='M43 0H57V14L72 28H77V41H64L62 55L76 100H55L50 79L45 100H24L38 55L36 41H23V28H28L43 14Z'/%3E%3C/svg%3E");
+    }
+    .meeple.purple {
+      --meeple-fill: #7c3aed;
+      --meeple-svg: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-18 -18 136 136'%3E%3Cdefs%3E%3ClinearGradient id='h' x1='20%25' y1='8%25' x2='80%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%23fff' stop-opacity='.55'/%3E%3Cstop offset='40%25' stop-color='%23fff' stop-opacity='0'/%3E%3Cstop offset='100%25' stop-color='%23000' stop-opacity='.32'/%3E%3C/linearGradient%3E%3C/defs%3E%3Cpath fill='%237c3aed' stroke='%23120806' stroke-width='30' stroke-linejoin='round' paint-order='stroke fill' d='M43 0H57V14L72 28H77V41H64L62 55L76 100H55L50 79L45 100H24L38 55L36 41H23V28H28L43 14Z'/%3E%3Cpath fill='url(%23h)' d='M43 0H57V14L72 28H77V41H64L62 55L76 100H55L50 79L45 100H24L38 55L36 41H23V28H28L43 14Z'/%3E%3C/svg%3E");
+    }
+    .meeple.white {
+      --meeple-fill: #f4f7fb;
+      --meeple-svg: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-18 -18 136 136'%3E%3Cdefs%3E%3ClinearGradient id='h' x1='20%25' y1='8%25' x2='80%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%23fff' stop-opacity='.35'/%3E%3Cstop offset='40%25' stop-color='%23fff' stop-opacity='0'/%3E%3Cstop offset='100%25' stop-color='%23000' stop-opacity='.22'/%3E%3C/linearGradient%3E%3C/defs%3E%3Cpath fill='%23f4f7fb' stroke='%23120806' stroke-width='30' stroke-linejoin='round' paint-order='stroke fill' d='M43 0H57V14L72 28H77V41H64L62 55L76 100H55L50 79L45 100H24L38 55L36 41H23V28H28L43 14Z'/%3E%3Cpath fill='url(%23h)' d='M43 0H57V14L72 28H77V41H64L62 55L76 100H55L50 79L45 100H24L38 55L36 41H23V28H28L43 14Z'/%3E%3C/svg%3E");
+    }
+    .meeple.brown {
+      --meeple-fill: #a67c52;
+      --meeple-svg: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-18 -18 136 136'%3E%3Cdefs%3E%3ClinearGradient id='h' x1='20%25' y1='8%25' x2='80%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%23fff' stop-opacity='.45'/%3E%3Cstop offset='40%25' stop-color='%23fff' stop-opacity='0'/%3E%3Cstop offset='100%25' stop-color='%23000' stop-opacity='.35'/%3E%3C/linearGradient%3E%3C/defs%3E%3Cpath fill='%23a67c52' stroke='%23120806' stroke-width='30' stroke-linejoin='round' paint-order='stroke fill' d='M43 0H57V14L72 28H77V41H64L62 55L76 100H55L50 79L45 100H24L38 55L36 41H23V28H28L43 14Z'/%3E%3Cpath fill='url(%23h)' d='M43 0H57V14L72 28H77V41H64L62 55L76 100H55L50 79L45 100H24L38 55L36 41H23V28H28L43 14Z'/%3E%3C/svg%3E");
+    }
 
     /* ---- tile ---- */
     .tile {
@@ -336,9 +424,13 @@
       width: var(--s);
       height: var(--s);
       background-color: var(--field);
-      background-image:
-        radial-gradient(circle at 22% 28%, rgba(255, 255, 255, 0.18) 0 1.5px, transparent 2px),
-        radial-gradient(circle at 72% 64%, rgba(0, 0, 0, 0.08) 0 1.5px, transparent 2px);
+      /* One light noise layer — keep zoom paint cheap */
+      background-image: radial-gradient(
+        circle at 30% 35%,
+        rgba(255, 255, 255, 0.12) 0 0.55px,
+        transparent 1px
+      );
+      background-size: 14px 14px;
       overflow: hidden;
       border-radius: 0;
       flex: none;
@@ -350,12 +442,29 @@
     .city {
       position: absolute;
       z-index: 3;
+      /* Outer wall tone; inner fill is ::after */
+      background-color: #8a2f22;
+      background-image: none;
+    }
+
+    /*
+      Inner fill. Field-facing edges are inset ~6% for a wall of even thickness,
+      including near corners (inner does not share outer corner tips on those edges).
+      Connection edges stay flush except tiny corner stubs so the wall does not taper to 0.
+    */
+    .city::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: 1;
+      pointer-events: none;
       background-color: var(--city);
-      background-image:
-        radial-gradient(circle at 22% 42%, #f3e2a4 0 1.4px, transparent 1.8px),
-        radial-gradient(circle at 48% 58%, #f3e2a4 0 1.4px, transparent 1.8px),
-        radial-gradient(circle at 70% 36%, #f3e2a4 0 1.4px, transparent 1.8px),
-        repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.08) 0 9px, transparent 9px 16px);
+      background-image: radial-gradient(
+        circle at 36% 38%,
+        rgba(255, 230, 180, 0.13) 0 0.5px,
+        transparent 0.95px
+      );
+      background-size: 14px 14px;
     }
 
     /* A city edge is city from corner to corner.
@@ -364,24 +473,47 @@
       inset: 0;
       clip-path: polygon(0 0, 100% 0, 68% 30%, 50% 38%, 32% 30%);
     }
+    .city.cap.n::after {
+      clip-path: polygon(5% 0, 95% 0, 64% 24%, 50% 30%, 36% 24%);
+    }
+
+    /* Shallower north cap (D / L) — clears the road like tile I. */
+    .city.cap.n.shallow {
+      clip-path: polygon(0 0, 100% 0, 70% 22%, 50% 28%, 30% 22%);
+    }
+    .city.cap.n.shallow::after {
+      clip-path: polygon(5% 0, 95% 0, 66% 16%, 50% 21%, 34% 16%);
+    }
 
     .city.cap.s {
       inset: 0;
       clip-path: polygon(0 100%, 100% 100%, 68% 70%, 50% 62%, 32% 70%);
+    }
+    .city.cap.s::after {
+      clip-path: polygon(5% 100%, 95% 100%, 64% 76%, 50% 70%, 36% 76%);
     }
 
     .city.cap.w {
       inset: 0;
       clip-path: polygon(0 0, 30% 32%, 38% 50%, 30% 68%, 0 100%);
     }
+    .city.cap.w::after {
+      clip-path: polygon(0 5%, 24% 36%, 30% 50%, 24% 64%, 0 95%);
+    }
 
     /* Same full edge as other cities, kept shallow so I's two cities meet only at the corner. */
     .city.cap.n.gap-w {
       clip-path: polygon(0 0, 100% 0, 70% 22%, 50% 28%, 30% 22%);
     }
+    .city.cap.n.gap-w::after {
+      clip-path: polygon(5% 0, 95% 0, 66% 16%, 50% 21%, 34% 16%);
+    }
 
     .city.cap.w.gap-n {
       clip-path: polygon(0 0, 22% 30%, 28% 50%, 22% 70%, 0 100%);
+    }
+    .city.cap.w.gap-n::after {
+      clip-path: polygon(0 5%, 16% 34%, 21% 50%, 16% 66%, 0 95%);
     }
 
     .city.bar.h {
@@ -397,25 +529,58 @@
         22% 34%
       );
     }
+    /* Even ~6% wall on field edges; diagonals matched (was much thinner than N/S). */
+    .city.bar.h::after {
+      clip-path: polygon(
+        0 8%,
+        0 92%,
+        19% 60%,
+        81% 60%,
+        100% 92%,
+        100% 8%,
+        81% 40%,
+        19% 40%
+      );
+    }
 
     .city.elbow.ne {
       inset: 0;
       clip-path: polygon(0 0, 100% 0, 100% 100%, 72% 72%, 34% 30%, 0 0);
+    }
+    .city.elbow.ne::after {
+      clip-path: polygon(6% 0, 100% 0, 100% 94%, 78% 66%, 42% 28%, 6% 0);
     }
 
     .city.elbow.nw {
       inset: 0;
       clip-path: polygon(0 0, 100% 0, 68% 34%, 34% 34%, 34% 68%, 0 100%, 0 0);
     }
+    .city.elbow.nw::after {
+      clip-path: polygon(0 6%, 94% 0, 64% 28%, 28% 28%, 28% 64%, 0 94%, 0 6%);
+    }
 
     .city.mouth.s {
       inset: 0;
       clip-path: polygon(0 0, 100% 0, 100% 100%, 72% 74%, 50% 60%, 28% 74%, 0 100%, 0 0);
     }
+    .city.mouth.s::after {
+      clip-path: polygon(0 0, 100% 0, 100% 94%, 76% 68%, 50% 52%, 24% 68%, 0 94%, 0 0);
+    }
 
+    /* All four edges connect — no outer wall. */
     .city.fill {
       inset: 0;
       clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%);
+      background-color: var(--city);
+      background-image: radial-gradient(
+        circle at 36% 38%,
+        rgba(255, 230, 180, 0.13) 0 0.5px,
+        transparent 0.95px
+      );
+      background-size: 14px 14px;
+    }
+    .city.fill::after {
+      display: none;
     }
 
     .road {
@@ -447,107 +612,209 @@
     .bend.sw.edge { width: 140px; height: 140px; left: -70px; top: 50px; border: 20px solid var(--road-line); }
     .bend.sw.line { width: 136px; height: 136px; left: -68px; top: 52px; border: 16px solid var(--road); z-index: 2; }
 
+    /* Tapestry banner + white ♦ */
     .pennant {
       position: absolute;
       z-index: 6;
-      width: 14px;
-      height: 16px;
-      background: #1f4f8a;
-      clip-path: polygon(0 0, 100% 0, 100% 68%, 50% 100%, 0 68%);
+      width: 13px;
+      height: 17px;
+      background: linear-gradient(180deg, #4576c2 0%, #234f96 55%, #173a72 100%);
+      border: 1.5px solid #d0a84c;
+      border-radius: 1px 1px 0 0;
+      clip-path: none;
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.18),
+        0 2.5px 0 #d0a84c;
+      filter: none;
     }
 
     .pennant::before {
       content: "";
       position: absolute;
-      left: 2px; right: 2px; top: 2px;
-      height: 6px;
-      background: #f7f4ea;
+      left: -2.5px;
+      right: -2.5px;
+      top: -2.5px;
+      height: 3.5px;
+      background: linear-gradient(90deg, #f0dfaa, #c49a45 45%, #f0dfaa);
+      border-radius: 1px;
+      box-shadow: none;
     }
 
-    .p-c { left: 64%; top: 26%; }
-    .p-bar { left: calc(50% - 7px); top: calc(50% - 8px); }
-    .p-ne { right: 16px; top: 12px; }
-    .p-nw { left: 12px; top: 12px; }
-    .p-u { left: calc(50% - 7px); top: 14px; }
-
-    .keep {
-      position: absolute;
-      z-index: 4;
-      left: 50%;
-      top: 48%;
-      width: 16px;
-      height: 26px;
-      transform: translate(-50%, -50%);
-      background: #ece6da;
-      border: 2px solid #5c5348;
-    }
-
-    .keep::before {
+    .pennant::after {
       content: "";
       position: absolute;
-      left: -5px; right: -5px; top: -9px;
-      height: 9px;
-      background: #6d342c;
-      clip-path: polygon(0 100%, 50% 0, 100% 100%);
+      left: 50%;
+      top: 52%;
+      width: 4.5px;
+      height: 4.5px;
+      transform: translate(-50%, -50%) rotate(45deg);
+      background: #fff;
+      border-radius: 0.4px;
+      bottom: auto;
+      right: auto;
+      box-shadow: 0 0 0 0.5px rgba(20, 30, 50, 0.25);
     }
+
+    /* Away from city meeple slots (C center, F center, M NE, O NW, Q/S mid-north) */
+    .p-c { left: 12%; top: 12%; }
+    .p-bar { left: 14%; top: 36%; }
+    .p-ne { left: auto; right: 7%; top: 6%; }
+    .p-nw { left: 7%; top: 6%; }
+    .p-u { left: 14%; top: 8%; }
 
     .monastery {
       position: absolute;
       z-index: 5;
       left: 50%;
-      top: 42%;
-      width: 36px;
+      top: 44%;
+      width: 58px;
+      height: 54px;
       transform: translate(-50%, -50%);
+      filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.28));
+    }
+
+    .monastery .wing {
+      position: absolute;
+      bottom: 0;
+      z-index: 0;
+      width: 16px;
+      height: 24px;
+      background:
+        linear-gradient(90deg, rgba(0, 0, 0, 0.05) 0 1px, transparent 1px) 0 0 / 5px 100%,
+        linear-gradient(#efe8dc, #d8cfc0);
+      border: 2px solid #4a3a2c;
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.35);
+    }
+
+    .monastery .wing.left { left: 0; }
+    .monastery .wing.right { right: 0; }
+
+    .monastery .wing::before {
+      content: "";
+      position: absolute;
+      left: -3px;
+      right: -3px;
+      top: -9px;
+      height: 9px;
+      background: linear-gradient(180deg, #a63a30, #72241e);
+      clip-path: polygon(0 100%, 50% 0, 100% 100%);
+    }
+
+    .monastery .wing::after {
+      content: "";
+      position: absolute;
+      left: 50%;
+      top: 6px;
+      width: 4px;
+      height: 5px;
+      transform: translateX(-50%);
+      background: #6b8cae;
+      border: 1px solid #3d4f66;
     }
 
     .monastery .cross {
       position: absolute;
       left: 50%;
       top: 0;
-      width: 2px;
-      height: 8px;
-      background: #f3efe4;
-      transform: translate(-50%, -7px);
+      z-index: 4;
+      width: 3px;
+      height: 13px;
+      background: linear-gradient(#f4dc88, #c9a227);
+      transform: translate(-50%, -12px);
+      box-shadow: 0 0 0 0.6px rgba(80, 50, 10, 0.4);
     }
 
     .monastery .cross::after {
       content: "";
       position: absolute;
-      left: -3px;
+      left: -4.5px;
       top: 2px;
-      width: 8px;
-      height: 2px;
-      background: #f3efe4;
+      width: 12px;
+      height: 3px;
+      background: linear-gradient(#f4dc88, #c9a227);
     }
 
     .monastery .roof {
+      position: absolute;
+      left: 50%;
+      top: 6px;
+      z-index: 2;
       display: block;
       width: 0;
       height: 0;
-      margin: 0 auto;
-      border-left: 16px solid transparent;
-      border-right: 16px solid transparent;
-      border-bottom: 12px solid #7c2f2a;
+      margin: 0;
+      transform: translateX(-50%);
+      border-left: 22px solid transparent;
+      border-right: 22px solid transparent;
+      border-bottom: 18px solid #9e342a;
+      filter: drop-shadow(0 1px 0 rgba(0, 0, 0, 0.25));
+    }
+
+    .monastery .roof::before {
+      content: "";
+      position: absolute;
+      left: -14px;
+      top: 11px;
+      width: 28px;
+      height: 6px;
+      background: #6f231c;
+      clip-path: polygon(0 0, 100% 0, 86% 100%, 14% 100%);
+    }
+
+    .monastery .roof::after {
+      content: "";
+      position: absolute;
+      left: -2px;
+      top: 3px;
+      width: 4px;
+      height: 8px;
+      background: #c9a227;
+      border-radius: 1px 1px 0 0;
     }
 
     .monastery .body {
+      position: absolute;
+      left: 50%;
+      bottom: 0;
+      z-index: 1;
       display: block;
-      width: 24px;
-      height: 14px;
-      margin: -1px auto 0;
-      background: #f4efe4;
-      border: 2px solid #5c4636;
+      width: 34px;
+      height: 26px;
+      margin: 0;
+      transform: translateX(-50%);
+      background:
+        linear-gradient(90deg, rgba(0, 0, 0, 0.06) 0 1px, transparent 1px) 0 0 / 6px 100%,
+        linear-gradient(#f8f3e9, #e2dacb);
+      border: 2px solid #4a3a2c;
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.45);
+    }
+
+    .monastery .body::before {
+      content: "";
+      position: absolute;
+      left: 5px;
+      top: 5px;
+      width: 6px;
+      height: 7px;
+      background: #6b8cae;
+      box-shadow: 14px 0 0 #6b8cae;
+      border: 1px solid #3d4f66;
     }
 
     .monastery .body::after {
       content: "";
-      display: block;
-      width: 4px;
-      height: 7px;
-      margin: 5px auto 0;
-      background: #6b3a2a;
+      position: absolute;
+      left: 50%;
+      bottom: 0;
+      width: 8px;
+      height: 11px;
+      transform: translateX(-50%);
+      background: linear-gradient(#7a4330, #5a2e22);
+      border-radius: 4px 4px 0 0;
+      box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.2);
     }
 
+    /* Square plaza; fountain drawn as CSS shapes (not emoji) */
     .village {
       position: absolute;
       z-index: 5;
@@ -557,10 +824,56 @@
       height: 20px;
       transform: translate(-50%, -50%);
       background:
-        linear-gradient(#f0d78a, #f0d78a) center 4px / 8px 5px no-repeat,
-        #8a4632;
-      border: 2px solid #f6edd8;
-      border-radius: 3px;
+        radial-gradient(circle at 30% 28%, rgba(255, 245, 220, 0.3) 0 1px, transparent 1.3px),
+        radial-gradient(circle at 70% 68%, rgba(40, 28, 16, 0.16) 0 1px, transparent 1.3px),
+        linear-gradient(145deg, #d4c4a0, #b49a6e 55%, #9a8460);
+      border: 1.5px solid #5c4a32;
+      border-radius: 2px;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    }
+
+    /* Wide stone basin + water ring */
+    .village::before {
+      content: "";
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 18px;
+      height: 18px;
+      transform: translate(-50%, -50%);
+      background:
+        radial-gradient(circle at 50% 50%, #4a9ec4 0 26%, #7ecce8 28% 40%, transparent 42%),
+        radial-gradient(circle at 32% 28%, rgba(255, 255, 255, 0.35) 0 2px, transparent 2.5px),
+        linear-gradient(155deg, #f0e8da, #b0a090 50%, #6a6054);
+      border: 1.5px solid #3a3228;
+      border-radius: 50%;
+      box-shadow:
+        inset 0 0 0 2px #d0c4b0,
+        inset 0 2px 2px rgba(0, 0, 0, 0.25);
+    }
+
+    /* Center stem + spray jets */
+    .village::after {
+      content: "";
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 16px;
+      height: 18px;
+      transform: translate(-50%, -62%);
+      background:
+        radial-gradient(circle at 50% 4%, #c8f0fc 0 2.2px, transparent 2.5px),
+        radial-gradient(circle at 12% 28%, #a0e0f4 0 2px, transparent 2.3px),
+        radial-gradient(circle at 88% 28%, #a0e0f4 0 2px, transparent 2.3px),
+        radial-gradient(circle at 28% 48%, #8ed4ec 0 1.6px, transparent 1.9px),
+        radial-gradient(circle at 72% 48%, #8ed4ec 0 1.6px, transparent 1.9px),
+        radial-gradient(circle at 50% 52%, #6eb8d8 0 2.4px, transparent 2.7px),
+        linear-gradient(#8ed4ec, #3e8cb0) center 40% / 3px 10px no-repeat;
+      border: none;
+      border-radius: 0;
+      box-shadow: none;
+      filter: none;
+      clip-path: none;
     }
 
 .rot-270 { transform: rotate(270deg); }

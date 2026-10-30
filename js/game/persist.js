@@ -85,5 +85,6 @@ export function restoreGame(data) {
     : players.map((_, index) => index);
   game.finalScored = !!data.finalScored;
   game.rankingOpen = !!data.rankingOpen;
+  if (!game.finished) game.reconcileHand();
   return game;
 }

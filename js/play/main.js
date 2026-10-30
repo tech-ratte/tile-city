@@ -263,9 +263,10 @@ function meepleMarksHTML(tile, pending) {
   const color = game.players[game.pendingMeeple.player].id;
   const slots = game.meepleSlots();
   const spots = slots.map((slot) =>
-    '<button type="button" class="meeple-spot ' + color + " " + slot.kind +
+    '<button type="button" class="meeple-spot spot-' + slot.kind +
     '" data-meeple-slot="' + slot.id + '" style="left:' + (slot.x * 100) +
-    "%;top:" + (slot.y * 100) + '%" aria-label="' + t("placeMeeple") + '"></button>'
+    "%;top:" + (slot.y * 100) + '%" aria-label="' + t("placeMeeple") +
+    '"><i class="meeple ' + color + '" aria-hidden="true"></i></button>'
   ).join("");
   const stock = game.meeples[game.pendingMeeple.player];
   const prompt = slots.length
@@ -279,7 +280,11 @@ function meepleMarksHTML(tile, pending) {
     spots +
     '<button type="button" id="skip-meeple">' + t("skip") + "</button>" +
     '<button type="button" id="undo-place" aria-label="' + t("undoPlace") +
-    '" title="' + t("undoPlace") + '">↩</button>' +
+    '" title="' + t("undoPlace") + '">' +
+    '<svg class="undo-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">' +
+    '<path fill="currentColor" d="M12.5 8C9.85 8 7.45 9 5.6 10.6L2 7v9h9l-3.62-3.62' +
+    'C8.77 11.22 10.54 10.5 12.5 10.5c3.54 0 6.55 2.31 7.6 5.5l2.37-.78C21.08 11.03 17.15 8 12.5 8z"/>' +
+    '</svg></button>' +
     "</div>"
   );
   return marks.join("");
@@ -484,6 +489,7 @@ function rotateClockwise() {
 
 function render(opts) {
   opts = opts || {};
+  game.reconcileHand();
   const anchor = opts.keep ? captureAnchor() : null;
   paintSide();
   paintGrid();
