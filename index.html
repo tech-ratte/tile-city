@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>カルカソンヌ</title>
+  <link rel="stylesheet" href="css/tiles.css">
+  <style>
+    .hero {
+      margin-top: 48px;
+      display: grid;
+      gap: 28px;
+    }
+
+    .hero h1 {
+      margin: 0;
+      font-size: clamp(36px, 7vw, 56px);
+      letter-spacing: 0.04em;
+      line-height: 1.15;
+    }
+
+    .hero .lead {
+      font-size: 17px;
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 8px;
+    }
+
+    .actions a {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 10rem;
+      padding: 12px 22px;
+      border-radius: 999px;
+      text-decoration: none;
+      font-weight: 700;
+      font-size: 16px;
+      letter-spacing: 0.04em;
+    }
+
+    .actions .play {
+      color: #fffdf8;
+      background: var(--city);
+      border: 1px solid #9e3422;
+      box-shadow: 0 8px 20px rgba(196, 71, 50, 0.22);
+    }
+
+    .actions .play:hover {
+      filter: brightness(1.05);
+    }
+
+    .actions .tiles {
+      color: var(--ink);
+      background: #fff;
+      border: 1px solid var(--line);
+    }
+
+    .actions .tiles:hover {
+      background: #fffaf1;
+    }
+
+    .preview {
+      margin-top: 8px;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .preview .tile {
+      box-shadow: 0 10px 24px rgba(70, 50, 20, 0.12);
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="hero">
+      <div>
+        <h1>カルカソンヌ</h1>
+        <p class="lead">基本セットのタイル配置をブラウザで試せます。出版社の絵は使っていません。</p>
+        <div class="actions">
+          <a class="play" href="play.html">遊ぶ</a>
+          <a class="tiles" href="tiles.html">タイルの見本</a>
+        </div>
+      </div>
+      <div class="preview" aria-hidden="true">
+        <div class="tile">
+          <i class="city cap n"></i>
+          <i class="road h"></i>
+        </div>
+        <div class="tile rot-90">
+          <i class="city cap n"></i>
+        </div>
+        <div class="tile">
+          <i class="bend sw edge"></i>
+          <i class="bend sw line"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
