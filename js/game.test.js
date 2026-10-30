@@ -1,5 +1,5 @@
-const assert = require("assert");
-const {
+import assert from "assert";
+import {
   TYPES,
   PLAYERS,
   MEEPLES_EACH,
@@ -29,7 +29,7 @@ const {
   COLOR_PALETTE,
   PLAYERS_MIN,
   PLAYERS_MAX,
-} = require("./game.js");
+} from "./game/index.js";
 
 function makePlaced(id, rot, meeple) {
   const tile = makeTile(id);

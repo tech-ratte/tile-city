@@ -1,0 +1,9 @@
+{
+  "name": "tile-city",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node js/game.test.js",
+    "build": "node scripts/build-browser.mjs"
+  }
+}
