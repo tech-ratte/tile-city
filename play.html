@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>カルカソンヌ 配置</title>
+  <title>Tile City</title>
   <link rel="stylesheet" href="css/tiles.css">
   <style>
     html, body { height: 100%; overflow: hidden; }
@@ -38,6 +38,9 @@
     }
 
     .board-panel {
+      position: relative;
+      z-index: 1;
+      isolation: isolate;
       min-width: 0;
       min-height: 0;
       display: flex;
@@ -77,13 +80,24 @@
 
     .players li {
       display: grid;
-      grid-template-columns: 1fr auto auto;
+      grid-template-columns: auto 1fr auto auto;
       align-items: center;
       gap: 8px 12px;
       padding: 8px 10px;
       border-radius: 12px;
       border: 1px solid transparent;
       background: rgba(255, 255, 255, 0.03);
+    }
+
+    .players li:not(:has(.rank)) {
+      grid-template-columns: 1fr auto auto;
+    }
+
+    .players .rank {
+      font-size: 12px;
+      font-weight: 700;
+      color: #93a8be;
+      min-width: 1.2em;
     }
 
     .players .pname {
@@ -123,11 +137,23 @@
     .players li.green .score { color: #3dff9a; text-shadow: 0 0 8px rgba(61, 255, 154, 0.75); }
     .players li.yellow .pname,
     .players li.yellow .score { color: #ffe14a; text-shadow: 0 0 8px rgba(255, 225, 74, 0.75); }
+    .players li.orange .pname,
+    .players li.orange .score { color: #ff9a3d; text-shadow: 0 0 8px rgba(255, 154, 61, 0.8); }
+    .players li.purple .pname,
+    .players li.purple .score { color: #7c3aed; text-shadow: 0 0 8px rgba(124, 58, 237, 0.8); }
+    .players li.white .pname,
+    .players li.white .score { color: #f4f7fb; text-shadow: 0 0 8px rgba(255, 255, 255, 0.35); }
+    .players li.brown .pname,
+    .players li.brown .score { color: #a67c52; text-shadow: 0 0 8px rgba(166, 124, 82, 0.8); }
 
     .players li.red.on { border-color: #ff5d78; box-shadow: 0 0 14px rgba(255, 93, 120, 0.4); }
     .players li.blue.on { border-color: #49c4ff; box-shadow: 0 0 14px rgba(73, 196, 255, 0.4); }
     .players li.green.on { border-color: #3dff9a; box-shadow: 0 0 14px rgba(61, 255, 154, 0.35); }
     .players li.yellow.on { border-color: #ffe14a; box-shadow: 0 0 14px rgba(255, 225, 74, 0.35); }
+    .players li.orange.on { border-color: #ff9a3d; box-shadow: 0 0 14px rgba(255, 154, 61, 0.35); }
+    .players li.purple.on { border-color: #7c3aed; box-shadow: 0 0 14px rgba(124, 58, 237, 0.35); }
+    .players li.white.on { border-color: #ffffff; box-shadow: 0 0 14px rgba(255, 255, 255, 0.35); }
+    .players li.brown.on { border-color: #a67c52; box-shadow: 0 0 14px rgba(166, 124, 82, 0.35); }
 
     .hud-top { margin: 0; }
     .hud-bottom { margin: 0; }
@@ -165,22 +191,323 @@
 
     .deck-short { display: none; }
 
-    .hand { margin: 0; }
-
-    .note-banner {
-      background: #f8efe0;
-      border: 1px solid #e4d0a8;
-      color: #6a4a12;
-      border-radius: 10px;
-      padding: 8px 10px;
-      font-size: 14px;
-      margin-bottom: 10px;
+    .hud-meta {
+      display: none;
     }
 
-    .note-banner.done {
-      background: #e7f2ea;
-      border-color: #b7d7c2;
-      color: #1f5a32;
+    .exit-chip {
+      font: inherit;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      color: #ffd0d8;
+      background: rgba(70, 14, 24, 0.82);
+      border: 1px solid rgba(255, 93, 120, 0.55);
+      border-radius: 999px;
+      padding: 8px 16px;
+      cursor: pointer;
+      box-shadow: 0 0 12px rgba(255, 70, 100, 0.18);
+    }
+
+    .exit-chip:hover {
+      border-color: #ff5d78;
+      color: #fff0f3;
+      background: rgba(90, 18, 30, 0.9);
+    }
+
+    .foot .exit-chip {
+      display: inline-block;
+      width: 100%;
+      text-align: center;
+      margin-top: 8px;
+    }
+
+    .hand { margin: 0; }
+
+    .discard-overlay {
+      position: absolute;
+      inset: 0;
+      z-index: 40;
+      display: flex;
+      align-items: safe center;
+      justify-content: center;
+      padding: 16px 12px;
+      overflow: auto;
+      background: rgba(9, 13, 20, 0.55);
+      pointer-events: auto;
+    }
+
+    /* Ranking sits lower-center so it clears the top HUD. */
+    .discard-overlay:has(.discard-card.ranking-open) {
+      align-items: flex-end;
+      padding-top: max(56px, 8vh);
+      padding-bottom: max(48px, 14vh);
+    }
+
+    .discard-overlay[hidden] {
+      display: none;
+    }
+
+    .discard-card {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 14px;
+      width: min(20em, 100%);
+      max-width: 20em;
+      margin: auto;
+      padding: 18px 22px;
+      border-radius: 16px;
+      background: rgba(10, 16, 28, 0.94);
+      border: 1px solid rgba(140, 220, 255, 0.28);
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
+    }
+
+    .discard-card.ranking-open {
+      width: min(17.5em, 100%);
+      max-width: 17.5em;
+      max-height: min(76vh, 560px);
+      margin: 0 auto;
+      padding: 14px 14px 12px;
+      gap: 8px;
+      overflow: hidden;
+    }
+
+    .discard-card.exit-open {
+      gap: 16px;
+    }
+
+    .discard-card [hidden] {
+      display: none !important;
+    }
+
+    #ranking-root {
+      width: 100%;
+      min-height: 0;
+      flex: 1 1 auto;
+      max-height: calc(76vh - 140px);
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .discard-card.ranking-open .ranking-actions {
+      flex: none;
+      margin-top: 8px;
+      width: 100%;
+      gap: 8px;
+    }
+
+    .discard-card p {
+      margin: 0;
+      text-align: center;
+      color: #f4f7fb;
+      font-size: 18px;
+      font-weight: 700;
+      line-height: 1.45;
+    }
+
+    .discard-card.ranking-open > p {
+      font-size: 16px;
+      padding: 0 28px;
+      line-height: 1.3;
+    }
+
+    .discard-card #ok-discard,
+    .discard-card #confirm-exit,
+    .discard-card #cancel-exit {
+      min-width: 5.5em;
+      padding: 10px 22px;
+      border: 0;
+      border-radius: 999px;
+      background: #f4f7fb;
+      color: #152033;
+      font: inherit;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .discard-card #cancel-exit {
+      background: transparent;
+      color: #f4f7fb;
+      border: 1px solid rgba(244, 247, 251, 0.45);
+    }
+
+    .discard-card.ranking-open .ranking-actions .again-chip,
+    .discard-card.ranking-open .ranking-actions .quit-chip {
+      min-width: 5em;
+      padding: 10px 18px;
+      font: inherit;
+      font-weight: 700;
+      font-size: 14px;
+    }
+
+    .minimize-ranking {
+      position: absolute;
+      top: 8px;
+      left: 8px;
+      z-index: 2;
+      display: grid;
+      place-items: center;
+      width: 28px;
+      height: 28px;
+      padding: 0;
+      border: 1px solid rgba(244, 247, 251, 0.35);
+      border-radius: 8px;
+      background: rgba(10, 16, 28, 0.92);
+      color: #f4f7fb;
+      cursor: pointer;
+      line-height: 0;
+    }
+
+    .minimize-ranking:hover {
+      border-color: #fff;
+      background: rgba(30, 40, 56, 0.96);
+    }
+
+    /* Paired corner marks with a clear gap (not a +). */
+    .minimize-ranking .min-ico {
+      position: relative;
+      display: block;
+      width: 14px;
+      height: 14px;
+    }
+
+    .minimize-ranking .min-ico::before,
+    .minimize-ranking .min-ico::after {
+      content: "";
+      position: absolute;
+      width: 5px;
+      height: 5px;
+      box-sizing: border-box;
+    }
+
+    .minimize-ranking .min-ico::before {
+      top: 0;
+      right: 0;
+      border-left: 2px solid currentColor;
+      border-bottom: 2px solid currentColor;
+    }
+
+    .minimize-ranking .min-ico::after {
+      bottom: 0;
+      left: 0;
+      border-top: 2px solid currentColor;
+      border-right: 2px solid currentColor;
+    }
+
+    .ranking-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: center;
+      margin-top: 28px;
+      padding-top: 4px;
+    }
+
+    .ranking-list {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .ranking-list li {
+      display: grid;
+      grid-template-columns: 1.2em 1fr auto;
+      gap: 2px 8px;
+      align-items: center;
+      padding: 5px 9px;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.06);
+      color: #f4f7fb;
+      font-weight: 700;
+      font-size: 13px;
+      line-height: 1.3;
+    }
+
+    .ranking-list .rank-num { color: #93a8be; font-size: 12px; }
+    .ranking-list .rank-name.red { color: #ff5d78; }
+    .ranking-list .rank-name.blue { color: #49c4ff; }
+    .ranking-list .rank-name.green { color: #3dff9a; }
+    .ranking-list .rank-name.yellow { color: #ffe14a; }
+    .ranking-list .rank-name.orange { color: #ff9a3d; }
+    .ranking-list .rank-name.purple { color: #7c3aed; }
+    .ranking-list .rank-name.white { color: #f4f7fb; }
+    .ranking-list .rank-name.brown { color: #a67c52; }
+    .ranking-list .rank-score {
+      font-size: 14px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .ranking-chip,
+    .again-chip,
+    .quit-chip {
+      font: inherit;
+      color: #dfffee;
+      background: transparent;
+      border: 1px solid rgba(140, 255, 210, 0.45);
+      border-radius: 999px;
+      padding: 8px 16px;
+      cursor: pointer;
+      box-shadow: 0 0 12px rgba(80, 255, 180, 0.12);
+    }
+
+    .ranking-chip:hover {
+      border-color: #d6ff6a;
+      color: #f4ffd2;
+    }
+
+    .again-chip:hover {
+      border-color: #9dffc0;
+      color: #ffffff;
+      background: rgba(80, 180, 120, 0.22);
+    }
+
+    .quit-chip {
+      color: #ffd0d8;
+      border-color: rgba(255, 93, 120, 0.55);
+      box-shadow: 0 0 12px rgba(255, 70, 100, 0.12);
+    }
+
+    .quit-chip:hover {
+      border-color: #ff8da0;
+      color: #ffffff;
+      background: rgba(180, 50, 70, 0.28);
+    }
+
+    /* Desktop: ranking lives in .foot; hide the hand copy. */
+    .hand.ranking-hand {
+      display: none;
+    }
+
+    .end-actions {
+      display: none;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .foot .end-actions {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .foot .ranking-chip,
+    .foot .again-chip,
+    .foot .quit-chip {
+      display: inline-block;
+      width: 100%;
+      text-align: center;
+      margin-top: 0;
+      box-sizing: border-box;
+    }
+
+    .hand.discard-only .preview {
+      pointer-events: none;
+      cursor: default;
     }
 
     .preview {
@@ -342,6 +669,19 @@
       text-shadow: 0 0 10px rgba(100, 220, 255, 0.45);
     }
 
+    .rot-hint kbd {
+      display: inline-block;
+      padding: 1px 7px;
+      border-radius: 6px;
+      border: 1px solid rgba(125, 255, 181, 0.55);
+      background: rgba(40, 90, 60, 0.55);
+      color: #b6ffd4;
+      font: inherit;
+      font-weight: 800;
+      letter-spacing: 0.02em;
+      text-shadow: 0 0 8px rgba(80, 255, 160, 0.55);
+    }
+
     .scroller {
       flex: 1;
       min-height: 0;
@@ -392,12 +732,19 @@
       box-shadow: none;
     }
 
+    .slot.filled {
+      overflow: visible;
+      /* Local stack: recent ring < meeple < HUD outside board-panel */
+      z-index: 0;
+      isolation: isolate;
+    }
+
     .slot.filled[class*="owner-"]::before {
       content: "";
       position: absolute;
       top: 0;
       left: 0;
-      z-index: 5;
+      z-index: 1;
       width: 12%;
       height: 12%;
       pointer-events: none;
@@ -417,6 +764,18 @@
     .slot.filled.owner-yellow::before {
       background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpolygon points='0,0 100,0 0,100' fill='%23ffffff'/%3E%3Cpolygon points='3,3 90,3 3,90' fill='%23ffe14a'/%3E%3C/svg%3E");
     }
+    .slot.filled.owner-orange::before {
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpolygon points='0,0 100,0 0,100' fill='%23ffffff'/%3E%3Cpolygon points='3,3 90,3 3,90' fill='%23ff9a3d'/%3E%3C/svg%3E");
+    }
+    .slot.filled.owner-purple::before {
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpolygon points='0,0 100,0 0,100' fill='%23ffffff'/%3E%3Cpolygon points='3,3 90,3 3,90' fill='%237c3aed'/%3E%3C/svg%3E");
+    }
+    .slot.filled.owner-white::before {
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpolygon points='0,0 100,0 0,100' fill='%232a3340'/%3E%3Cpolygon points='3,3 90,3 3,90' fill='%23f4f7fb'/%3E%3C/svg%3E");
+    }
+    .slot.filled.owner-brown::before {
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpolygon points='0,0 100,0 0,100' fill='%23ffffff'/%3E%3Cpolygon points='3,3 90,3 3,90' fill='%23a67c52'/%3E%3C/svg%3E");
+    }
 
     .slot.filled.recent::before {
       content: none;
@@ -426,7 +785,7 @@
       content: "";
       position: absolute;
       inset: 0;
-      z-index: 6;
+      z-index: 1;
       pointer-events: none;
       box-sizing: border-box;
       border: 3px solid;
@@ -437,6 +796,10 @@
     .slot.filled.recent.owner-blue::after { border-color: #49c4ff; }
     .slot.filled.recent.owner-green::after { border-color: #3dff9a; }
     .slot.filled.recent.owner-yellow::after { border-color: #ffe14a; }
+    .slot.filled.recent.owner-orange::after { border-color: #ff9a3d; }
+    .slot.filled.recent.owner-purple::after { border-color: #7c3aed; }
+    .slot.filled.recent.owner-white::after { border-color: #f4f7fb; }
+    .slot.filled.recent.owner-brown::after { border-color: #a67c52; }
 
     :root {
       --tile: 120px;
@@ -444,7 +807,11 @@
       --cell: calc(var(--tile) * var(--board-zoom));
     }
 
-    .slot .scaler { zoom: var(--board-zoom); }
+    .slot .scaler {
+      position: relative;
+      z-index: 0;
+      zoom: var(--board-zoom);
+    }
 
     button.slot {
       display: block;
@@ -555,6 +922,10 @@
     .meeple-spot.blue { --spot-c: #49c4ff; }
     .meeple-spot.green { --spot-c: #3dff9a; }
     .meeple-spot.yellow { --spot-c: #ffe14a; }
+    .meeple-spot.orange { --spot-c: #ff9a3d; }
+    .meeple-spot.purple { --spot-c: #7c3aed; }
+    .meeple-spot.white { --spot-c: #f4f7fb; }
+    .meeple-spot.brown { --spot-c: #a67c52; }
 
     .meeple-spot.city { --spot-ring: #e03a25; }
     .meeple-spot.road { --spot-ring: #f0c96e; }
@@ -565,18 +936,45 @@
       transform: rotate(90deg);
     }
 
-    .slot .meeple.on-tile {
+    .slot .meeple-pin {
       position: absolute;
-      z-index: 8;
+      z-index: 7;
       width: 22%;
       height: 28%;
       transform: translate(-50%, -50%);
       pointer-events: none;
+    }
+
+    .slot .meeple-pin .meeple.on-tile {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
       filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.45));
     }
 
-    .slot .meeple.on-tile.field-meeple {
-      transform: translate(-50%, -50%) rotate(90deg);
+    .slot .meeple-pin .meeple.on-tile.field-meeple {
+      transform: rotate(90deg);
+    }
+
+    .slot .meeple-earned {
+      position: absolute;
+      left: 50%;
+      bottom: calc(100% + 2px);
+      transform: translateX(-50%);
+      z-index: 8;
+      min-width: 1.4em;
+      padding: 0.08em 0.32em;
+      border-radius: 999px;
+      background: rgba(10, 16, 28, 0.94);
+      border: 1px solid rgba(255, 255, 255, 0.6);
+      color: #fff;
+      font-size: 11px;
+      font-weight: 800;
+      line-height: 1.2;
+      letter-spacing: 0.02em;
+      white-space: nowrap;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
     }
 
     .meeple-prompt {
@@ -641,18 +1039,13 @@
 
     #undo-place:hover { border-color: #d6ff6a; color: #f4ffd2; }
 
-    .foot { margin-top: 14px; }
-    .foot p { margin: 8px 0 0; }
+    .foot {
+      margin-top: 14px;
+      min-height: 0;
+    }
 
     details summary { cursor: pointer; font-weight: 700; }
     details li { margin: 4px 0; }
-
-    #check {
-      margin-top: 8px;
-      padding: 8px;
-      background: #fff;
-      white-space: pre-wrap;
-    }
 
     @media (max-width: 1024px) {
       .wrap { padding: 0; }
@@ -663,6 +1056,23 @@
         grid-template-rows: 1fr;
         gap: 0;
         height: 100%;
+      }
+
+      /* Sit above the HUD overlay so 8-player ranking stays visible. */
+      .discard-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 50;
+        padding: 12px 10px calc(12px + env(safe-area-inset-bottom, 0px));
+      }
+
+      .discard-overlay:has(.discard-card.ranking-open) {
+        padding-top: max(48px, 7vh);
+        padding-bottom: max(40px, calc(12vh + env(safe-area-inset-bottom, 0px)));
+      }
+
+      .discard-card.ranking-open {
+        max-height: min(74dvh, 560px);
       }
 
       .board-panel {
@@ -681,7 +1091,7 @@
 
       .side {
         grid-area: 1 / 1;
-        z-index: 6;
+        z-index: 20;
         min-height: 0;
         height: 100%;
         overflow: visible;
@@ -697,12 +1107,17 @@
       }
 
       .hud-top,
-      .hud-bottom,
-      #note {
+      .hud-bottom {
         pointer-events: auto;
       }
 
+      .discard-card p {
+        font-size: 16px;
+      }
+
       .hud-top {
+        position: relative;
+        z-index: 21;
         padding: 10px 10px 18px;
         background: linear-gradient(to bottom, rgba(9, 13, 20, 0.88), rgba(9, 13, 20, 0.45), transparent);
       }
@@ -726,11 +1141,27 @@
 
       .meters { display: none; }
 
+      .hud-meta {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        margin-top: 8px;
+        width: 100%;
+      }
+
+      .hud-meta .exit-chip {
+        flex: none;
+        padding: 4px 10px;
+        font-size: 13px;
+        text-shadow: none;
+      }
+
       .deck-short {
         display: inline-flex;
         align-items: center;
         gap: 6px;
-        margin-top: 8px;
+        margin: 0;
         margin-left: auto;
         color: #c9f6ff;
         font-size: 13px;
@@ -752,7 +1183,8 @@
 
       .hud-top #stats-root {
         display: flex;
-        justify-content: flex-end;
+        flex-direction: column;
+        align-items: stretch;
       }
 
       .hud-bottom {
@@ -766,6 +1198,33 @@
         align-items: center;
         gap: 10px;
         width: 100%;
+      }
+
+      /* Phone + pad: discarded tile as centered my-tile at bottom. */
+      .hand.discard-only {
+        position: fixed;
+        left: 50%;
+        bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+        transform: translateX(-50%);
+        z-index: 9;
+        width: auto;
+        margin: 0;
+        justify-content: center;
+        pointer-events: none;
+      }
+
+      .hand.discard-only .preview {
+        margin: 0;
+      }
+
+      .hand.discard-only .preview-frame {
+        box-shadow: 0 8px 28px rgba(0, 0, 0, 0.45);
+      }
+
+      .hud-bottom:has(.hand.discard-only) {
+        padding: 0;
+        background: transparent;
+        pointer-events: none;
       }
 
       .hand .preview {
@@ -801,17 +1260,49 @@
 
       .hand .deg { font-size: 11px; }
 
-      .foot { display: none; }
+      .foot { display: none !important; }
 
-      #note {
-        position: absolute;
-        left: 10px;
-        right: 10px;
-        top: 50%;
-        transform: translateY(-50%);
-        margin: 0;
-        z-index: 7;
-        pointer-events: none;
+      .hand.ranking-hand {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 8px;
+        width: 100%;
+      }
+
+      .hand.ranking-hand .again-chip,
+      .hand.ranking-hand .ranking-chip,
+      .hand.ranking-hand .quit-chip {
+        flex: 1;
+        text-align: center;
+        background: rgba(10, 16, 28, 0.78);
+      }
+    }
+
+    /* Pad only: larger my-tile; keep thumb scale, just tighten the 4-angle width. */
+    @media (min-width: 768px) and (max-width: 1024px) {
+      .hand {
+        justify-content: center;
+      }
+
+      .hand .preview-frame {
+        width: 108px;
+        height: 108px;
+      }
+
+      .hand .preview-frame .tile {
+        zoom: 0.9;
+      }
+
+      .hand .rots {
+        flex: 0 1 auto;
+        max-width: 46%;
+        justify-content: center;
+      }
+
+      .hand .thumb {
+        --thumb-scale: 0.65;
+        flex: 0 0 auto;
       }
     }
   </style>
@@ -824,38 +1315,132 @@
         <div class="scroller" id="scroller">
           <div class="board-grid" id="grid"></div>
         </div>
-        <pre id="check" hidden></pre>
+        <div id="discard-overlay" class="discard-overlay" hidden>
+          <div class="discard-card" id="overlay-card">
+            <button type="button" id="minimize-ranking" class="minimize-ranking" hidden data-i18n-aria="boardView" data-i18n-title="boardView" aria-label="Board" title="Board">
+              <span class="min-ico" aria-hidden="true"></span>
+            </button>
+            <p id="overlay-message">No legal place for this tile</p>
+            <div id="ranking-root" hidden></div>
+            <div id="ranking-actions" class="ranking-actions" hidden>
+              <button type="button" id="end-game" class="quit-chip" data-i18n="home">Home</button>
+              <button type="button" id="again-game" class="again-chip" data-i18n="again">Again</button>
+            </div>
+            <div id="overlay-actions">
+              <button type="button" id="ok-discard" data-i18n="ok">OK</button>
+              <button type="button" id="confirm-exit" hidden data-i18n="endGame">End</button>
+              <button type="button" id="cancel-exit" class="secondary" hidden data-i18n="cancel">Cancel</button>
+            </div>
+          </div>
+        </div>
       </div>
       <aside class="side">
-        <div id="note" class="note-banner" hidden></div>
         <div class="hud-top">
           <div id="players-root"></div>
           <div id="stats-root"></div>
         </div>
         <div id="hand-root" class="hud-bottom"></div>
-        <div class="foot">
-          <details>
-            <summary>配置の条件</summary>
-            <ul>
-              <li>新しいタイルは、既にあるタイルと少なくとも1辺が接します。</li>
-              <li>接した辺は、端から端まで同じ地形です。都市、道、草原がそれぞれ揃います。</li>
-              <li>90度ずつ回せます。どの向きでも置けないタイルは除いて、同じ人の番でもう1枚引きます。</li>
-            </ul>
-          </details>
-          <p><button type="button" id="restart">はじめから</button></p>
-          <p class="fine"><a href="index.html">トップ</a> · <a href="tiles.html">タイルの見本</a></p>
-        </div>
+        <div class="foot" id="foot-root"></div>
       </aside>
     </div>
   </div>
   <script src="js/game.js"></script>
+  <script src="js/i18n.js"></script>
   <script>
+    const t = (key) => TileCityI18n.t(key);
     const ZOOM_MIN = 0.35;
     const ZOOM_MAX = 1.6;
     const ZOOM_STEP = 0.05;
     const ZOOM_WHEEL = 0.025;
     const TILE_TOTAL = Carcassonne.TYPES.reduce((sum, type) => sum + type.count, 0);
-    let game = Carcassonne.createGame();
+    const SETUP_KEY = "tile-city-setup";
+    const SAVE_KEY = "tile-city-save";
+    let exitConfirmOpen = false;
+
+    function loadRoster() {
+      try {
+        const raw = sessionStorage.getItem(SETUP_KEY);
+        if (!raw) return null;
+        return Carcassonne.normalizePlayers(JSON.parse(raw));
+      } catch (err) {
+        return null;
+      }
+    }
+
+    function clearSave() {
+      try {
+        localStorage.removeItem(SAVE_KEY);
+      } catch (err) {}
+    }
+
+    function readSave() {
+      try {
+        const raw = localStorage.getItem(SAVE_KEY);
+        if (!raw) return null;
+        const data = JSON.parse(raw);
+        if (data && data.game) return data;
+        if (data && data.v) return { game: data, view: null };
+        return null;
+      } catch (err) {
+        clearSave();
+        return null;
+      }
+    }
+
+    function loadSavedGame() {
+      const save = readSave();
+      if (!save) return null;
+      const restored = Carcassonne.restoreGame(save.game);
+      if (!restored) {
+        clearSave();
+        return null;
+      }
+      return { game: restored, view: save.view || null };
+    }
+
+    let readyToPersist = false;
+
+    function persistGame() {
+      if (!readyToPersist) return;
+      try {
+        const box = document.getElementById("scroller");
+        localStorage.setItem(SAVE_KEY, JSON.stringify({
+          game: Carcassonne.serializeGame(game),
+          view: {
+            zoom: boardZoom,
+            left: box ? box.scrollLeft : 0,
+            top: box ? box.scrollTop : 0,
+          },
+        }));
+      } catch (err) {}
+    }
+
+    function restoreView(view) {
+      if (!view) return;
+      const zoom = Number(view.zoom);
+      if (Number.isFinite(zoom)) {
+        boardZoom = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, zoom));
+        applyBoardZoom();
+        syncBoardPadding();
+      }
+      const box = scroller();
+      const left = Number(view.left);
+      const top = Number(view.top);
+      requestAnimationFrame(() => {
+        void document.getElementById("grid").offsetWidth;
+        if (Number.isFinite(left)) box.scrollLeft = left;
+        if (Number.isFinite(top)) box.scrollTop = top;
+        persistGame();
+      });
+    }
+
+    const saved = loadSavedGame();
+    const roster = loadRoster();
+    if (!saved && !roster) {
+      location.replace("setup.html");
+      throw new Error("setup required");
+    }
+    let game = saved ? saved.game : Carcassonne.createGame(undefined, roster);
     let pan = null;
     let skipClick = false;
     let boardZoom = 0.8;
@@ -944,28 +1529,33 @@
       box.scrollTop = mapZoomCoord(
         contentY, beforePad.top, beforePad.innerH, afterPad.top, afterPad.innerH
       ) - py;
+      persistGame();
     }
 
     function paintLegend() {
       const legend = document.getElementById("legend");
-      const done = game.finished ? '<p class="rot-hint">置き終わり</p>' : "";
       legend.innerHTML =
         '<div class="hint-legend">' +
-        '<p><i class="swatch-key now"></i>配置可能な位置</p>' +
-        '<p><i class="swatch-key later"></i>回転すると配置できる位置</p>' +
+        '<p><i class="swatch-key now"></i>' + t("canPlace") + "</p>" +
+        '<p><i class="swatch-key later"></i>' + t("needsRotate") + "</p>" +
         '<div class="zoom-controls">' +
-        '<button type="button" class="zoom-btn" id="zoom-out" aria-label="縮小">−</button>' +
+        '<button type="button" class="zoom-btn" id="zoom-out" aria-label="' + t("zoomOut") + '">−</button>' +
         '<span class="zoom-label" id="zoom-label">' + zoomPercent() + "</span>" +
-        '<button type="button" class="zoom-btn" id="zoom-in" aria-label="拡大">+</button>' +
+        '<button type="button" class="zoom-btn" id="zoom-in" aria-label="' + t("zoomIn") + '">+</button>' +
         "</div></div>" +
-        '<p class="rot-hint">右クリックか R で回転 · ホイールでズーム</p>' +
-        done;
+        '<p class="rot-hint">' + t("rotHint") + "</p>";
     }
 
     function playersHTML() {
-      return '<ul class="players">' + Carcassonne.PLAYERS.map((player, index) => {
+      const order = game.finished && game.standings
+        ? game.standings
+        : game.players.map((_, index) => index);
+      return '<ul class="players">' + order.map((index) => {
+        const player = game.players[index];
         const on = !game.finished && index === game.player ? " on" : "";
+        const rank = game.finished ? '<span class="rank">' + (order.indexOf(index) + 1) + "</span>" : "";
         return '<li class="' + player.id + on + '">' +
+          rank +
           '<span class="pname">' + player.name + "</span>" +
           '<span class="meeple-count"><i class="meeple ' + player.id + '" aria-hidden="true"></i>×' +
           game.meeples[index] + "</span>" +
@@ -974,17 +1564,46 @@
       }).join("") + "</ul>";
     }
 
+    function endActionsHTML(layout) {
+      if (layout === "row") {
+        return '<button type="button" class="quit-chip js-quit">' + t("home") + "</button>" +
+          '<button type="button" class="ranking-chip js-open-ranking">' + t("rank") + "</button>" +
+          '<button type="button" class="again-chip js-again">' + t("again") + "</button>";
+      }
+      return '<button type="button" class="ranking-chip js-open-ranking">' + t("rank") + "</button>" +
+        '<div class="end-actions">' +
+        '<button type="button" class="quit-chip js-quit">' + t("home") + "</button>" +
+        '<button type="button" class="again-chip js-again">' + t("again") + "</button></div>";
+    }
+
     function statsHTML() {
-      return '<div class="meters"><div><span>deck</span><b>' + game.deck.length +
-        '</b></div><div><span>board</span><b>' + game.board.size +
-        '</b></div><div><span>discards</span><b>' + game.discards.length +
-        '</b></div></div><div class="deck-short">' +
-        '<span class="deck-chip">deck ' + game.deck.length + "</span>" +
-        '<span class="deck-chip">board ' + game.board.size + "/" + TILE_TOTAL + "</span></div>";
+      const exitTop = game.finished
+        ? ""
+        : '<button type="button" class="exit-chip js-exit">' + t("exit") + "</button>";
+      return '<div class="meters"><div><span>' + t("deck") + "</span><b>" + game.deck.length +
+        '</b></div><div><span>' + t("board") + "</span><b>" + game.board.size +
+        '</b></div><div><span>' + t("discards") + "</span><b>" + game.discards.length +
+        '</b></div></div><div class="hud-meta">' + exitTop +
+        '<div class="deck-short">' +
+        '<span class="deck-chip">' + t("deck") + " " + game.deck.length + "</span>" +
+        '<span class="deck-chip">' + t("board") + " " + game.board.size + "/" + TILE_TOTAL + "</span>" +
+        '<span class="deck-chip">' + t("discards") + " " + game.discards.length + "</span></div></div>";
     }
 
     function handHTML() {
+      if (game.finished) {
+        if (!game.rankingOpen) {
+          return '<div class="hand ranking-hand">' + endActionsHTML("row") + "</div>";
+        }
+        return "";
+      }
       if (!game.current) return "";
+      if (game.pendingDiscard) {
+        return '<div class="hand discard-only">' +
+          '<div class="preview" aria-label="' + t("unplaceableTile") + '">' +
+          '<span class="preview-frame">' + Carcassonne.tileHTML(game.current.id, 0) +
+          "</span></div></div>";
+      }
       const counts = game.rotationCounts();
       const thumbs = [0, 1, 2, 3].map((rot) => {
         const on = rot === game.rotation ? " on" : "";
@@ -994,52 +1613,144 @@
           Carcassonne.tileHTML(game.current.id, rot) + '</span></span><span class="deg">' +
           (rot * 90) + "°</span></button>";
       }).join("");
-      return '<div class="hand"><button type="button" class="preview" data-rotate="1" aria-label="タイルを回転">' +
+      return '<div class="hand"><button type="button" class="preview" data-rotate="1" aria-label="' +
+        t("rotateTile") + '">' +
         '<span class="preview-frame">' + Carcassonne.tileHTML(game.current.id, game.rotation) +
         "</span></button>" +
         '<div class="rots">' + thumbs + "</div></div>";
+    }
+
+    function footHTML() {
+      if (game.finished && !game.rankingOpen) return endActionsHTML("stack");
+      if (game.finished) return "";
+      return '<button type="button" class="exit-chip js-exit">' + t("exit") + "</button>";
     }
 
     function meepleMarksHTML(tile, pending) {
       const marks = [];
       if (tile.meeple) {
         const fieldClass = tile.meeple.kind === "field" ? " field-meeple" : "";
+        const earned = tile.meeple.earned
+          ? '<span class="meeple-earned">+' + tile.meeple.earned + "</span>"
+          : "";
         marks.push(
-          '<i class="meeple on-tile ' + tile.meeple.color + fieldClass + '" style="left:' +
-          (tile.meeple.x * 100) + "%;top:" + (tile.meeple.y * 100) + '%" aria-hidden="true"></i>'
+          '<span class="meeple-pin" style="left:' + (tile.meeple.x * 100) + "%;top:" +
+          (tile.meeple.y * 100) + '%">' +
+          '<i class="meeple on-tile ' + tile.meeple.color + fieldClass + '" aria-hidden="true"></i>' +
+          earned + "</span>"
         );
       }
       if (!pending) return marks.join("");
-      const color = Carcassonne.PLAYERS[game.pendingMeeple.player].id;
-      const spots = game.meepleSlots().map((slot) =>
+      const color = game.players[game.pendingMeeple.player].id;
+      const slots = game.meepleSlots();
+      const spots = slots.map((slot) =>
         '<button type="button" class="meeple-spot ' + color + " " + slot.kind +
         '" data-meeple-slot="' + slot.id + '" style="left:' + (slot.x * 100) +
-        "%;top:" + (slot.y * 100) + '%" aria-label="ミープルを置く"></button>'
+        "%;top:" + (slot.y * 100) + '%" aria-label="' + t("placeMeeple") + '"></button>'
       ).join("");
+      const stock = game.meeples[game.pendingMeeple.player];
+      const prompt = slots.length
+        ? t("pickMeeple")
+        : stock <= 0
+          ? t("noMeeplesLeft")
+          : t("noOpenSpot");
       marks.push(
         '<div class="meeple-layer">' +
-        '<p class="meeple-prompt">印を選択してミープルを置く</p>' +
+        '<p class="meeple-prompt">' + prompt + "</p>" +
         spots +
-        '<button type="button" id="skip-meeple">skip</button>' +
-        '<button type="button" id="undo-place" aria-label="配置をやめる" title="配置をやめる">↩</button>' +
+        '<button type="button" id="skip-meeple">' + t("skip") + "</button>" +
+        '<button type="button" id="undo-place" aria-label="' + t("undoPlace") +
+        '" title="' + t("undoPlace") + '">↩</button>' +
         "</div>"
       );
       return marks.join("");
     }
 
+    function rankingHTML() {
+      const order = game.standings || game.players.map((_, index) => index);
+      const rows = order.map((index, rank) => {
+        const player = game.players[index];
+        return '<li>' +
+          '<span class="rank-num">' + (rank + 1) + "</span>" +
+          '<span class="rank-name ' + player.id + '">' + player.name + "</span>" +
+          '<b class="rank-score">' + game.scores[index] + "</b></li>";
+      }).join("");
+      return '<ul class="ranking-list">' + rows + "</ul>";
+    }
+
+    function paintDiscardOverlay() {
+      const overlay = document.getElementById("discard-overlay");
+      const card = document.getElementById("overlay-card");
+      const message = document.getElementById("overlay-message");
+      const rankingRoot = document.getElementById("ranking-root");
+      const rankingActions = document.getElementById("ranking-actions");
+      const actions = document.getElementById("overlay-actions");
+      const ok = document.getElementById("ok-discard");
+      const confirmExit = document.getElementById("confirm-exit");
+      const cancelExit = document.getElementById("cancel-exit");
+      const minimize = document.getElementById("minimize-ranking");
+
+      function showActions(mode) {
+        ok.hidden = mode !== "discard";
+        confirmExit.hidden = mode !== "exit";
+        cancelExit.hidden = mode !== "exit";
+        actions.hidden = mode === "ranking";
+        rankingActions.hidden = mode !== "ranking";
+        minimize.hidden = mode !== "ranking";
+        card.classList.toggle("ranking-open", mode === "ranking");
+        card.classList.toggle("exit-open", mode === "exit");
+      }
+
+      if (game.pendingDiscard) {
+        exitConfirmOpen = false;
+        overlay.hidden = false;
+        message.hidden = false;
+        message.textContent = t("noLegalPlace");
+        rankingRoot.hidden = true;
+        rankingRoot.innerHTML = "";
+        showActions("discard");
+        return;
+      }
+      if (exitConfirmOpen && !game.finished) {
+        overlay.hidden = false;
+        message.hidden = false;
+        message.textContent = t("endThisGame");
+        rankingRoot.hidden = true;
+        rankingRoot.innerHTML = "";
+        showActions("exit");
+        return;
+      }
+      if (game.finished && game.rankingOpen) {
+        exitConfirmOpen = false;
+        overlay.hidden = false;
+        message.hidden = false;
+        message.textContent = t("gameOver");
+        rankingRoot.hidden = false;
+        rankingRoot.innerHTML = rankingHTML();
+        showActions("ranking");
+        return;
+      }
+      exitConfirmOpen = false;
+      overlay.hidden = true;
+      rankingRoot.hidden = true;
+      rankingRoot.innerHTML = "";
+      showActions("discard");
+    }
+
     function paintSide() {
-      const note = document.getElementById("note");
-      note.hidden = true;
-      note.textContent = "";
       document.getElementById("players-root").innerHTML = playersHTML();
       document.getElementById("stats-root").innerHTML = statsHTML();
       document.getElementById("hand-root").innerHTML = handHTML();
+      document.getElementById("foot-root").innerHTML = footHTML();
+      paintDiscardOverlay();
       paintLegend();
     }
 
     function paintGrid() {
       const bounds = game.bounds(1);
-      const hints = game.pendingMeeple ? { now: [], later: [] } : game.hints();
+      const hints = game.pendingMeeple || game.pendingDiscard || exitConfirmOpen
+        ? { now: [], later: [] }
+        : game.hints();
       const now = new Set(hints.now.map((cell) => cell.x + "," + cell.y));
       const later = new Map(hints.later.map((cell) => [cell.x + "," + cell.y, cell.rots]));
       const pendingKey = game.pendingMeeple
@@ -1070,7 +1781,7 @@
           if (now.has(pos)) {
             parts.push(
               '<button type="button" class="slot empty hint-now" data-pos="' + pos + '" data-place="' + pos +
-              '" data-preview-rot="' + game.rotation + '" aria-label="配置できる"></button>'
+              '" data-preview-rot="' + game.rotation + '" aria-label="Can place"></button>'
             );
             continue;
           }
@@ -1136,7 +1847,7 @@
     }
 
     function showGhost(slot) {
-      if (!slot || slot.querySelector(".ghost") || !game.current) return;
+      if (!slot || slot.querySelector(".ghost") || !game.current || game.pendingDiscard) return;
       const ok = slot.classList.contains("hint-now");
       const blocked = slot.classList.contains("hint-rot");
       if (!ok && !blocked) return;
@@ -1147,7 +1858,7 @@
     }
 
     function rotateClockwise() {
-      if (game.finished || game.pendingMeeple || !game.current) return;
+      if (game.finished || game.pendingMeeple || game.pendingDiscard || !game.current) return;
       game.rotate(1);
       render({ keep: true });
     }
@@ -1157,6 +1868,7 @@
       const anchor = opts.keep ? captureAnchor() : null;
       paintSide();
       paintGrid();
+      persistGame();
       if (opts.center) requestAnimationFrame(() => centerOn(opts.center));
       else if (anchor) restoreAnchor(anchor);
     }
@@ -1190,6 +1902,7 @@
       if (pan.moved) {
         skipClick = true;
         setTimeout(() => { skipClick = false; }, 0);
+        persistGame();
       }
       pan = null;
       scroller().classList.remove("dragging");
@@ -1202,18 +1915,53 @@
       }
       const button = event.target.closest("button");
       if (!button) return;
-      if (button.id === "restart") {
-        game = Carcassonne.createGame();
-        window.__game = game;
-        render({ center: "0,0" });
-        return;
-      }
       if (button.id === "zoom-in") {
         setBoardZoom(boardZoom + ZOOM_STEP);
         return;
       }
       if (button.id === "zoom-out") {
         setBoardZoom(boardZoom - ZOOM_STEP);
+        return;
+      }
+      if (button.id === "ok-discard") {
+        if (game.acknowledgeDiscard()) render({ keep: true });
+        return;
+      }
+      if (button.id === "minimize-ranking") {
+        game.rankingOpen = false;
+        render({ keep: true });
+        return;
+      }
+      if (button.classList.contains("js-open-ranking")) {
+        game.rankingOpen = true;
+        exitConfirmOpen = false;
+        render({ keep: true });
+        return;
+      }
+      if (button.classList.contains("js-exit")) {
+        exitConfirmOpen = true;
+        render({ keep: true });
+        return;
+      }
+      if (button.id === "cancel-exit") {
+        exitConfirmOpen = false;
+        render({ keep: true });
+        return;
+      }
+      if (button.id === "confirm-exit") {
+        exitConfirmOpen = false;
+        game.finishGame();
+        render({ keep: true });
+        return;
+      }
+      if (button.classList.contains("js-again") || button.id === "again-game") {
+        clearSave();
+        location.href = "setup.html";
+        return;
+      }
+      if (button.classList.contains("js-quit") || button.id === "end-game") {
+        clearSave();
+        location.href = "index.html";
         return;
       }
       if (button.id === "skip-meeple") {
@@ -1253,8 +2001,13 @@
 
     document.addEventListener("keydown", (event) => {
       if (event.repeat) return;
+      if (game.pendingDiscard && (event.key === "Enter" || event.key === " ")) {
+        event.preventDefault();
+        if (game.acknowledgeDiscard()) render({ keep: true });
+        return;
+      }
       if (event.key === "r" || event.key === "R") {
-        if (!pointerOnBoard) return;
+        if (!pointerOnBoard || game.pendingDiscard) return;
         event.preventDefault();
         rotateClockwise();
       }
@@ -1262,7 +2015,7 @@
 
     document.addEventListener("contextmenu", (event) => {
       if (!event.target.closest("#scroller")) return;
-      if (game.finished || game.pendingMeeple || !game.current) return;
+      if (game.finished || game.pendingMeeple || game.pendingDiscard || !game.current) return;
       event.preventDefault();
       rotateClockwise();
     });
@@ -1347,110 +2100,20 @@
 
     applyBoardZoom();
     syncBoardPadding();
-    render({ center: "0,0" });
+    TileCityI18n.apply();
+    readyToPersist = true;
+    if (saved) {
+      render({ keep: true });
+      restoreView(saved.view);
+    } else {
+      render({ center: "0,0" });
+    }
     window.addEventListener("resize", () => {
       syncBoardPadding();
     });
-
-    if (location.hash === "#check") {
-      const lines = [];
-      const expect = (cond, msg) => lines.push((cond ? "ok " : "FAIL ") + msg);
-      const show = () => {
-        const pre = document.getElementById("check");
-        pre.hidden = false;
-        pre.textContent = lines.join("\n");
-      };
-      game.current = Carcassonne.makeTile("U");
-      game.rotation = 0;
-      render();
-      const east = document.querySelector('[data-pos="1,0"]');
-      expect(east.classList.contains("hint-rot"), "U の東は回転ヒント");
-      expect(!east.classList.contains("hint-now"), "U の東は今の向きでは置けない");
-      expect(!east.querySelector(".hint-label"), "マスに文字がない");
-      expect(east.dataset.previewRot === "0", "回転マスにもプレビューがある");
-      east.dispatchEvent(new MouseEvent("mouseover", { bubbles: true }));
-      expect(!!east.querySelector(".ghost.invalid"), "回転マスのホバーで赤い枠のタイルが出る");
-      expect(!document.getElementById("grid").textContent.includes("置ける"), "置けるの文字がない");
-      expect(document.querySelectorAll(".thumb").length === 4, "4つの角度");
-      expect(document.querySelector('[data-set-rot="1"] .deg').textContent === "90°", "90°のタイル");
-      expect(document.querySelector('[data-set-rot="3"] .deg').textContent === "270°", "270°のタイル");
-      expect(!document.getElementById("show-hint"), "ヒントの位置へがない");
-      expect(!document.querySelector("h1"), "タイトルがない");
-      expect(document.querySelector(".hint-legend").textContent.includes("配置可能な位置"), "配置可能な位置");
-      expect(document.querySelector(".hint-legend").textContent.includes("回転すると配置できる位置"), "回転後の位置");
-      const laterColor = getComputedStyle(document.querySelector(".slot.hint-rot")).boxShadow;
-      expect(laterColor.includes("123, 135, 152"), "灰色のヒント");
-      const scroll = getComputedStyle(document.getElementById("scroller"));
-      expect(scroll.overflowX === "scroll" && scroll.overflowY === "scroll", "縦横スクロール");
-      expect(getComputedStyle(document.body).overflow === "hidden", "ページはスクロールしない");
-      const box = document.getElementById("scroller");
-      const beforeLeft = box.scrollLeft;
-      box.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, button: 0, clientX: 240, clientY: 240 }));
-      document.dispatchEvent(new MouseEvent("mousemove", { bubbles: true, clientX: 160, clientY: 180 }));
-      document.dispatchEvent(new MouseEvent("mouseup", { bubbles: true }));
-      document.dispatchEvent(new MouseEvent("click", { bubbles: true }));
-      expect(box.scrollLeft !== beforeLeft, "左ドラッグで横に動く");
-      const beforeZoom = boardZoom;
-      document.getElementById("zoom-in").click();
-      expect(boardZoom > beforeZoom, "ズームイン");
-      document.getElementById("zoom-out").click();
-      expect(Math.abs(boardZoom - beforeZoom) < 0.001, "ズームアウト");
-      expect(document.querySelector(".rot-hint").textContent.includes("R"), "回転のヒント");
-      expect(document.querySelector(".rot-hint").textContent.includes("ズーム"), "ズームのヒント");
-      const corner = document.querySelector('[data-pos="1,-1"]');
-      expect(corner && corner.classList.contains("empty") && !corner.classList.contains("hint-now") && !corner.classList.contains("hint-rot"), "角だけはヒントなし");
-      document.getElementById("scroller").dispatchEvent(new PointerEvent("pointerenter"));
-      document.dispatchEvent(new KeyboardEvent("keydown", { key: "r", bubbles: true }));
-      expect(game.rotation === 1, "R で回転");
-      expect(document.querySelector('[data-pos="1,0"]').classList.contains("hint-now"), "回すと東が置ける");
-      expect(document.querySelector('[data-pos="1,0"]').dataset.previewRot === "1", "置けるマスだけビューワー");
-      const placeCell = document.querySelector('[data-pos="1,0"]');
-      placeCell.dispatchEvent(new MouseEvent("mouseover", { bubbles: true }));
-      expect(!!placeCell.querySelector(".ghost"), "置けるマスのホバーでタイルが出る");
-      document.getElementById("scroller").dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true }));
-      expect(game.rotation === 2, "右クリックで回転");
-      document.body.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true }));
-      expect(game.rotation === 2, "盤外の右クリックでは回らない");
-      document.getElementById("scroller").dispatchEvent(new PointerEvent("pointerleave"));
-      document.dispatchEvent(new KeyboardEvent("keydown", { key: "r", bubbles: true }));
-      expect(game.rotation === 2, "盤外では R で回らない");
-      document.getElementById("scroller").dispatchEvent(new PointerEvent("pointerenter"));
-      game.setRotation(1);
-      render();
-      document.querySelector('[data-pos="1,0"]').click();
-      const placed = document.querySelector('[data-pos="1,0"]');
-      expect(placed.classList.contains("filled"), "東に置いた");
-      expect(!!placed.querySelector(".rot-90"), "置いたタイルは90°");
-      expect(game.board.get("1,0").id === "U", "盤の東は U");
-      expect(!!game.pendingMeeple, "ミープル配置待ち");
-      expect(document.querySelectorAll(".meeple-spot").length > 0, "ミープルの印がある");
-      expect(!!document.querySelector(".meeple-prompt"), "案内がタイル上にある");
-      expect(!!document.getElementById("skip-meeple"), "skip がタイル下にある");
-      expect(document.getElementById("skip-meeple").closest(".slot.meeple-target") != null, "skip は配置タイル側");
-      expect(!!document.getElementById("undo-place"), "戻るボタンがある");
-      expect(document.querySelector(".meeple-spot").classList.contains("red"), "印はプレイヤカラー");
-      expect(game.player === 0, "ミープル待ちではまだ赤");
-      document.getElementById("undo-place").click();
-      expect(game.pendingMeeple == null, "戻るで配置待ちが終わる");
-      expect(game.current && game.current.id === "U", "戻ると手札のタイルが戻る");
-      expect(!game.board.has("1,0"), "戻ると盤から消える");
-      game.setRotation(1);
-      render();
-      document.querySelector('[data-pos="1,0"]').click();
-      expect(!!game.pendingMeeple, "再配置でミープル待ち");
-      document.getElementById("skip-meeple").click();
-      expect(game.pendingMeeple == null, "skip でミープル待ちが終わる");
-      expect(game.player === 1, "次は青");
-      game.current = Carcassonne.makeTile("E");
-      game.rotation = 2;
-      render();
-      expect(document.querySelector('[data-pos="0,-1"]').classList.contains("hint-now"), "E を180°で北に置ける");
-      game.current = Carcassonne.makeTile("V");
-      game.rotation = 0;
-      render();
-      expect(document.querySelector('[data-pos="0,1"]').classList.contains("hint-now"), "V をそのまま南に置ける");
-      show();
-    }
+    window.addEventListener("pagehide", () => {
+      persistGame();
+    });
   </script>
 </body>
 </html>

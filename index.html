@@ -1,93 +1,219 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>カルカソンヌ</title>
+  <title>Tile City</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Outfit:wght@500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/tiles.css">
   <style>
-    .hero {
-      margin-top: 48px;
-      display: grid;
-      gap: 28px;
+    :root {
+      --home-ink: #f3efe6;
+      --home-muted: rgba(243, 239, 230, 0.72);
+      --home-deep: #142018;
+      --home-moss: #2f5d3a;
+      --home-clay: #c44732;
     }
 
-    .hero h1 {
+    html, body {
+      min-height: 100%;
+    }
+
+    body {
       margin: 0;
-      font-size: clamp(36px, 7vw, 56px);
-      letter-spacing: 0.04em;
-      line-height: 1.15;
+      color: var(--home-ink);
+      font-family: "Outfit", "Yu Gothic UI", sans-serif;
+      background: var(--home-deep);
+      overflow-x: hidden;
     }
 
-    .hero .lead {
-      font-size: 17px;
+    .home {
+      position: relative;
+      min-height: 100vh;
+      min-height: 100dvh;
+      display: grid;
+      place-items: center;
+      padding:
+        calc(20px + env(safe-area-inset-top, 0px))
+        clamp(20px, 5vw, 40px)
+        calc(24px + env(safe-area-inset-bottom, 0px));
+      background:
+        radial-gradient(ellipse 70% 50% at 50% 0%, rgba(196, 165, 116, 0.22), transparent 55%),
+        radial-gradient(ellipse 55% 45% at 20% 85%, rgba(47, 93, 58, 0.4), transparent 50%),
+        radial-gradient(ellipse 50% 40% at 85% 70%, rgba(36, 70, 48, 0.35), transparent 50%),
+        linear-gradient(160deg, #1a2e22 0%, #243528 45%, #152018 100%);
+    }
+
+    .home::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background-image:
+        radial-gradient(circle at 20% 28%, rgba(255, 255, 255, 0.07) 0 1px, transparent 2px),
+        radial-gradient(circle at 70% 62%, rgba(0, 0, 0, 0.12) 0 1.5px, transparent 2px);
+      background-size: 28px 28px, 36px 36px;
+      opacity: 0.5;
+      pointer-events: none;
+      animation: drift 28s linear infinite;
+    }
+
+    @keyframes drift {
+      from { background-position: 0 0, 0 0; }
+      to { background-position: 28px 36px, -36px 28px; }
+    }
+
+    @keyframes rise {
+      from { opacity: 0; transform: translateY(14px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes bob {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-8px); }
+    }
+
+    .lang-bar {
+      position: absolute;
+      top: calc(14px + env(safe-area-inset-top, 0px));
+      right: clamp(14px, 4vw, 28px);
+      z-index: 2;
+      background: rgba(10, 18, 14, 0.55);
+      border-color: rgba(243, 239, 230, 0.18);
+      backdrop-filter: blur(8px);
+      animation: rise 0.65s ease both;
+    }
+
+    .lang-bar button {
+      color: var(--home-muted);
+    }
+
+    .lang-bar button.on {
+      background: rgba(243, 239, 230, 0.14);
+      color: var(--home-ink);
+      box-shadow: none;
+    }
+
+    .hero {
+      position: relative;
+      z-index: 1;
+      width: min(28rem, 100%);
+      text-align: center;
+      animation: rise 0.75s 0.06s ease both;
+    }
+
+    .tile-row {
+      display: flex;
+      justify-content: center;
+      align-items: flex-end;
+      gap: clamp(10px, 2.5vw, 16px);
+      margin: 0 auto 22px;
+      pointer-events: none;
+    }
+
+    .tile-row .tile {
+      --s: clamp(64px, 18vw, 96px);
+      box-shadow: 0 14px 32px rgba(0, 0, 0, 0.35);
+      animation: bob 5.5s ease-in-out infinite;
+    }
+
+    .tile-row .tile:nth-child(2) {
+      transform: translateY(clamp(8px, 2vw, 14px));
+      animation-delay: -1.8s;
+    }
+
+    .tile-row .tile:nth-child(3) {
+      animation-delay: -3.2s;
+    }
+
+    .brand {
+      margin: 0;
+      font-family: "Fraunces", Georgia, serif;
+      font-size: clamp(48px, 11vw, 84px);
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      line-height: 0.95;
+      text-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
+    }
+
+    .lead {
+      margin: 16px auto 0;
+      max-width: 22rem;
+      color: var(--home-muted);
+      font-size: clamp(15px, 2.6vw, 17px);
+      font-weight: 500;
+      line-height: 1.45;
     }
 
     .actions {
       display: flex;
       flex-wrap: wrap;
-      gap: 12px;
-      margin-top: 8px;
+      justify-content: center;
+      gap: 10px;
+      margin-top: 26px;
+      animation: rise 0.75s 0.14s ease both;
     }
 
     .actions a {
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      min-width: 10rem;
-      padding: 12px 22px;
+      min-width: 7.5rem;
+      padding: 13px 24px;
       border-radius: 999px;
       text-decoration: none;
       font-weight: 700;
-      font-size: 16px;
+      font-size: 15px;
       letter-spacing: 0.04em;
+      transition: transform 0.18s ease, filter 0.18s ease;
+    }
+
+    .actions a:hover {
+      transform: translateY(-1px);
     }
 
     .actions .play {
       color: #fffdf8;
-      background: var(--city);
+      background: var(--home-clay);
       border: 1px solid #9e3422;
-      box-shadow: 0 8px 20px rgba(196, 71, 50, 0.22);
+      box-shadow: 0 10px 28px rgba(196, 71, 50, 0.28);
     }
 
     .actions .play:hover {
-      filter: brightness(1.05);
+      filter: brightness(1.06);
     }
 
-    .actions .tiles {
-      color: var(--ink);
-      background: #fff;
-      border: 1px solid var(--line);
+    .actions .rules {
+      color: var(--home-ink);
+      background: rgba(243, 239, 230, 0.08);
+      border: 1px solid rgba(243, 239, 230, 0.28);
     }
 
-    .actions .tiles:hover {
-      background: #fffaf1;
+    .actions .rules:hover {
+      background: rgba(243, 239, 230, 0.14);
     }
 
-    .preview {
-      margin-top: 8px;
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-    }
-
-    .preview .tile {
-      box-shadow: 0 10px 24px rgba(70, 50, 20, 0.12);
+    @media (prefers-reduced-motion: reduce) {
+      .home::before,
+      .tile-row .tile,
+      .hero,
+      .actions,
+      .lang-bar {
+        animation: none;
+      }
     }
   </style>
 </head>
 <body>
-  <div class="wrap">
-    <div class="hero">
-      <div>
-        <h1>カルカソンヌ</h1>
-        <p class="lead">基本セットのタイル配置をブラウザで試せます。出版社の絵は使っていません。</p>
-        <div class="actions">
-          <a class="play" href="play.html">遊ぶ</a>
-          <a class="tiles" href="tiles.html">タイルの見本</a>
-        </div>
-      </div>
-      <div class="preview" aria-hidden="true">
+  <div class="home">
+    <div class="lang-bar" role="group" aria-label="Language">
+      <button type="button" data-lang="en">EN</button>
+      <button type="button" data-lang="ja">JA</button>
+    </div>
+
+    <main class="hero">
+      <div class="tile-row" aria-hidden="true">
         <div class="tile">
           <i class="city cap n"></i>
           <i class="road h"></i>
@@ -100,7 +226,17 @@
           <i class="bend sw line"></i>
         </div>
       </div>
-    </div>
+      <h1 class="brand" data-i18n="homeTitle">Tile City</h1>
+      <p class="lead" data-i18n="homeLead">Build roads and cities, place meeples, and score the board — in your browser.</p>
+      <div class="actions">
+        <a class="play" href="setup.html" data-i18n="play">Play</a>
+        <a class="rules" href="tiles.html" data-i18n="rules">Rules</a>
+      </div>
+    </main>
   </div>
+  <script src="js/i18n.js"></script>
+  <script>
+    TileCityI18n.bindLangBar();
+  </script>
 </body>
 </html>

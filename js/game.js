@@ -3,13 +3,46 @@
   if (typeof module === "object" && module.exports) module.exports = api;
   else root.Carcassonne = api;
 })(typeof globalThis !== "undefined" ? globalThis : this, function () {
-  const PLAYERS = [
-    { id: "red", name: "赤" },
-    { id: "blue", name: "青" },
-    { id: "green", name: "緑" },
-    { id: "yellow", name: "黄" },
+  const COLOR_PALETTE = [
+    { id: "red", hex: "#ff5d78", label: "Red" },
+    { id: "blue", hex: "#49c4ff", label: "Blue" },
+    { id: "green", hex: "#3dff9a", label: "Green" },
+    { id: "yellow", hex: "#ffe14a", label: "Yellow" },
+    { id: "orange", hex: "#ff9a3d", label: "Orange" },
+    { id: "purple", hex: "#7c3aed", label: "Purple" },
+    { id: "white", hex: "#f4f7fb", label: "White" },
+    { id: "brown", hex: "#a67c52", label: "Brown" },
   ];
+  const PLAYERS = COLOR_PALETTE.slice(0, 4).map((color) => ({
+    id: color.id,
+    name: color.label,
+  }));
   const MEEPLES_EACH = 7;
+  const PLAYERS_MIN = 2;
+  const PLAYERS_MAX = 8;
+  const NAME_MAX = 6;
+
+  function normalizePlayers(list) {
+    if (!Array.isArray(list) || !list.length) {
+      return PLAYERS.map((player) => ({ id: player.id, name: player.name }));
+    }
+    const known = new Set(COLOR_PALETTE.map((color) => color.id));
+    const used = new Set();
+    const out = [];
+    for (const item of list) {
+      if (out.length >= PLAYERS_MAX) break;
+      const id = item && known.has(item.id) ? item.id : null;
+      if (!id || used.has(id)) continue;
+      used.add(id);
+      const raw = item.name == null ? "" : String(item.name);
+      const name = raw.trim().slice(0, NAME_MAX) || COLOR_PALETTE.find((c) => c.id === id).label;
+      out.push({ id: id, name: name });
+    }
+    if (out.length < PLAYERS_MIN) {
+      return PLAYERS.map((player) => ({ id: player.id, name: player.name }));
+    }
+    return out;
+  }
 
   const EDGE_NAME = { C: "都市", R: "道", F: "草原" };
   const DIR_NAME = ["北", "東", "南", "西"];
@@ -303,7 +336,70 @@
     return { x: x + 0.5, y: y + 0.5 };
   }
 
-  // Candidate meeple spots on a placed tile. Occupied-feature legality is deferred.
+  // Field edge ports in catalog orientation.
+  // Side 0/1 follow the clockwise rim: N:W→E, E:N→S, S:E→W, W:S→N.
+  // Across a shared edge, side s connects to the neighbor's opposite edge at 1-s.
+  const FIELD_PORTS = {
+    A: [[["N", 0], ["N", 1], ["E", 0], ["E", 1], ["S", 0], ["S", 1], ["W", 0], ["W", 1]]],
+    B: [[["N", 0], ["N", 1], ["E", 0], ["E", 1], ["S", 0], ["S", 1], ["W", 0], ["W", 1]]],
+    C: [],
+    D: [
+      [["E", 0], ["W", 1]],
+      [["E", 1], ["W", 0], ["S", 0], ["S", 1]],
+    ],
+    E: [[["E", 0], ["E", 1], ["S", 0], ["S", 1], ["W", 0], ["W", 1]]],
+    F: [[["N", 0], ["N", 1]], [["S", 0], ["S", 1]]],
+    G: [[["N", 0], ["N", 1]], [["S", 0], ["S", 1]]],
+    H: [[["E", 0], ["E", 1], ["W", 0], ["W", 1]]],
+    I: [[["E", 0], ["E", 1], ["S", 0], ["S", 1]]],
+    J: [
+      [["W", 0], ["W", 1], ["E", 0], ["S", 1]],
+      [["E", 1], ["S", 0]],
+    ],
+    K: [
+      [["E", 0], ["E", 1], ["S", 0], ["W", 1]],
+      [["S", 1], ["W", 0]],
+    ],
+    L: [
+      [["E", 1], ["S", 0]],
+      [["S", 1], ["W", 0]],
+      [["E", 0], ["W", 1]],
+    ],
+    M: [[["S", 0], ["S", 1], ["W", 0], ["W", 1]]],
+    N: [[["S", 0], ["S", 1], ["W", 0], ["W", 1]]],
+    O: [
+      [["E", 0], ["S", 1]],
+      [["E", 1], ["S", 0]],
+    ],
+    P: [
+      [["E", 0], ["S", 1]],
+      [["E", 1], ["S", 0]],
+    ],
+    Q: [[["S", 0], ["S", 1]]],
+    R: [[["S", 0], ["S", 1]]],
+    S: [[["S", 1]], [["S", 0]]],
+    T: [[["S", 1]], [["S", 0]]],
+    U: [
+      [["W", 0], ["W", 1], ["N", 0], ["S", 1]],
+      [["E", 0], ["E", 1], ["N", 1], ["S", 0]],
+    ],
+    V: [
+      [["N", 0], ["N", 1], ["E", 0], ["E", 1], ["S", 0], ["W", 1]],
+      [["S", 1], ["W", 0]],
+    ],
+    W: [
+      [["N", 0], ["N", 1], ["E", 0], ["W", 1]],
+      [["E", 1], ["S", 0]],
+      [["S", 1], ["W", 0]],
+    ],
+    X: [
+      [["N", 0], ["W", 1]],
+      [["N", 1], ["E", 0]],
+      [["E", 1], ["S", 0]],
+      [["S", 1], ["W", 0]],
+    ],
+  };
+
   function listMeepleSlots(tile) {
     const layout = MEEPLE_LAYOUTS[tile.id];
     if (!layout) return [];
@@ -317,6 +413,474 @@
         x: point.x,
         y: point.y,
       };
+    });
+  }
+
+  const DIRS = ["N", "E", "S", "W"];
+  const DIR_INDEX = { N: 0, E: 1, S: 2, W: 3 };
+  const OPP_DIR = { N: "S", E: "W", S: "N", W: "E" };
+
+  function absDir(catalogDir, rot) {
+    return DIRS[(DIR_INDEX[catalogDir] + ((rot % 4) + 4) % 4) % 4];
+  }
+
+  function findRoadIndexByAbsEdge(tile, absEdge) {
+    const rot = tile.rot || 0;
+    for (let i = 0; i < (tile.roads || []).length; i++) {
+      for (const dir of tile.roads[i]) {
+        if (absDir(dir, rot) === absEdge) return i;
+      }
+    }
+    return -1;
+  }
+
+  function findCityIndexByAbsEdge(tile, absEdge) {
+    const rot = tile.rot || 0;
+    for (let i = 0; i < (tile.cities || []).length; i++) {
+      for (const dir of tile.cities[i].edges) {
+        if (absDir(dir, rot) === absEdge) return i;
+      }
+    }
+    return -1;
+  }
+
+  function collectRoadComponent(board, startX, startY, startRoadIndex) {
+    const visited = new Set();
+    const queue = [{ x: startX, y: startY, index: startRoadIndex }];
+    const parts = [];
+    let open = false;
+
+    while (queue.length) {
+      const cur = queue.shift();
+      const id = cur.x + "," + cur.y + "," + cur.index;
+      if (visited.has(id)) continue;
+      visited.add(id);
+      parts.push(cur);
+
+      const tile = board.get(keyOf(cur.x, cur.y));
+      if (!tile || !tile.roads || !tile.roads[cur.index]) {
+        open = true;
+        continue;
+      }
+      const rot = tile.rot || 0;
+      for (const catalogDir of tile.roads[cur.index]) {
+        const dir = absDir(catalogDir, rot);
+        const step = NEI[DIR_INDEX[dir]];
+        const nx = cur.x + step.dx;
+        const ny = cur.y + step.dy;
+        const neighbor = board.get(keyOf(nx, ny));
+        if (!neighbor) {
+          open = true;
+          continue;
+        }
+        const nextIndex = findRoadIndexByAbsEdge(neighbor, OPP_DIR[dir]);
+        if (nextIndex < 0) {
+          open = true;
+          continue;
+        }
+        queue.push({ x: nx, y: ny, index: nextIndex });
+      }
+    }
+
+    return { complete: !open, parts: parts };
+  }
+
+  function collectCityComponent(board, startX, startY, startCityIndex) {
+    const visited = new Set();
+    const queue = [{ x: startX, y: startY, index: startCityIndex }];
+    const parts = [];
+    let open = false;
+
+    while (queue.length) {
+      const cur = queue.shift();
+      const id = cur.x + "," + cur.y + "," + cur.index;
+      if (visited.has(id)) continue;
+      visited.add(id);
+      parts.push(cur);
+
+      const tile = board.get(keyOf(cur.x, cur.y));
+      if (!tile || !tile.cities || !tile.cities[cur.index]) {
+        open = true;
+        continue;
+      }
+      const rot = tile.rot || 0;
+      for (const catalogDir of tile.cities[cur.index].edges) {
+        const dir = absDir(catalogDir, rot);
+        const step = NEI[DIR_INDEX[dir]];
+        const nx = cur.x + step.dx;
+        const ny = cur.y + step.dy;
+        const neighbor = board.get(keyOf(nx, ny));
+        if (!neighbor) {
+          open = true;
+          continue;
+        }
+        const nextIndex = findCityIndexByAbsEdge(neighbor, OPP_DIR[dir]);
+        if (nextIndex < 0) {
+          open = true;
+          continue;
+        }
+        queue.push({ x: nx, y: ny, index: nextIndex });
+      }
+    }
+
+    return { complete: !open, parts: parts };
+  }
+
+  function monasteryComplete(board, x, y) {
+    for (let dy = -1; dy <= 1; dy++) {
+      for (let dx = -1; dx <= 1; dx++) {
+        if (!board.has(keyOf(x + dx, y + dy))) return false;
+      }
+    }
+    return true;
+  }
+
+  function fieldPortsFor(tile) {
+    return FIELD_PORTS[tile.id] || [];
+  }
+
+  function findFieldIndexByAbsPort(tile, absEdge, side) {
+    const rot = tile.rot || 0;
+    const fields = fieldPortsFor(tile);
+    for (let i = 0; i < fields.length; i++) {
+      for (const port of fields[i]) {
+        if (absDir(port[0], rot) === absEdge && port[1] === side) return i;
+      }
+    }
+    return -1;
+  }
+
+  function collectFieldComponent(board, startX, startY, startFieldIndex) {
+    const visited = new Set();
+    const queue = [{ x: startX, y: startY, index: startFieldIndex }];
+    const parts = [];
+    let open = false;
+
+    while (queue.length) {
+      const cur = queue.shift();
+      const id = cur.x + "," + cur.y + "," + cur.index;
+      if (visited.has(id)) continue;
+      visited.add(id);
+      parts.push(cur);
+
+      const tile = board.get(keyOf(cur.x, cur.y));
+      const fields = tile ? fieldPortsFor(tile) : null;
+      if (!tile || !fields || !fields[cur.index]) {
+        open = true;
+        continue;
+      }
+      const rot = tile.rot || 0;
+      for (const port of fields[cur.index]) {
+        const dir = absDir(port[0], rot);
+        const side = port[1];
+        const step = NEI[DIR_INDEX[dir]];
+        const nx = cur.x + step.dx;
+        const ny = cur.y + step.dy;
+        const neighbor = board.get(keyOf(nx, ny));
+        if (!neighbor) {
+          open = true;
+          continue;
+        }
+        const nextIndex = findFieldIndexByAbsPort(neighbor, OPP_DIR[dir], 1 - side);
+        if (nextIndex < 0) {
+          open = true;
+          continue;
+        }
+        queue.push({ x: nx, y: ny, index: nextIndex });
+      }
+    }
+
+    return { complete: !open, parts: parts };
+  }
+
+  // On each tile, which field index borders which city index (for farmer scoring).
+  const FIELD_CITY_TOUCH = {
+    D: [[0, 0]],
+    E: [[0, 0]],
+    F: [[0, 0], [1, 0]],
+    G: [[0, 0], [1, 0]],
+    H: [[0, 0], [0, 1]],
+    I: [[0, 0], [0, 1]],
+    J: [[0, 0]],
+    K: [[0, 0]],
+    L: [[2, 0]],
+    M: [[0, 0]],
+    N: [[0, 0]],
+    O: [[0, 0]],
+    P: [[0, 0]],
+    Q: [[0, 0]],
+    R: [[0, 0]],
+    S: [[0, 0], [1, 0]],
+    T: [[0, 0], [1, 0]],
+  };
+
+  function featureHasMeeple(board, kind, parts) {
+    for (const part of parts) {
+      const tile = board.get(keyOf(part.x, part.y));
+      if (!tile || !tile.meeple) continue;
+      if (tile.meeple.kind !== kind) continue;
+      if (kind === "monastery") return true;
+      if (tile.meeple.index === part.index) return true;
+    }
+    return false;
+  }
+
+  function isMeepleSlotOpen(board, x, y, slot) {
+    if (!slot) return false;
+    if (slot.kind === "monastery") {
+      const tile = board.get(keyOf(x, y));
+      return !(tile && tile.meeple && tile.meeple.kind === "monastery");
+    }
+    if (slot.kind === "road") {
+      const result = collectRoadComponent(board, x, y, slot.index);
+      return !featureHasMeeple(board, "road", result.parts);
+    }
+    if (slot.kind === "city") {
+      const result = collectCityComponent(board, x, y, slot.index);
+      return !featureHasMeeple(board, "city", result.parts);
+    }
+    if (slot.kind === "field") {
+      const result = collectFieldComponent(board, x, y, slot.index);
+      return !featureHasMeeple(board, "field", result.parts);
+    }
+    return false;
+  }
+
+  function meepleCountsOnFeature(board, kind, parts, playerCount) {
+    const counts = Array.from({ length: playerCount }, () => 0);
+    for (const part of parts) {
+      const tile = board.get(keyOf(part.x, part.y));
+      if (!tile || !tile.meeple) continue;
+      if (tile.meeple.kind !== kind) continue;
+      if (kind !== "monastery" && tile.meeple.index !== part.index) continue;
+      if (tile.meeple.player < 0 || tile.meeple.player >= playerCount) continue;
+      counts[tile.meeple.player] += 1;
+    }
+    return counts;
+  }
+
+  function majorityPlayers(counts) {
+    let best = 0;
+    for (const count of counts) if (count > best) best = count;
+    if (best <= 0) return [];
+    const winners = [];
+    for (let i = 0; i < counts.length; i++) if (counts[i] === best) winners.push(i);
+    return winners;
+  }
+
+  function uniqueTileCount(parts) {
+    const seen = new Set();
+    for (const part of parts) seen.add(part.x + "," + part.y);
+    return seen.size;
+  }
+
+  function cityPennantCount(board, parts) {
+    let total = 0;
+    const seen = new Set();
+    for (const part of parts) {
+      const id = part.x + "," + part.y + "," + part.index;
+      if (seen.has(id)) continue;
+      seen.add(id);
+      const tile = board.get(keyOf(part.x, part.y));
+      if (tile && tile.cities && tile.cities[part.index] && tile.cities[part.index].pennant) total += 1;
+    }
+    return total;
+  }
+
+  function componentId(parts) {
+    return parts.map((part) => part.x + "," + part.y + "," + part.index).sort().join("|");
+  }
+
+  function awardPoints(game, players, points) {
+    for (const player of players) game.scores[player] += points;
+  }
+
+  function returnMeepleFromTile(game, tile, kind, index) {
+    if (!tile || !tile.meeple) return false;
+    if (tile.meeple.kind !== kind) return false;
+    if (kind === "road" || kind === "city" || kind === "field") {
+      if (tile.meeple.index !== index) return false;
+    }
+    game.meeples[tile.meeple.player] += 1;
+    tile.meeple = null;
+    return true;
+  }
+
+  function returnMeeplesOnFeature(game, kind, parts) {
+    let returned = 0;
+    for (const part of parts) {
+      const tile = game.board.get(keyOf(part.x, part.y));
+      if (returnMeepleFromTile(game, tile, kind, part.index)) returned += 1;
+    }
+    return returned;
+  }
+
+  function labelMeepleEarnings(board, kind, parts, winners, points) {
+    if (!points || !winners.length) return;
+    const win = new Set(winners);
+    for (const part of parts) {
+      const tile = board.get(keyOf(part.x, part.y));
+      if (!tile || !tile.meeple) continue;
+      if (tile.meeple.kind !== kind) continue;
+      if (kind !== "monastery" && tile.meeple.index !== part.index) continue;
+      if (!win.has(tile.meeple.player)) continue;
+      tile.meeple.earned = (tile.meeple.earned || 0) + points;
+    }
+  }
+
+  function scoreFeature(game, kind, parts, points, options) {
+    const opts = options || {};
+    const winners = majorityPlayers(
+      meepleCountsOnFeature(game.board, kind, parts, game.players.length)
+    );
+    if (winners.length && points > 0) {
+      awardPoints(game, winners, points);
+      if (!opts.returnMeeples) labelMeepleEarnings(game.board, kind, parts, winners, points);
+    }
+    if (opts.returnMeeples) return returnMeeplesOnFeature(game, kind, parts);
+    return 0;
+  }
+
+  function roadPoints(parts, complete) {
+    const tiles = uniqueTileCount(parts);
+    return complete ? tiles : tiles;
+  }
+
+  function cityPoints(board, parts, complete) {
+    const tiles = uniqueTileCount(parts);
+    const pennants = cityPennantCount(board, parts);
+    if (complete) return tiles * 2 + pennants * 2;
+    return tiles + pennants;
+  }
+
+  function monasteryTileCount(board, x, y) {
+    let count = 0;
+    for (let dy = -1; dy <= 1; dy++) {
+      for (let dx = -1; dx <= 1; dx++) {
+        if (board.has(keyOf(x + dx, y + dy))) count += 1;
+      }
+    }
+    return count;
+  }
+
+  function completedCitiesTouchingField(board, fieldParts) {
+    const seen = new Set();
+    let total = 0;
+    for (const part of fieldParts) {
+      const tile = board.get(keyOf(part.x, part.y));
+      if (!tile) continue;
+      const touches = FIELD_CITY_TOUCH[tile.id] || [];
+      for (let i = 0; i < touches.length; i++) {
+        if (touches[i][0] !== part.index) continue;
+        const cityIndex = touches[i][1];
+        const city = collectCityComponent(board, part.x, part.y, cityIndex);
+        if (!city.complete) continue;
+        const id = componentId(city.parts);
+        if (seen.has(id)) continue;
+        seen.add(id);
+        total += 1;
+      }
+    }
+    return total;
+  }
+
+  function resolveCompletions(game, x, y) {
+    const board = game.board;
+    const tile = board.get(keyOf(x, y));
+    if (!tile) return { roads: 0, cities: 0, monasteries: 0, points: 0 };
+    const summary = { roads: 0, cities: 0, monasteries: 0, points: 0 };
+    const before = game.scores.slice();
+    const seenRoads = new Set();
+    const seenCities = new Set();
+
+    (tile.roads || []).forEach((_, index) => {
+      const seed = x + "," + y + "," + index;
+      if (seenRoads.has(seed)) return;
+      const result = collectRoadComponent(board, x, y, index);
+      for (const part of result.parts) seenRoads.add(part.x + "," + part.y + "," + part.index);
+      if (!result.complete) return;
+      scoreFeature(game, "road", result.parts, roadPoints(result.parts, true), { returnMeeples: true });
+      summary.roads += 1;
+    });
+
+    (tile.cities || []).forEach((_, index) => {
+      const seed = x + "," + y + "," + index;
+      if (seenCities.has(seed)) return;
+      const result = collectCityComponent(board, x, y, index);
+      for (const part of result.parts) seenCities.add(part.x + "," + part.y + "," + part.index);
+      if (!result.complete) return;
+      scoreFeature(game, "city", result.parts, cityPoints(board, result.parts, true), { returnMeeples: true });
+      summary.cities += 1;
+    });
+
+    for (let dy = -1; dy <= 1; dy++) {
+      for (let dx = -1; dx <= 1; dx++) {
+        const mx = x + dx;
+        const my = y + dy;
+        const spot = board.get(keyOf(mx, my));
+        if (!spot || !spot.monastery) continue;
+        if (!monasteryComplete(board, mx, my)) continue;
+        if (!spot.meeple || spot.meeple.kind !== "monastery") continue;
+        scoreFeature(game, "monastery", [{ x: mx, y: my, index: null }], 9, { returnMeeples: true });
+        summary.monasteries += 1;
+      }
+    }
+
+    summary.points = game.scores.reduce((sum, score, i) => sum + (score - before[i]), 0);
+    return summary;
+  }
+
+  function finalizeScores(game) {
+    const board = game.board;
+    const seenRoads = new Set();
+    const seenCities = new Set();
+    const seenFields = new Set();
+    const stockBefore = game.meeples.slice();
+    const keep = { returnMeeples: false };
+
+    for (const [pos, tile] of board) {
+      const [x, y] = pos.split(",").map(Number);
+      (tile.roads || []).forEach((_, index) => {
+        const seed = x + "," + y + "," + index;
+        if (seenRoads.has(seed)) return;
+        const result = collectRoadComponent(board, x, y, index);
+        for (const part of result.parts) seenRoads.add(part.x + "," + part.y + "," + part.index);
+        if (result.complete) return;
+        scoreFeature(game, "road", result.parts, roadPoints(result.parts, false), keep);
+      });
+      (tile.cities || []).forEach((_, index) => {
+        const seed = x + "," + y + "," + index;
+        if (seenCities.has(seed)) return;
+        const result = collectCityComponent(board, x, y, index);
+        for (const part of result.parts) seenCities.add(part.x + "," + part.y + "," + part.index);
+        if (result.complete) return;
+        scoreFeature(game, "city", result.parts, cityPoints(board, result.parts, false), keep);
+      });
+      if (tile.monastery && tile.meeple && tile.meeple.kind === "monastery") {
+        if (!monasteryComplete(board, x, y)) {
+          scoreFeature(game, "monastery", [{ x: x, y: y, index: null }], monasteryTileCount(board, x, y), keep);
+        }
+      }
+      const fields = fieldPortsFor(tile);
+      fields.forEach((_, index) => {
+        const seed = x + "," + y + "," + index;
+        if (seenFields.has(seed)) return;
+        const result = collectFieldComponent(board, x, y, index);
+        for (const part of result.parts) seenFields.add(part.x + "," + part.y + "," + part.index);
+        const cities = completedCitiesTouchingField(board, result.parts);
+        scoreFeature(game, "field", result.parts, cities * 3, keep);
+      });
+    }
+
+    game.standings = rankPlayers(game.scores, stockBefore);
+    game.rankingOpen = true;
+  }
+
+  function rankPlayers(scores, meeples) {
+    return scores.map((_, index) => index).sort((a, b) => {
+      if (scores[b] !== scores[a]) return scores[b] - scores[a];
+      if (meeples[b] !== meeples[a]) return meeples[b] - meeples[a];
+      return a - b;
     });
   }
 
@@ -385,7 +949,8 @@
   }
 
   class Game {
-    constructor(deck) {
+    constructor(deck, players) {
+      this.players = normalizePlayers(players);
       this.deck = deck;
       this.board = new Map();
       this.discards = [];
@@ -393,11 +958,14 @@
       this.current = null;
       this.rotation = 0;
       this.finished = false;
-      this.note = "";
-      this.scores = PLAYERS.map(() => 0);
-      this.meeples = PLAYERS.map(() => MEEPLES_EACH);
-      this.lastPlacedBy = Object.fromEntries(PLAYERS.map((player) => [player.id, null]));
+      this.scores = this.players.map(() => 0);
+      this.meeples = this.players.map(() => MEEPLES_EACH);
+      this.lastPlacedBy = Object.fromEntries(this.players.map((player) => [player.id, null]));
       this.pendingMeeple = null;
+      this.pendingDiscard = false;
+      this.standings = this.players.map((_, index) => index);
+      this.finalScored = false;
+      this.rankingOpen = false;
     }
 
     placedEdges(rot) {
@@ -414,41 +982,47 @@
     }
 
     pull() {
-      const removed = [];
       this.current = null;
       this.rotation = 0;
+      this.pendingDiscard = false;
       while (this.deck.length) {
         const tile = this.deck.pop();
         if (this.canPlaceAnywhere(tile)) {
           this.current = tile;
-          break;
+          return false;
         }
-        this.discards.push(tile);
-        removed.push(tile.id);
+        this.current = tile;
+        this.pendingDiscard = true;
+        return true;
       }
-      if (!this.current) this.finished = true;
-      this.describeRemoved(removed);
-      return removed;
+      this.finishGame();
+      return false;
     }
 
-    describeRemoved(ids) {
-      if (!ids.length) {
-        this.note = this.finished ? "山札が尽きました。置き終わりです。" : "";
+    finishGame() {
+      if (this.finalScored) {
+        this.finished = true;
+        this.rankingOpen = true;
         return;
       }
-      const list = ids.join("、");
-      if (this.finished) {
-        this.note = list + " はどの向きでも置けないので除きました。山札が尽きました。置き終わりです。";
-        return;
-      }
-      const name = PLAYERS[this.player].name;
-      this.note = list + " はどの向きでも置けないので除きました。" + name + "の番のまま、次のタイルです。";
+      this.finished = true;
+      this.finalScored = true;
+      finalizeScores(this);
+    }
+
+    acknowledgeDiscard() {
+      if (!this.pendingDiscard || !this.current) return false;
+      this.discards.push(this.current);
+      this.current = null;
+      this.pendingDiscard = false;
+      this.pull();
+      return true;
     }
 
     hints() {
       const now = [];
       const later = [];
-      if (!this.current || this.finished) return { now, later };
+      if (!this.current || this.finished || this.pendingDiscard) return { now, later };
       for (const cell of openCells(this.board)) {
         const rots = [];
         for (let rot = 0; rot < 4; rot++) {
@@ -465,7 +1039,7 @@
 
     rotationCounts() {
       const counts = [0, 0, 0, 0];
-      if (!this.current || this.finished) return counts;
+      if (!this.current || this.finished || this.pendingDiscard) return counts;
       for (const cell of openCells(this.board)) {
         for (let rot = 0; rot < 4; rot++) {
           if (canPlace(this.board, cell.x, cell.y, rotateEdges(this.current.edges, rot))) counts[rot] += 1;
@@ -496,21 +1070,21 @@
     }
 
     rotate(delta) {
-      if (this.finished || this.pendingMeeple || !this.current) return;
+      if (this.finished || this.pendingMeeple || this.pendingDiscard || !this.current) return;
       this.rotation = (this.rotation + (delta % 4) + 4) % 4;
     }
 
     setRotation(rot) {
-      if (this.finished || this.pendingMeeple || !this.current) return;
+      if (this.finished || this.pendingMeeple || this.pendingDiscard || !this.current) return;
       this.rotation = ((rot % 4) + 4) % 4;
     }
 
     place(x, y) {
-      if (this.finished || this.pendingMeeple || !this.current) return false;
+      if (this.finished || this.pendingMeeple || this.pendingDiscard || !this.current) return false;
       const edges = rotateEdges(this.current.edges, this.rotation);
       if (!canPlace(this.board, x, y, edges)) return false;
       const key = keyOf(x, y);
-      const owner = PLAYERS[this.player].id;
+      const owner = this.players[this.player].id;
       this.board.set(key, clonePlaced(this.current, this.rotation, owner));
       const prevLastPlaced = this.lastPlacedBy[owner];
       this.lastPlacedBy[owner] = key;
@@ -526,29 +1100,35 @@
 
     meepleSlots() {
       if (!this.pendingMeeple) return [];
-      const tile = this.board.get(keyOf(this.pendingMeeple.x, this.pendingMeeple.y));
+      if (this.meeples[this.pendingMeeple.player] <= 0) return [];
+      const x = this.pendingMeeple.x;
+      const y = this.pendingMeeple.y;
+      const tile = this.board.get(keyOf(x, y));
       if (!tile) return [];
-      return listMeepleSlots(tile);
+      return listMeepleSlots(tile).filter((slot) => isMeepleSlotOpen(this.board, x, y, slot));
     }
 
     placeMeeple(slotId) {
       if (!this.pendingMeeple) return false;
-      const key = keyOf(this.pendingMeeple.x, this.pendingMeeple.y);
+      const player = this.pendingMeeple.player;
+      if (this.meeples[player] <= 0) return false;
+      const x = this.pendingMeeple.x;
+      const y = this.pendingMeeple.y;
+      const key = keyOf(x, y);
       const tile = this.board.get(key);
       if (!tile) return false;
       const slot = listMeepleSlots(tile).find((item) => item.id === slotId);
-      if (!slot) return false;
-      const player = this.pendingMeeple.player;
+      if (!slot || !isMeepleSlotOpen(this.board, x, y, slot)) return false;
       tile.meeple = {
         player: player,
-        color: PLAYERS[player].id,
+        color: this.players[player].id,
         slot: slot.id,
         kind: slot.kind,
         index: slot.index == null ? null : slot.index,
         x: slot.x,
         y: slot.y,
       };
-      this.meeples[player] = Math.max(0, this.meeples[player] - 1);
+      this.meeples[player] -= 1;
       this.finishMeeplePhase();
       return true;
     }
@@ -569,33 +1149,143 @@
       this.current = makeTile(tile.id, tile.start);
       this.rotation = tile.rot;
       this.player = pending.player;
-      this.lastPlacedBy[PLAYERS[pending.player].id] = pending.prevLastPlaced;
+      this.lastPlacedBy[this.players[pending.player].id] = pending.prevLastPlaced;
       this.pendingMeeple = null;
       this.finished = false;
-      this.note = "";
       return true;
     }
 
     finishMeeplePhase() {
+      if (!this.pendingMeeple) return;
+      const x = this.pendingMeeple.x;
+      const y = this.pendingMeeple.y;
       this.pendingMeeple = null;
-      this.player = (this.player + 1) % PLAYERS.length;
+      resolveCompletions(this, x, y);
+      this.player = (this.player + 1) % this.players.length;
       this.pull();
     }
   }
 
-  function createGame(random) {
+  function createGame(random, players) {
     const roll = random || Math.random;
     const tiles = buildTiles();
     const start = tiles.find((tile) => tile.start);
     const deck = shuffle(tiles.filter((tile) => !tile.start), roll);
-    const game = new Game(deck);
+    const game = new Game(deck, players);
     game.board.set("0,0", clonePlaced(start, 0));
+    game.player = Math.floor(roll() * game.players.length);
     game.pull();
+    return game;
+  }
+
+  const SAVE_VERSION = 1;
+
+  function snapshotLooseTile(tile) {
+    if (!tile) return null;
+    return { id: tile.id, start: !!tile.start };
+  }
+
+  function snapshotPlacedTile(tile) {
+    if (!tile) return null;
+    return {
+      id: tile.id,
+      start: !!tile.start,
+      rot: tile.rot || 0,
+      owner: tile.owner || null,
+      meeple: tile.meeple ? Object.assign({}, tile.meeple) : null,
+    };
+  }
+
+  function revivePlacedTile(data) {
+    const tile = clonePlaced(makeTile(data.id, data.start), data.rot || 0, data.owner || null);
+    tile.meeple = data.meeple ? Object.assign({}, data.meeple) : null;
+    return tile;
+  }
+
+  function serializeGame(game) {
+    return {
+      v: SAVE_VERSION,
+      players: game.players.map((player) => ({ id: player.id, name: player.name })),
+      deck: game.deck.map(snapshotLooseTile),
+      discards: game.discards.map(snapshotLooseTile),
+      board: Array.from(game.board.entries()).map(([key, tile]) => [key, snapshotPlacedTile(tile)]),
+      player: game.player,
+      current: snapshotLooseTile(game.current),
+      rotation: game.rotation,
+      finished: !!game.finished,
+      scores: game.scores.slice(),
+      meeples: game.meeples.slice(),
+      lastPlacedBy: Object.assign({}, game.lastPlacedBy),
+      pendingMeeple: game.pendingMeeple ? Object.assign({}, game.pendingMeeple) : null,
+      pendingDiscard: !!game.pendingDiscard,
+      standings: game.standings.slice(),
+      finalScored: !!game.finalScored,
+      rankingOpen: !!game.rankingOpen,
+    };
+  }
+
+  function restoreGame(data) {
+    if (!data || data.v !== SAVE_VERSION || !Array.isArray(data.board)) return null;
+    const players = normalizePlayers(data.players);
+    if (!players || players.length < PLAYERS_MIN) return null;
+    const game = new Game((data.deck || []).map((tile) => makeTile(tile.id, tile.start)), players);
+    game.board = new Map();
+    for (const entry of data.board) {
+      if (!entry || entry.length < 2 || !entry[1]) continue;
+      game.board.set(entry[0], revivePlacedTile(entry[1]));
+    }
+    if (!game.board.size) return null;
+    game.discards = (data.discards || []).map((tile) => makeTile(tile.id, tile.start));
+    game.player = ((data.player % players.length) + players.length) % players.length;
+    game.current = data.current ? makeTile(data.current.id, data.current.start) : null;
+    game.rotation = ((data.rotation % 4) + 4) % 4;
+    game.finished = !!data.finished;
+    game.scores = players.map((_, index) => Number(data.scores && data.scores[index]) || 0);
+    game.meeples = players.map((_, index) => {
+      const value = data.meeples && data.meeples[index];
+      return value == null ? MEEPLES_EACH : Number(value);
+    });
+    game.lastPlacedBy = Object.assign(
+      Object.fromEntries(players.map((player) => [player.id, null])),
+      data.lastPlacedBy || {}
+    );
+    game.pendingMeeple = data.pendingMeeple ? Object.assign({}, data.pendingMeeple) : null;
+    game.pendingDiscard = !!data.pendingDiscard;
+    game.standings = Array.isArray(data.standings)
+      ? data.standings.slice()
+      : players.map((_, index) => index);
+    game.finalScored = !!data.finalScored;
+    game.rankingOpen = !!data.rankingOpen;
+    return game;
+  }
+
+  // Auto-play until the final placeable tile is in hand (deck empty).
+  function simulateToLastTile(random) {
+    const game = createGame(random);
+    let guard = 0;
+    while (!game.finished && ++guard < 120) {
+      while (game.pendingDiscard) {
+        if (!game.acknowledgeDiscard()) break;
+      }
+      if (game.finished || !game.current) break;
+      if (game.deck.length === 0) return game;
+      for (let i = 0; i < 4 && game.hints().now.length === 0; i++) game.rotate(1);
+      const cell = game.hints().now[0];
+      if (!cell) break;
+      if (!game.place(cell.x, cell.y)) break;
+      const slots = game.meepleSlots();
+      if (slots.length) game.placeMeeple(slots[0].id);
+      else if (!game.skipMeeple()) break;
+    }
     return game;
   }
 
   return {
     PLAYERS,
+    COLOR_PALETTE,
+    PLAYERS_MIN,
+    PLAYERS_MAX,
+    NAME_MAX,
     MEEPLES_EACH,
     TYPES,
     MARKUP,
@@ -611,6 +1301,24 @@
     tileHTML,
     listMeepleSlots,
     MEEPLE_LAYOUTS,
+    FIELD_PORTS,
+    collectRoadComponent,
+    collectCityComponent,
+    collectFieldComponent,
+    monasteryComplete,
+    isMeepleSlotOpen,
+    resolveCompletions,
+    finalizeScores,
+    rankPlayers,
+    normalizePlayers,
+    cityPoints,
+    roadPoints,
+    completedCitiesTouchingField,
+    FIELD_CITY_TOUCH,
     createGame,
+    serializeGame,
+    restoreGame,
+    SAVE_VERSION,
+    simulateToLastTile,
   };
 });

@@ -30,6 +30,44 @@
       padding: 28px 0 64px;
     }
 
+    .lang-bar {
+      display: inline-flex;
+      align-items: center;
+      gap: 2px;
+      padding: 3px;
+      border-radius: 999px;
+      background: rgba(44, 38, 31, 0.08);
+      border: 1px solid var(--line);
+    }
+
+    .lang-bar button {
+      min-width: 2.6em;
+      padding: 6px 11px;
+      border: 0;
+      border-radius: 999px;
+      background: transparent;
+      color: var(--muted);
+      font: inherit;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      cursor: pointer;
+    }
+
+    .lang-bar button.on {
+      background: #fff;
+      color: var(--ink);
+      box-shadow: 0 1px 2px rgba(44, 38, 31, 0.08);
+    }
+
+    .page-top {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
     header h1 {
       margin: 0 0 8px;
       font-size: 28px;
@@ -93,16 +131,23 @@
     }
 
     .swatch {
+      display: inline-block;
+      flex: none;
       width: 28px;
       height: 18px;
       border-radius: 3px;
       border: 1px solid rgba(0, 0, 0, 0.18);
+      position: static;
+      z-index: auto;
+      clip-path: none;
+      box-shadow: none;
+      background-image: none;
     }
 
-    .swatch.field { background: var(--field); }
-    .swatch.road { background: var(--road); box-shadow: inset 0 0 0 2px var(--road-line); }
-    .swatch.city { background: var(--city); }
-    .swatch.pennant {
+    .swatch-field { background: var(--field); }
+    .swatch-road { background: var(--road); box-shadow: inset 0 0 0 2px var(--road-line); }
+    .swatch-city { background: var(--city); }
+    .swatch-pennant {
       width: 14px;
       height: 16px;
       background: #1f4f8a;
@@ -117,10 +162,23 @@
     }
 
     .demo {
+      --s: 88px;
       background: var(--card);
       border: 1px solid var(--line);
       border-radius: 14px;
       padding: 14px;
+      overflow: hidden;
+      min-width: 0;
+    }
+
+    .demo .board {
+      max-width: 100%;
+    }
+
+    .demo .board.fit {
+      width: 100%;
+      max-width: calc(var(--s) * 3 + 20px);
+      box-sizing: border-box;
     }
 
     .demo h3 { margin-top: 0; }
@@ -264,6 +322,13 @@
     .meeple.blue { --c: #49c4ff; }
     .meeple.green { --c: #3dff9a; }
     .meeple.yellow { --c: #ffe14a; }
+    .meeple.orange { --c: #ff9a3d; }
+    .meeple.purple { --c: #7c3aed; }
+    .meeple.white {
+      --c: #f4f7fb;
+      filter: drop-shadow(0 0 0.6px #111) drop-shadow(0 1px 0 rgba(0, 0, 0, 0.35));
+    }
+    .meeple.brown { --c: #a67c52; }
 
     /* ---- tile ---- */
     .tile {

@@ -1,52 +1,167 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>カルカソンヌ 基本セット タイル見本</title>
+  <title>Tile City Rules</title>
   <link rel="stylesheet" href="css/tiles.css">
+  <style>
+    .toc {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px 14px;
+      margin: 14px 0 0;
+      padding: 0;
+      list-style: none;
+      font-size: 14px;
+    }
+
+    .toc a { color: #8a4a2a; }
+
+    .rules-grid {
+      display: grid;
+      gap: 10px;
+      margin: 12px 0 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .rules-grid li {
+      padding: 10px 12px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: #fff;
+    }
+
+    .rules-grid strong {
+      display: block;
+      margin-bottom: 2px;
+    }
+
+    .score-table {
+      width: 100%;
+      max-width: 36rem;
+      border-collapse: collapse;
+      margin-top: 12px;
+      font-size: 14px;
+    }
+
+    .score-table th,
+    .score-table td {
+      border: 1px solid var(--line);
+      padding: 8px 10px;
+      text-align: left;
+      background: #fff;
+    }
+
+    .score-table th { background: #fff8ee; }
+
+    .nav-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .nav-row a {
+      display: inline-flex;
+      padding: 8px 16px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: #fff;
+      color: var(--ink);
+      text-decoration: none;
+      font-weight: 700;
+      font-size: 14px;
+    }
+
+    .page-foot-nav {
+      margin-top: 40px;
+    }
+
+    .page-foot {
+      margin-top: 16px;
+      padding-top: 16px;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 13px;
+    }
+  </style>
 </head>
 <body>
   <div class="wrap">
+    <div class="page-top">
+      <div></div>
+      <div class="lang-bar" role="group" aria-label="Language">
+        <button type="button" data-lang="en">EN</button>
+        <button type="button" data-lang="ja">JA</button>
+      </div>
+    </div>
     <header>
-      <h1>カルカソンヌ 基本セット タイル見本</h1>
-      <p class="lead"><a href="index.html">トップ</a> / <a href="play.html">配置はこちら</a>で試せます。このページはタイルの見本です。出版社の絵は使っていません。辺の端から端で都市・道・草原が一致するか、都市がタイルの中でつながるか、道がどこで止まるか、旗の有無、枚数が公式の72枚と一致するように描いています。</p>
-      <ul class="stats">
-        <li>24種類</li>
-        <li>72枚</li>
-        <li>旗 10</li>
-        <li>スタートは D の1枚</li>
-        <li>川・拡張は入れない</li>
+      <h1 data-i18n="rulesTitle">Tile City Rules</h1>
+      <p class="lead" data-i18n="rulesLead">Base-set style tile placement for 2–8 players. Original art — not the publisher’s illustrations.</p>
+      <div class="nav-row">
+        <a href="index.html" data-i18n="home">Home</a>
+        <a href="setup.html" data-i18n="play">Play</a>
+      </div>
+      <ul class="toc">
+        <li><a href="#goal" data-i18n="tocGoal">Goal</a></li>
+        <li><a href="#setup" data-i18n="tocSetup">Setup</a></li>
+        <li><a href="#turn" data-i18n="tocTurn">Turn</a></li>
+        <li><a href="#place" data-i18n="tocPlace">Placement</a></li>
+        <li><a href="#meeple" data-i18n="tocMeeple">Meeples</a></li>
+        <li><a href="#score" data-i18n="tocScore">Scoring</a></li>
+        <li><a href="#end" data-i18n="tocEnd">Game end</a></li>
+        <li><a href="#tiles" data-i18n="tocTiles">Tiles A–X</a></li>
       </ul>
     </header>
 
-    <section>
-      <h2>色の意味</h2>
-      <p class="note">接続は辺の端から端で見ます。接した辺の上にある地形が、向かいの辺とすべて同じ並びになります。都市の辺は端から端まで都市です。その角から内側に切るので、隣の辺は草原か道です。角だけが隣のタイルに触れていても、地形はつながりません。</p>
-      <ul class="legend">
-        <li><i class="swatch field"></i>草原</li>
-        <li><i class="swatch road"></i>道</li>
-        <li><i class="swatch city"></i>都市</li>
-        <li><i class="swatch pennant"></i>旗（紋章）</li>
-        <li><i class="meeple red"></i>ミープル案（この段階では置かない）</li>
+    <section id="goal">
+      <h2 data-i18n="goalTitle">Goal</h2>
+      <p class="note" data-i18n="goalBody">Score the most points by completing roads, cities, and monasteries during the game, then score leftover features and fields at the end.</p>
+    </section>
+
+    <section id="setup">
+      <h2 data-i18n="setupSecTitle">Setup</h2>
+      <ul class="rules-grid">
+        <li><strong data-i18n="setupPlayers">Players</strong> <span data-i18n="setupPlayersBody">2–8. Each color has 7 meeples. Pick names (max 6 letters) and unique colors on the setup screen.</span></li>
+        <li><strong data-i18n="setupStartTile">Start tile</strong> <span data-i18n="setupStartTileBody">One marked D tile starts face-up in the center. Shuffle the other 71 tiles into the deck.</span></li>
+        <li><strong data-i18n="setupFirst">First player</strong> <span data-i18n="setupFirstBody">The starting player is chosen at random. Turns then follow the player list order.</span></li>
       </ul>
     </section>
 
-    <section>
-      <h2>並べたときに合うか</h2>
-      <div class="demos">
+    <section id="turn">
+      <h2 data-i18n="turnTitle">On your turn</h2>
+      <ul class="rules-grid">
+        <li><strong data-i18n="turnDraw">1. Draw</strong> <span data-i18n="turnDrawBody">Take the top tile so everyone can see it.</span></li>
+        <li><strong data-i18n="turnPlace">2. Place</strong> <span data-i18n="turnPlaceBody">Rotate in 90° steps and place it legally (see Placement). If no orientation fits anywhere, discard it and draw again — your turn is not spent.</span></li>
+        <li><strong data-i18n="turnMeeple">3. Meeple (optional)</strong> <span data-i18n="turnMeepleBody">You may put one of your meeples on an open feature of the tile you just placed.</span></li>
+        <li><strong data-i18n="turnScore">4. Score</strong> <span data-i18n="turnScoreBody">Any roads, cities, or monasteries completed by that placement score now and return those meeples.</span></li>
+      </ul>
+    </section>
+
+    <section id="place">
+      <h2 data-i18n="placeTitle">Placement</h2>
+      <ul class="rules-grid">
+        <li><strong data-i18n="placeTouch">Touch a side</strong> <span data-i18n="placeTouchBody">The new tile must share at least one full side with an existing tile. Corner-only contact is illegal.</span></li>
+        <li><strong data-i18n="placeEdges">Edges match</strong> <span data-i18n="placeEdgesBody">Every touching side must match end-to-end: city–city, road–road, field–field.</span></li>
+        <li><strong data-i18n="placeNoFlip">No flip</strong> <span data-i18n="placeNoFlipBody">Rotate only; never mirror the tile.</span></li>
+        <li><strong data-i18n="placeOpen">Open board</strong> <span data-i18n="placeOpenBody">The map can grow in any direction.</span></li>
+      </ul>
+
+      <div class="demos" style="margin-top: 16px">
         <article class="demo">
-          <h3 class="ok">置ける</h3>
-          <p>中央がスタートと同じ D。北の辺は端から端まで都市で、180度回した E の都市と一致する。東の辺は上の草原・中央の道・下の草原で、90度回した U と一致する。南の辺は端から端まで草原で、V の北の草原と一致する。</p>
+          <h3 class="ok" data-i18n="legalTitle">Legal</h3>
+          <p data-i18n="legalBody">Center is start tile D. North city matches E rotated 180°. East road matches U rotated 90°. South field matches V’s north field.</p>
           <div class="board fit">
-            <div class="tile rot-180" style="grid-column: 2; grid-row: 1" aria-label="Eを180度回転">
+            <div class="tile rot-180" style="grid-column: 2; grid-row: 1" aria-label="E rotated 180°">
               <i class="city cap n"></i>
             </div>
             <div class="tile" style="grid-column: 2; grid-row: 2" aria-label="D">
               <i class="city cap n"></i>
               <i class="road h"></i>
             </div>
-            <div class="tile rot-90" style="grid-column: 3; grid-row: 2" aria-label="Uを90度回転">
+            <div class="tile rot-90" style="grid-column: 3; grid-row: 2" aria-label="U rotated 90°">
               <i class="road v"></i>
             </div>
             <div class="tile" style="grid-column: 2; grid-row: 3" aria-label="V">
@@ -57,8 +172,8 @@
         </article>
 
         <article class="demo">
-          <h3 class="bad">置けない（辺が一致しない）</h3>
-          <p>D の東は道、回転していない E の西は草原。1辺でも違えば置けない。</p>
+          <h3 class="bad" data-i18n="illegalEdgesTitle">Illegal — edges clash</h3>
+          <p data-i18n="illegalEdgesBody">D’s east edge is a road; unrotated E’s west edge is a field. One mismatch blocks the place.</p>
           <div class="board badfit">
             <div class="tile" aria-label="D">
               <i class="city cap n"></i>
@@ -71,8 +186,8 @@
         </article>
 
         <article class="demo">
-          <h3 class="bad">置けない（角だけ）</h3>
-          <p>角と角だけが触れる置き方は、辺が接していないので不可。斜めの都市や道は、この接触ではつながらない。</p>
+          <h3 class="bad" data-i18n="illegalCornerTitle">Illegal — corner only</h3>
+          <p data-i18n="illegalCornerBody">Tiles that only touch at a corner do not share a side, so the place is illegal.</p>
           <div class="corner-box">
             <div class="tile" aria-label="D">
               <i class="city cap n"></i>
@@ -86,15 +201,74 @@
       </div>
     </section>
 
+    <section id="meeple">
+      <h2 data-i18n="meepleTitle">Meeples</h2>
+      <ul class="rules-grid">
+        <li><strong data-i18n="meepleWhere">Where</strong> <span data-i18n="meepleWhereBody">Only on the tile you just placed: road, city, monastery, or field mark that is still free.</span></li>
+        <li><strong data-i18n="meepleOne">One feature</strong> <span data-i18n="meepleOneBody">You cannot join a road, city, or field that already has any meeple on its connected area.</span></li>
+        <li><strong data-i18n="meepleStock">Stock</strong> <span data-i18n="meepleStockBody">If you have no meeples left, skip placement. Completing a feature returns your meeples there (except at final scoring).</span></li>
+        <li><strong data-i18n="meepleSkip">Skip</strong> <span data-i18n="meepleSkipBody">You may place the tile and skip the meeple.</span></li>
+      </ul>
+      <ul class="meeples">
+        <li><i class="meeple red"></i><span data-i18n="colorRed">Red</span></li>
+        <li><i class="meeple blue"></i><span data-i18n="colorBlue">Blue</span></li>
+        <li><i class="meeple green"></i><span data-i18n="colorGreen">Green</span></li>
+        <li><i class="meeple yellow"></i><span data-i18n="colorYellow">Yellow</span></li>
+        <li><i class="meeple orange"></i><span data-i18n="colorOrange">Orange</span></li>
+        <li><i class="meeple purple"></i><span data-i18n="colorPurple">Purple</span></li>
+        <li><i class="meeple white"></i><span data-i18n="colorWhite">White</span></li>
+        <li><i class="meeple brown"></i><span data-i18n="colorBrown">Brown</span></li>
+      </ul>
+    </section>
+
+    <section id="score">
+      <h2 data-i18n="scoreTitle">Scoring during the game</h2>
+      <p class="note" data-i18n="scoreIntro">When a feature finishes, the player(s) with the most meeples on it score. Ties: every tied player gets the full points. Those meeples return to stock.</p>
+      <table class="score-table">
+        <thead>
+          <tr><th data-i18n="scoreFeature">Feature</th><th data-i18n="scoreComplete">Complete</th></tr>
+        </thead>
+        <tbody>
+          <tr><td data-i18n="scoreRoad">Road</td><td data-i18n="scoreRoadBody">1 point per tile in the road</td></tr>
+          <tr><td data-i18n="scoreCity">City</td><td data-i18n="scoreCityBody">2 points per tile + 2 per pennant (banner)</td></tr>
+          <tr><td data-i18n="scoreMonastery">Monastery</td><td data-i18n="scoreMonasteryBody">9 points when all 8 neighbors are filled</td></tr>
+          <tr><td data-i18n="scoreField">Field</td><td data-i18n="scoreFieldBody">Not scored mid-game</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="end">
+      <h2 data-i18n="endTitle">Game end</h2>
+      <ul class="rules-grid">
+        <li><strong data-i18n="endWhen">When</strong> <span data-i18n="endWhenBody">After the last tile is placed (or Exit ends the game early), final scoring runs.</span></li>
+        <li><strong data-i18n="endRoads">Incomplete roads</strong> <span data-i18n="endRoadsBody">1 point per tile.</span></li>
+        <li><strong data-i18n="endCities">Incomplete cities</strong> <span data-i18n="endCitiesBody">1 point per tile + 1 per pennant.</span></li>
+        <li><strong data-i18n="endMonasteries">Incomplete monasteries</strong> <span data-i18n="endMonasteriesBody">1 point per filled cell in the 3×3 (including the monastery tile).</span></li>
+        <li><strong data-i18n="endFields">Fields</strong> <span data-i18n="endFieldsBody">Farmers stay on the board. Each field scores 3 points per completed city it touches. Majority rules as above.</span></li>
+        <li><strong data-i18n="endMeeples">Meeples</strong> <span data-i18n="endMeeplesBody">Final scoring does not return meeples; +N labels show what each scored.</span></li>
+        <li><strong data-i18n="endTies">Ties</strong> <span data-i18n="endTiesBody">Equal score → more meeples still in stock ranks higher.</span></li>
+      </ul>
+    </section>
+
+    <section id="controls">
+      <h2 data-i18n="controlsTitle">Controls</h2>
+      <ul class="rules-grid">
+        <li><strong data-i18n="controlsRotate">Rotate</strong> <span data-i18n="controlsRotateBody">Right-click the board, press R while the pointer is over the board, or tap the hand preview / angle thumbs.</span></li>
+        <li><strong data-i18n="controlsZoom">Zoom</strong> <span data-i18n="controlsZoomBody">Mouse wheel or pinch. Buttons on desktop legend.</span></li>
+        <li><strong data-i18n="controlsPan">Pan</strong> <span data-i18n="controlsPanBody">Drag the board.</span></li>
+        <li><strong data-i18n="controlsHints">Hints</strong> <span data-i18n="controlsHintsBody">Green = can place now. Gray = needs a different rotation.</span></li>
+      </ul>
+    </section>
+
     <section>
-      <h2>I の二つの都市</h2>
-      <p class="note">I には都市が二つあります。北の辺と西の辺は、ほかの都市と同じく端から端まで都市です。東と南は草原です。二つの都市は北西の角の一点を共有します。一つの都市になるのは、辺が端から端まで接したときです。</p>
+      <h2 data-i18n="tileITitle">Separate cities on tile I</h2>
+      <p class="note" data-i18n="tileIIntro">Tile I has two cities that only meet at a corner point. They stay separate unless each joins other tiles along a full city edge.</p>
       <div class="demos">
         <article class="demo">
-          <h3 class="ok">北の都市につながる</h3>
-          <p>上の E を180度回すと、南の辺が都市になります。I の北の辺とその並びが一致し、一つの都市になります。I の西の都市は、この都市には入りません。</p>
+          <h3 class="ok" data-i18n="tileINorth">Joins the north city</h3>
+          <p data-i18n="tileINorthBody">E rotated 180° matches I’s north city edge. I’s west city stays separate.</p>
           <div class="board stack">
-            <div class="tile rot-180" aria-label="Eを180度回転">
+            <div class="tile rot-180" aria-label="E rotated 180°">
               <i class="city cap n"></i>
             </div>
             <div class="tile" aria-label="I">
@@ -103,12 +277,11 @@
             </div>
           </div>
         </article>
-
         <article class="demo">
-          <h3 class="ok">西の都市につながる</h3>
-          <p>左の E を90度回すと、東の辺が都市になります。I の西の辺とその並びが一致し、一つの都市になります。I の北の都市は、この都市には入りません。</p>
+          <h3 class="ok" data-i18n="tileIWest">Joins the west city</h3>
+          <p data-i18n="tileIWestBody">E rotated 90° matches I’s west city edge. I’s north city stays separate.</p>
           <div class="board pair">
-            <div class="tile rot-90" aria-label="Eを90度回転">
+            <div class="tile rot-90" aria-label="E rotated 90°">
               <i class="city cap n"></i>
             </div>
             <div class="tile" aria-label="I">
@@ -117,16 +290,15 @@
             </div>
           </div>
         </article>
-
         <article class="demo">
-          <h3 class="ok">二つは別の都市のまま</h3>
-          <p>北と西に同時に都市を付けても、I の中の草原で分かれたままです。左上の二つの E は角で接するだけなので、そこでも都市は一つになりません。</p>
+          <h3 class="ok" data-i18n="tileIBoth">Still two cities</h3>
+          <p data-i18n="tileIBothBody">Even with both sides filled, I’s cities remain split by field inside the tile. Corner-only contact between the two E tiles does not merge them.</p>
           <div class="board quad">
             <div></div>
-            <div class="tile rot-180" aria-label="Eを180度回転">
+            <div class="tile rot-180" aria-label="E rotated 180°">
               <i class="city cap n"></i>
             </div>
-            <div class="tile rot-90" aria-label="Eを90度回転">
+            <div class="tile rot-90" aria-label="E rotated 90°">
               <i class="city cap n"></i>
             </div>
             <div class="tile" aria-label="I">
@@ -138,157 +310,137 @@
       </div>
     </section>
 
-    <section>
-      <h2>A〜X（ルールシートと同じ記号と枚数）</h2>
-      <p class="note">向きは、北を上にした基準です。ゲーム中は90度単位で回します。裏返して鏡像にはしません。J と K は回しても同じタイルになりません。羊や家の絵柄差は種類に数えません。旗の有無だけ枚数を分けています。</p>
+    <section id="tiles">
+      <h2 data-i18n="tilesTitle">Tiles A–X</h2>
+      <p class="note" data-i18n="tilesIntro">Same letter codes and counts as the classic base set. North is up in the catalog. J and K are mirrors — rotation never turns one into the other. Pennants (banners) are listed separately from plain twins.</p>
+      <ul class="legend">
+        <li><i class="swatch swatch-field" aria-hidden="true"></i><span data-i18n="legendField">Field</span></li>
+        <li><i class="swatch swatch-road" aria-hidden="true"></i><span data-i18n="legendRoad">Road</span></li>
+        <li><i class="swatch swatch-city" aria-hidden="true"></i><span data-i18n="legendCity">City</span></li>
+        <li><i class="swatch swatch-pennant" aria-hidden="true"></i><span data-i18n="legendPennant">Pennant</span></li>
+      </ul>
 
       <div class="catalog">
         <article class="card">
-          <div class="tile" data-id="A" data-count="2" data-edges="F,F,R,F" data-roads="S" data-monastery="1">
+          <div class="tile" data-id="A" data-count="2">
             <i class="road to-s"></i>
             <span class="monastery"><i class="cross"></i><i class="roof"></i><i class="body"></i></span>
           </div>
           <div class="meta">
             <p class="id">A <span>×2</span></p>
-            <p class="name">修道院と道</p>
-            <p class="edges">北 草原 · 東 草原 · 南 道 · 西 草原</p>
-            <p class="extra">道は修道院で終わる。道の左右で草原は2つ。</p>
+            <p class="name" data-i18n="tileA">Monastery + road</p>
+            <p class="edges" data-i18n="edgesA">N field · E field · S road · W field</p>
           </div>
         </article>
-
         <article class="card">
-          <div class="tile" data-id="B" data-count="4" data-edges="F,F,F,F" data-monastery="1">
+          <div class="tile" data-id="B" data-count="4">
             <span class="monastery"><i class="cross"></i><i class="roof"></i><i class="body"></i></span>
           </div>
           <div class="meta">
             <p class="id">B <span>×4</span></p>
-            <p class="name">修道院</p>
-            <p class="edges">四辺とも草原</p>
-            <p class="extra">草原は1つ。修道院は道や都市とはつながらない。</p>
+            <p class="name" data-i18n="tileB">Monastery</p>
+            <p class="edges" data-i18n="edgesB">All sides field</p>
           </div>
         </article>
-
         <article class="card">
-          <div class="tile" data-id="C" data-count="1" data-edges="C,C,C,C" data-cities="N+E+S+W*">
+          <div class="tile" data-id="C" data-count="1">
             <i class="city fill"></i>
             <i class="keep"></i>
-            <i class="pennant p-c" title="旗"></i>
+            <i class="pennant p-c" title="Pennant"></i>
           </div>
           <div class="meta">
             <p class="id">C <span>×1</span></p>
-            <p class="name">四辺が都市</p>
-            <p class="edges">四辺とも都市。中では1つの都市。</p>
-            <div class="badges"><span class="badge">旗</span></div>
+            <p class="name" data-i18n="tileC">City all sides</p>
+            <div class="badges"><span class="badge" data-i18n="badgePennant">Pennant</span></div>
           </div>
         </article>
-
         <article class="card">
-          <div class="tile" data-id="D" data-count="4" data-edges="C,R,F,R" data-cities="N" data-roads="E-W" data-start="1">
+          <div class="tile" data-id="D" data-count="4">
             <i class="city cap n"></i>
             <i class="road h"></i>
           </div>
           <div class="meta">
             <p class="id">D <span>×4</span></p>
-            <p class="name">都市と直線の道</p>
-            <p class="edges">北 都市 · 東 道 · 南 草原 · 西 道</p>
-            <p class="extra">都市は北の辺を端から端まで覆う。東と西の辺は道で、都市はそこへ続かない。道は都市に触れない。草原は道の北と南で2つ。</p>
-            <div class="badges"><span class="badge start">1枚がスタート</span></div>
+            <p class="name" data-i18n="tileD">City + straight road</p>
+            <p class="edges" data-i18n="edgesD">N city · E road · S field · W road</p>
+            <div class="badges"><span class="badge start" data-i18n="badgeStart">1 is start</span></div>
           </div>
         </article>
-
         <article class="card">
-          <div class="tile" data-id="E" data-count="5" data-edges="C,F,F,F" data-cities="N">
+          <div class="tile" data-id="E" data-count="5">
             <i class="city cap n"></i>
           </div>
           <div class="meta">
             <p class="id">E <span>×5</span></p>
-            <p class="name">一方だけの都市</p>
-            <p class="edges">北 都市 · ほか3辺は草原</p>
-            <p class="extra">草原は1つ。</p>
+            <p class="name" data-i18n="tileE">Single city side</p>
+            <p class="edges" data-i18n="edgesE">N city · else field</p>
           </div>
         </article>
-
         <article class="card">
-          <div class="tile" data-id="F" data-count="2" data-edges="F,C,F,C" data-cities="E+W*">
+          <div class="tile" data-id="F" data-count="2">
             <i class="city bar h"></i>
-            <i class="pennant p-bar" title="旗"></i>
+            <i class="pennant p-bar" title="Pennant"></i>
           </div>
           <div class="meta">
             <p class="id">F <span>×2</span></p>
-            <p class="name">向かいの都市がつながる</p>
-            <p class="edges">東 都市 · 西 都市 · 北 草原 · 南 草原</p>
-            <p class="extra">都市は1本。草原は上下で分かれる。</p>
-            <div class="badges"><span class="badge">旗</span></div>
+            <p class="name" data-i18n="tileF">Linked opposite cities</p>
+            <div class="badges"><span class="badge" data-i18n="badgePennant">Pennant</span></div>
           </div>
         </article>
-
         <article class="card">
-          <div class="tile" data-id="G" data-count="1" data-edges="F,C,F,C" data-cities="E+W">
+          <div class="tile" data-id="G" data-count="1">
             <i class="city bar h"></i>
           </div>
           <div class="meta">
             <p class="id">G <span>×1</span></p>
-            <p class="name">向かいの都市がつながる</p>
-            <p class="edges">F と同じ地形。旗はない。</p>
+            <p class="name" data-i18n="tileG">Linked opposite cities</p>
+            <p class="extra" data-i18n="tileGExtra">Like F, no pennant.</p>
           </div>
         </article>
-
         <article class="card">
-          <div class="tile" data-id="H" data-count="3" data-edges="C,F,C,F" data-cities="N,S">
+          <div class="tile" data-id="H" data-count="3">
             <i class="city cap n"></i>
             <i class="city cap s"></i>
           </div>
           <div class="meta">
             <p class="id">H <span>×3</span></p>
-            <p class="name">向かいの都市が分かれる</p>
-            <p class="edges">北 都市 · 南 都市 · 東 草原 · 西 草原</p>
-            <p class="extra">都市は2つ。間の草原は1つで、東西の辺につながる。</p>
+            <p class="name" data-i18n="tileH">Split opposite cities</p>
           </div>
         </article>
-
         <article class="card">
-          <div class="tile" data-id="I" data-count="2" data-edges="C,F,F,C" data-cities="N,W">
+          <div class="tile" data-id="I" data-count="2">
             <i class="city cap n gap-w"></i>
             <i class="city cap w gap-n"></i>
           </div>
           <div class="meta">
             <p class="id">I <span>×2</span></p>
-            <p class="name">隣の都市が分かれる</p>
-            <p class="edges">北 都市 · 西 都市 · 東 草原 · 南 草原</p>
-            <p class="extra">北と西は端から端まで都市で、ほかの都市辺とつながる。二つの都市は角の一点を共有し、辺では分かれている。</p>
+            <p class="name" data-i18n="tileI">Split adjacent cities</p>
           </div>
         </article>
-
         <article class="card">
-          <div class="tile" data-id="J" data-count="3" data-edges="C,R,R,F" data-cities="N" data-roads="E-S">
+          <div class="tile" data-id="J" data-count="3">
             <i class="city cap n"></i>
             <i class="bend se edge"></i>
             <i class="bend se line"></i>
           </div>
           <div class="meta">
             <p class="id">J <span>×3</span></p>
-            <p class="name">都市と右のカーブ</p>
-            <p class="edges">北 都市 · 東 道 · 南 道 · 西 草原</p>
-            <p class="extra">道は1本。K の鏡像で、回転では K にならない。</p>
+            <p class="name" data-i18n="tileJ">City + right curve</p>
           </div>
         </article>
-
         <article class="card">
-          <div class="tile" data-id="K" data-count="3" data-edges="C,F,R,R" data-cities="N" data-roads="S-W">
+          <div class="tile" data-id="K" data-count="3">
             <i class="city cap n"></i>
             <i class="bend sw edge"></i>
             <i class="bend sw line"></i>
           </div>
           <div class="meta">
             <p class="id">K <span>×3</span></p>
-            <p class="name">都市と左のカーブ</p>
-            <p class="edges">北 都市 · 東 草原 · 南 道 · 西 道</p>
-            <p class="extra">道は1本。</p>
+            <p class="name" data-i18n="tileK">City + left curve</p>
           </div>
         </article>
-
         <article class="card">
-          <div class="tile" data-id="L" data-count="3" data-edges="C,R,R,R" data-cities="N" data-roads="E|S|W">
+          <div class="tile" data-id="L" data-count="3">
             <i class="city cap n"></i>
             <i class="road h-e"></i>
             <i class="road h-w"></i>
@@ -297,145 +449,116 @@
           </div>
           <div class="meta">
             <p class="id">L <span>×3</span></p>
-            <p class="name">都市と三叉路</p>
-            <p class="edges">北 都市 · 東 道 · 南 道 · 西 道</p>
-            <p class="extra">中央で道は3本に分かれて終わる。東西は突き抜けない。</p>
+            <p class="name" data-i18n="tileL">City + 3-way road</p>
           </div>
         </article>
-
         <article class="card">
-          <div class="tile" data-id="M" data-count="2" data-edges="C,C,F,F" data-cities="N+E*">
+          <div class="tile" data-id="M" data-count="2">
             <i class="city elbow ne"></i>
-            <i class="pennant p-ne" title="旗"></i>
+            <i class="pennant p-ne" title="Pennant"></i>
           </div>
           <div class="meta">
             <p class="id">M <span>×2</span></p>
-            <p class="name">角の都市</p>
-            <p class="edges">北 都市 · 東 都市 · 南 草原 · 西 草原</p>
-            <p class="extra">北と東は1つの都市。I とは逆で、角を通ってつながる。</p>
-            <div class="badges"><span class="badge">旗</span></div>
+            <p class="name" data-i18n="tileM">Corner city</p>
+            <div class="badges"><span class="badge" data-i18n="badgePennant">Pennant</span></div>
           </div>
         </article>
-
         <article class="card">
-          <div class="tile" data-id="N" data-count="3" data-edges="C,C,F,F" data-cities="N+E">
+          <div class="tile" data-id="N" data-count="3">
             <i class="city elbow ne"></i>
           </div>
           <div class="meta">
             <p class="id">N <span>×3</span></p>
-            <p class="name">角の都市</p>
-            <p class="edges">M と同じ地形。旗はない。</p>
+            <p class="name" data-i18n="tileN">Corner city</p>
           </div>
         </article>
-
         <article class="card">
-          <div class="tile" data-id="O" data-count="2" data-edges="C,R,R,C" data-cities="N+W*" data-roads="E-S">
+          <div class="tile" data-id="O" data-count="2">
             <i class="city elbow nw"></i>
             <i class="bend se edge"></i>
             <i class="bend se line"></i>
-            <i class="pennant p-nw" title="旗"></i>
+            <i class="pennant p-nw" title="Pennant"></i>
           </div>
           <div class="meta">
             <p class="id">O <span>×2</span></p>
-            <p class="name">角の都市と道</p>
-            <p class="edges">北 都市 · 東 道 · 南 道 · 西 都市</p>
-            <p class="extra">都市は左上で1つ。道は右下のカーブ1本。</p>
-            <div class="badges"><span class="badge">旗</span></div>
+            <p class="name" data-i18n="tileO">Corner city + road</p>
+            <div class="badges"><span class="badge" data-i18n="badgePennant">Pennant</span></div>
           </div>
         </article>
-
         <article class="card">
-          <div class="tile" data-id="P" data-count="3" data-edges="C,R,R,C" data-cities="N+W" data-roads="E-S">
+          <div class="tile" data-id="P" data-count="3">
             <i class="city elbow nw"></i>
             <i class="bend se edge"></i>
             <i class="bend se line"></i>
           </div>
           <div class="meta">
             <p class="id">P <span>×3</span></p>
-            <p class="name">角の都市と道</p>
-            <p class="edges">O と同じ地形。旗はない。</p>
+            <p class="name" data-i18n="tileP">Corner city + road</p>
           </div>
         </article>
-
         <article class="card">
-          <div class="tile" data-id="Q" data-count="1" data-edges="C,C,F,C" data-cities="N+E+W*">
+          <div class="tile" data-id="Q" data-count="1">
             <i class="city mouth s"></i>
-            <i class="pennant p-u" title="旗"></i>
+            <i class="pennant p-u" title="Pennant"></i>
           </div>
           <div class="meta">
             <p class="id">Q <span>×1</span></p>
-            <p class="name">三方が都市</p>
-            <p class="edges">北 都市 · 東 都市 · 南 草原 · 西 都市</p>
-            <p class="extra">都市は1つ。開口部の草原は1つ。</p>
-            <div class="badges"><span class="badge">旗</span></div>
+            <p class="name" data-i18n="tileQ">3-side city</p>
+            <div class="badges"><span class="badge" data-i18n="badgePennant">Pennant</span></div>
           </div>
         </article>
-
         <article class="card">
-          <div class="tile" data-id="R" data-count="3" data-edges="C,C,F,C" data-cities="N+E+W">
+          <div class="tile" data-id="R" data-count="3">
             <i class="city mouth s"></i>
           </div>
           <div class="meta">
             <p class="id">R <span>×3</span></p>
-            <p class="name">三方が都市</p>
-            <p class="edges">Q と同じ地形。旗はない。</p>
+            <p class="name" data-i18n="tileR">3-side city</p>
           </div>
         </article>
-
         <article class="card">
-          <div class="tile" data-id="S" data-count="2" data-edges="C,C,R,C" data-cities="N+E+W*" data-roads="S">
+          <div class="tile" data-id="S" data-count="2">
             <i class="city mouth s"></i>
             <i class="road gate"></i>
-            <i class="pennant p-u" title="旗"></i>
+            <i class="pennant p-u" title="Pennant"></i>
           </div>
           <div class="meta">
             <p class="id">S <span>×2</span></p>
-            <p class="name">三方の都市と入口の道</p>
-            <p class="edges">北 都市 · 東 都市 · 南 道 · 西 都市</p>
-            <p class="extra">道は都市の入口で終わる。草原は道の左右で2つ。</p>
-            <div class="badges"><span class="badge">旗</span></div>
+            <p class="name" data-i18n="tileS">3-side city + gate road</p>
+            <div class="badges"><span class="badge" data-i18n="badgePennant">Pennant</span></div>
           </div>
         </article>
-
         <article class="card">
-          <div class="tile" data-id="T" data-count="1" data-edges="C,C,R,C" data-cities="N+E+W" data-roads="S">
+          <div class="tile" data-id="T" data-count="1">
             <i class="city mouth s"></i>
             <i class="road gate"></i>
           </div>
           <div class="meta">
             <p class="id">T <span>×1</span></p>
-            <p class="name">三方の都市と入口の道</p>
-            <p class="edges">S と同じ地形。旗はない。</p>
+            <p class="name" data-i18n="tileT">3-side city + gate road</p>
           </div>
         </article>
-
         <article class="card">
-          <div class="tile" data-id="U" data-count="8" data-edges="R,F,R,F" data-roads="N-S">
+          <div class="tile" data-id="U" data-count="8">
             <i class="road v"></i>
           </div>
           <div class="meta">
             <p class="id">U <span>×8</span></p>
-            <p class="name">直線の道</p>
-            <p class="edges">北 道 · 南 道 · 東 草原 · 西 草原</p>
-            <p class="extra">道は1本。草原は左右で2つ。</p>
+            <p class="name" data-i18n="tileU">Straight road</p>
           </div>
         </article>
-
         <article class="card">
-          <div class="tile" data-id="V" data-count="9" data-edges="F,F,R,R" data-roads="S-W">
+          <div class="tile" data-id="V" data-count="9">
             <i class="bend sw edge"></i>
             <i class="bend sw line"></i>
           </div>
           <div class="meta">
             <p class="id">V <span>×9</span></p>
-            <p class="name">カーブ</p>
-            <p class="edges">北 草原 · 東 草原 · 南 道 · 西 道</p>
-            <p class="extra">道は1本。内側の草原と外側の草原は別。</p>
+            <p class="name" data-i18n="tileV">Curve</p>
           </div>
         </article>
-
         <article class="card">
-          <div class="tile" data-id="W" data-count="4" data-edges="F,R,R,R" data-roads="E|S|W">
+          <div class="tile" data-id="W" data-count="4">
             <i class="road h-e"></i>
             <i class="road h-w"></i>
             <i class="road v-s"></i>
@@ -443,14 +566,11 @@
           </div>
           <div class="meta">
             <p class="id">W <span>×4</span></p>
-            <p class="name">三叉路</p>
-            <p class="edges">北 草原 · 東 道 · 南 道 · 西 道</p>
-            <p class="extra">道は3本。中央の集落でそれぞれ終わる。</p>
+            <p class="name" data-i18n="tileW">3-way road</p>
           </div>
         </article>
-
         <article class="card">
-          <div class="tile" data-id="X" data-count="1" data-edges="R,R,R,R" data-roads="N|E|S|W">
+          <div class="tile" data-id="X" data-count="1">
             <i class="road v-n"></i>
             <i class="road h-e"></i>
             <i class="road v-s"></i>
@@ -459,39 +579,21 @@
           </div>
           <div class="meta">
             <p class="id">X <span>×1</span></p>
-            <p class="name">十字路</p>
-            <p class="edges">四辺とも道</p>
-            <p class="extra">道は4本。十字に突き抜けない。草原は4つの角。</p>
+            <p class="name" data-i18n="tileX">Crossroads</p>
           </div>
         </article>
       </div>
     </section>
 
-    <section>
-      <h2>ミープルのマーク案</h2>
-      <p class="note">4人固定。基本セットの5色のうち赤・青・緑・黄を使い、黒は余らせます。この見本では盤に置きません。マークは単色のミープル型で、顔や服の描き込みはありません。</p>
-      <ul class="meeples">
-        <li><i class="meeple red"></i>赤</li>
-        <li><i class="meeple blue"></i>青</li>
-        <li><i class="meeple green"></i>緑</li>
-        <li><i class="meeple yellow"></i>黄</li>
-      </ul>
-    </section>
-
-    <section class="rules">
-      <h2>配置で実装するルール</h2>
-      <ul>
-        <li>開始時、D のうち裏面指定の1枚だけを中央に表で置く。残り71枚をシャッフルして山札にする。</li>
-        <li>手番では山札から1枚を全員に見える状態で出し、90度単位で回してから置く。置いたタイルは動かさない。</li>
-        <li>新しいタイルは、既存のタイルと少なくとも1辺を接する。角だけが触れるマスには置けない。</li>
-        <li>接したすべての辺で、端から端までの地形が一致する。都市は都市、道は道、草原は草原。その並びが辺の端まで同じである。</li>
-        <li>空いている辺は制約にしない。2〜4辺が接するときは、接している辺をすべて満たす。</li>
-        <li>盤の大きさは固定しない。上下左右に広がる。</li>
-        <li>4回転のすべてで置けるマスが無いタイルは、ゲームから除外して引き直す。手番は消費しない。</li>
-        <li>この段階ではミープルを置かず、点数も計算しない。スタートの1枚のあと、山札の71枚を4人の手番で置き切るところまで。</li>
-      </ul>
-      <p class="note">枚数の出典はメビウスゲームズのルールシート（A×2 から X×1、合計72）と、同じ内訳の現行基本ルール。辺の地形は、その記号順のタイル（A 修道院と道、D 都市と直線の道、X 十字路）に合わせています。旗は C1・F2・M2・O2・Q1・S2 の10枚です。</p>
-    </section>
+    <div class="nav-row page-foot-nav">
+      <a href="index.html" data-i18n="home">Home</a>
+      <a href="setup.html" data-i18n="play">Play</a>
+    </div>
+    <p class="page-foot" data-i18n="rulesFoot">Tile City · base-set rules adapted for this browser version.</p>
   </div>
+  <script src="js/i18n.js"></script>
+  <script>
+    TileCityI18n.bindLangBar();
+  </script>
 </body>
 </html>
