@@ -330,8 +330,8 @@
       box-shadow: inset 0 0 0 2px #3dff8a, 0 0 8px rgba(40, 255, 140, 0.8);
     }
     .swatch-key.later {
-      background: rgba(160, 175, 190, 0.22);
-      box-shadow: inset 0 0 0 2px #9aa8b8, 0 0 8px rgba(160, 175, 190, 0.45);
+      background: rgba(48, 56, 68, 0.72);
+      box-shadow: inset 0 0 0 2px #7b8798, 0 0 8px rgba(80, 90, 105, 0.45);
     }
 
     .rot-hint {
@@ -453,7 +453,7 @@
     }
 
     .slot.empty {
-      background: transparent;
+      background: rgba(18, 10, 6, 0.55);
     }
 
     .slot.hint-now {
@@ -473,8 +473,8 @@
     }
 
     .slot.hint-rot {
-      background: rgba(140, 155, 170, 0.5);
-      box-shadow: inset 0 0 0 2px #9aa8b8, 0 0 12px rgba(140, 155, 170, 0.35);
+      background: rgba(48, 56, 68, 0.72);
+      box-shadow: inset 0 0 0 2px #7b8798, 0 0 12px rgba(80, 90, 105, 0.45);
     }
 
     .slot.hint-rot:hover {
@@ -724,6 +724,32 @@
       if (label) label.textContent = zoomPercent();
     }
 
+    function gridPadBox(grid) {
+      const style = getComputedStyle(grid);
+      const left = parseFloat(style.paddingLeft) || 0;
+      const top = parseFloat(style.paddingTop) || 0;
+      const right = parseFloat(style.paddingRight) || 0;
+      const bottom = parseFloat(style.paddingBottom) || 0;
+      return {
+        left,
+        top,
+        right,
+        bottom,
+        innerW: Math.max(0, grid.offsetWidth - left - right),
+        innerH: Math.max(0, grid.offsetHeight - top - bottom),
+      };
+    }
+
+    // Padding (50vw/50vh) stays fixed; only the tile grid scales with zoom.
+    function mapZoomCoord(coord, padBefore, innerBefore, padAfter, innerAfter) {
+      if (coord <= padBefore) return padAfter + (coord - padBefore);
+      if (coord >= padBefore + innerBefore) {
+        return padAfter + innerAfter + (coord - padBefore - innerBefore);
+      }
+      if (!(innerBefore > 0)) return padAfter;
+      return padAfter + (coord - padBefore) * (innerAfter / innerBefore);
+    }
+
     function setBoardZoom(next, pivot) {
       const clamped = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, Math.round(next * 1000) / 1000));
       if (clamped === boardZoom) {
@@ -732,21 +758,24 @@
       }
       const box = scroller();
       const grid = document.getElementById("grid");
-      const before = boardZoom;
       const rect = box.getBoundingClientRect();
       const px = pivot ? pivot.x - rect.left : rect.width / 2;
       const py = pivot ? pivot.y - rect.top : rect.height / 2;
-      const style = getComputedStyle(grid);
-      const padL = parseFloat(style.paddingLeft) || 0;
-      const padT = parseFloat(style.paddingTop) || 0;
+      const beforePad = gridPadBox(grid);
       const contentX = box.scrollLeft + px;
       const contentY = box.scrollTop + py;
-      const scale = clamped / before;
       boardZoom = clamped;
       applyBoardZoom();
-      // Padding (50vw/50vh) does not scale; only the tile grid does.
-      box.scrollLeft = padL + (contentX - padL) * scale - px;
-      box.scrollTop = padT + (contentY - padT) * scale - py;
+      // Flush layout before reading new size / setting scroll, or zoom-out
+      // clamps scrollLeft against the old max and the view drifts.
+      void grid.offsetWidth;
+      const afterPad = gridPadBox(grid);
+      box.scrollLeft = mapZoomCoord(
+        contentX, beforePad.left, beforePad.innerW, afterPad.left, afterPad.innerW
+      ) - px;
+      box.scrollTop = mapZoomCoord(
+        contentY, beforePad.top, beforePad.innerH, afterPad.top, afterPad.innerH
+      ) - py;
     }
 
     function paintLegend() {
@@ -1133,7 +1162,7 @@
       expect(document.querySelector(".hint-legend").textContent.includes("配置可能な位置"), "配置可能な位置");
       expect(document.querySelector(".hint-legend").textContent.includes("回転すると配置できる位置"), "回転後の位置");
       const laterColor = getComputedStyle(document.querySelector(".slot.hint-rot")).boxShadow;
-      expect(laterColor.includes("154, 168, 184"), "灰色のヒント");
+      expect(laterColor.includes("123, 135, 152"), "灰色のヒント");
       const scroll = getComputedStyle(document.getElementById("scroller"));
       expect(scroll.overflowX === "scroll" && scroll.overflowY === "scroll", "縦横スクロール");
       expect(getComputedStyle(document.body).overflow === "hidden", "ページはスクロールしない");
