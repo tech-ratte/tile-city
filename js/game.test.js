@@ -9,6 +9,8 @@ const {
   boardErrors,
   tileHTML,
   edgeText,
+  listMeepleSlots,
+  MEEPLE_LAYOUTS,
   createGame,
 } = require("./game.js");
 
@@ -44,6 +46,10 @@ function takeTurn(game) {
   assert.ok(cell, game.current.id + " has a highlighted cell");
   const player = game.player;
   assert.strictEqual(game.place(cell.x, cell.y), true);
+  assert.ok(game.pendingMeeple);
+  assert.strictEqual(game.player, player);
+  assert.ok(game.meepleSlots().length > 0);
+  assert.strictEqual(game.skipMeeple(), true);
   if (!game.finished) assert.strictEqual(game.player, (player + 1) % PLAYERS.length);
   assert.strictEqual(stock(game), 72);
   assert.deepStrictEqual(boardErrors(game.board), []);
@@ -132,7 +138,69 @@ placed.rotation = 1;
 assert.strictEqual(placed.place(1, 0), true);
 assert.strictEqual(placed.board.get("1,0").rot, 1);
 assert.deepStrictEqual(placed.board.get("1,0").edges, ["R", "F", "R", "F"]);
+assert.ok(placed.pendingMeeple);
+assert.strictEqual(placed.player, 0);
+assert.ok(placed.meepleSlots().some((slot) => slot.kind === "road"));
+assert.strictEqual(placed.skipMeeple(), true);
 assert.notStrictEqual(placed.player, 0);
+
+const withMeeple = createGame(mulberry32(4));
+withMeeple.current = makeTile("U");
+withMeeple.rotation = 1;
+assert.strictEqual(withMeeple.place(1, 0), true);
+const roadSlot = withMeeple.meepleSlots().find((slot) => slot.kind === "road");
+assert.ok(roadSlot);
+assert.strictEqual(withMeeple.placeMeeple(roadSlot.id), true);
+assert.strictEqual(withMeeple.board.get("1,0").meeple.slot, roadSlot.id);
+assert.strictEqual(withMeeple.meeples[0], 6);
+assert.strictEqual(withMeeple.pendingMeeple, null);
+
+for (const type of TYPES) {
+  assert.ok(MEEPLE_LAYOUTS[type.id], type.id + " has meeple layout");
+  const slots = listMeepleSlots({ id: type.id, rot: 0 });
+  assert.ok(slots.length > 0, type.id + " has slots");
+  if (type.monastery) {
+    assert.ok(slots.some((slot) => slot.kind === "monastery"), type.id + " monastery mark");
+  }
+  assert.strictEqual(slots.filter((slot) => slot.kind === "city").length, type.cities.length, type.id + " cities");
+  assert.strictEqual(slots.filter((slot) => slot.kind === "road").length, type.roads.length, type.id + " roads");
+}
+const vSlots = listMeepleSlots({ id: "V", rot: 0 });
+assert.strictEqual(vSlots.filter((slot) => slot.kind === "field").length, 2, "V has two fields");
+assert.ok(vSlots.some((slot) => slot.kind === "field" && slot.x > 0.5 && slot.y < 0.5), "V outer field");
+assert.ok(vSlots.some((slot) => slot.kind === "field" && slot.x < 0.25 && slot.y > 0.7), "V inner field");
+const bSlots = listMeepleSlots({ id: "B", rot: 0 });
+assert.ok(bSlots.some((slot) => slot.kind === "monastery" && slot.y < 0.5), "B monastery near building");
+assert.strictEqual(listMeepleSlots({ id: "D", rot: 0 }).filter((slot) => slot.kind === "field").length, 2, "D fields");
+const jSlots = listMeepleSlots({ id: "J", rot: 0 });
+assert.strictEqual(jSlots.filter((slot) => slot.kind === "field").length, 2, "J fields");
+assert.ok(jSlots.some((slot) => slot.kind === "field" && slot.x > 0.75 && slot.y > 0.75), "J inner SE pocket");
+assert.ok(jSlots.some((slot) => slot.kind === "road" && slot.x < 0.7 && slot.y < 0.7), "J road on arc");
+const pSlots = listMeepleSlots({ id: "P", rot: 0 });
+assert.strictEqual(pSlots.filter((slot) => slot.kind === "field").length, 2, "P fields");
+assert.ok(pSlots.some((slot) => slot.kind === "field" && slot.x > 0.75 && slot.y > 0.75), "P inner SE pocket");
+function minDist(a, b) {
+  return Math.hypot(a.x - b.x, a.y - b.y);
+}
+for (const id of ["J", "K", "O", "P", "V"]) {
+  const slots = listMeepleSlots({ id: id, rot: 0 });
+  for (let i = 0; i < slots.length; i++) {
+    for (let j = i + 1; j < slots.length; j++) {
+      assert.ok(minDist(slots[i], slots[j]) > 0.22, id + " slots separated");
+    }
+  }
+}
+
+const undoGame = createGame(mulberry32(4));
+undoGame.current = makeTile("U");
+undoGame.rotation = 1;
+assert.strictEqual(undoGame.place(1, 0), true);
+assert.strictEqual(undoGame.undoPlace(), true);
+assert.strictEqual(undoGame.pendingMeeple, null);
+assert.strictEqual(undoGame.current.id, "U");
+assert.strictEqual(undoGame.rotation, 1);
+assert.strictEqual(undoGame.player, 0);
+assert.ok(!undoGame.board.has("1,0"));
 
 const trapped = createGame(mulberry32(5));
 trapped.board.clear();

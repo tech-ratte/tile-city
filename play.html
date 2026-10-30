@@ -497,6 +497,150 @@
       box-shadow: inset 0 0 0 4px #ff0000, 0 0 20px rgba(255, 0, 0, 0.85);
     }
 
+    .slot.meeple-target {
+      overflow: visible;
+      z-index: 12;
+    }
+
+    .meeple-layer {
+      position: absolute;
+      inset: 0;
+      z-index: 20;
+      pointer-events: none;
+    }
+
+    .meeple-spot {
+      position: absolute;
+      z-index: 21;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 24%;
+      height: 24%;
+      min-width: 18px;
+      min-height: 18px;
+      padding: 0;
+      border: 3.5px solid var(--spot-ring, #fff);
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(12, 18, 28, 0.55);
+      box-shadow: 0 0 0 1.5px #fff, 0 0 12px rgba(0, 0, 0, 0.28);
+      cursor: pointer;
+      pointer-events: auto;
+    }
+
+    .meeple-spot:hover,
+    .meeple-spot:focus-visible {
+      box-shadow: 0 0 0 2px #fff, 0 0 16px rgba(255, 255, 255, 0.4);
+      outline: none;
+    }
+
+    .meeple-spot::after {
+      content: "";
+      display: block;
+      width: 52%;
+      height: 64%;
+      flex: none;
+      background: var(--spot-c, #dff3ff);
+      clip-path: polygon(
+        32% 0, 68% 0, 68% 16%, 90% 30%, 100% 30%, 100% 46%,
+        76% 46%, 74% 58%, 96% 100%, 60% 100%, 50% 74%,
+        40% 100%, 4% 100%, 26% 58%, 24% 46%, 0 46%, 0 30%,
+        10% 30%, 32% 16%
+      );
+      filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.45));
+    }
+
+    .meeple-spot.red { --spot-c: #ff5d78; }
+    .meeple-spot.blue { --spot-c: #49c4ff; }
+    .meeple-spot.green { --spot-c: #3dff9a; }
+    .meeple-spot.yellow { --spot-c: #ffe14a; }
+
+    .meeple-spot.city { --spot-ring: #e03a25; }
+    .meeple-spot.road { --spot-ring: #f0c96e; }
+    .meeple-spot.field { --spot-ring: #7ec22e; }
+    .meeple-spot.monastery { --spot-ring: #f5e6c8; }
+
+    .meeple-spot.field::after {
+      transform: rotate(90deg);
+    }
+
+    .slot .meeple.on-tile {
+      position: absolute;
+      z-index: 8;
+      width: 22%;
+      height: 28%;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+      filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.45));
+    }
+
+    .slot .meeple.on-tile.field-meeple {
+      transform: translate(-50%, -50%) rotate(90deg);
+    }
+
+    .meeple-prompt {
+      position: absolute;
+      left: 50%;
+      bottom: calc(100% + 8px);
+      transform: translateX(-50%);
+      z-index: 22;
+      margin: 0;
+      padding: 4px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(140, 220, 255, 0.35);
+      background: rgba(10, 16, 28, 0.88);
+      color: #c9f6ff;
+      font-size: 12px;
+      letter-spacing: 0.03em;
+      white-space: nowrap;
+      pointer-events: none;
+      text-shadow: 0 0 8px rgba(100, 220, 255, 0.45);
+    }
+
+    #skip-meeple {
+      position: absolute;
+      left: 50%;
+      top: calc(100% + 8px);
+      transform: translateX(-50%);
+      z-index: 22;
+      font: inherit;
+      color: #dfffee;
+      background: rgba(10, 16, 28, 0.88);
+      border: 1px solid rgba(140, 255, 210, 0.45);
+      border-radius: 999px;
+      padding: 6px 18px;
+      cursor: pointer;
+      box-shadow: 0 0 12px rgba(80, 255, 180, 0.12);
+      pointer-events: auto;
+      white-space: nowrap;
+    }
+
+    #skip-meeple:hover { border-color: #d6ff6a; color: #f4ffd2; }
+
+    #undo-place {
+      position: absolute;
+      left: calc(100% + 8px);
+      top: 50%;
+      transform: translateY(-50%);
+      z-index: 22;
+      width: 36px;
+      height: 36px;
+      padding: 0;
+      font: inherit;
+      font-size: 20px;
+      line-height: 1;
+      color: #dfffee;
+      background: rgba(10, 16, 28, 0.88);
+      border: 1px solid rgba(140, 255, 210, 0.45);
+      border-radius: 999px;
+      cursor: pointer;
+      box-shadow: 0 0 12px rgba(80, 255, 180, 0.12);
+      pointer-events: auto;
+    }
+
+    #undo-place:hover { border-color: #d6ff6a; color: #f4ffd2; }
+
     .foot { margin-top: 14px; }
     .foot p { margin: 8px 0 0; }
 
@@ -856,6 +1000,33 @@
         '<div class="rots">' + thumbs + "</div></div>";
     }
 
+    function meepleMarksHTML(tile, pending) {
+      const marks = [];
+      if (tile.meeple) {
+        const fieldClass = tile.meeple.kind === "field" ? " field-meeple" : "";
+        marks.push(
+          '<i class="meeple on-tile ' + tile.meeple.color + fieldClass + '" style="left:' +
+          (tile.meeple.x * 100) + "%;top:" + (tile.meeple.y * 100) + '%" aria-hidden="true"></i>'
+        );
+      }
+      if (!pending) return marks.join("");
+      const color = Carcassonne.PLAYERS[game.pendingMeeple.player].id;
+      const spots = game.meepleSlots().map((slot) =>
+        '<button type="button" class="meeple-spot ' + color + " " + slot.kind +
+        '" data-meeple-slot="' + slot.id + '" style="left:' + (slot.x * 100) +
+        "%;top:" + (slot.y * 100) + '%" aria-label="ミープルを置く"></button>'
+      ).join("");
+      marks.push(
+        '<div class="meeple-layer">' +
+        '<p class="meeple-prompt">印を選択してミープルを置く</p>' +
+        spots +
+        '<button type="button" id="skip-meeple">skip</button>' +
+        '<button type="button" id="undo-place" aria-label="配置をやめる" title="配置をやめる">↩</button>' +
+        "</div>"
+      );
+      return marks.join("");
+    }
+
     function paintSide() {
       const note = document.getElementById("note");
       note.hidden = true;
@@ -868,9 +1039,12 @@
 
     function paintGrid() {
       const bounds = game.bounds(1);
-      const hints = game.hints();
+      const hints = game.pendingMeeple ? { now: [], later: [] } : game.hints();
       const now = new Set(hints.now.map((cell) => cell.x + "," + cell.y));
       const later = new Map(hints.later.map((cell) => [cell.x + "," + cell.y, cell.rots]));
+      const pendingKey = game.pendingMeeple
+        ? game.pendingMeeple.x + "," + game.pendingMeeple.y
+        : null;
       const cols = bounds.maxX - bounds.minX + 1;
       const grid = document.getElementById("grid");
       grid.style.gridTemplateColumns = "repeat(" + cols + ", var(--cell))";
@@ -884,9 +1058,12 @@
           if (tile) {
             const owner = tile.owner ? " owner-" + tile.owner : "";
             const recent = tile.owner && game.lastPlacedBy[tile.owner] === pos ? " recent" : "";
+            const pending = pendingKey === pos;
             parts.push(
-              '<div class="slot filled' + owner + recent + '" data-pos="' + pos + '">' +
-              '<div class="scaler">' + Carcassonne.tileHTML(tile.id, tile.rot) + "</div></div>"
+              '<div class="slot filled' + owner + recent + (pending ? " meeple-target" : "") +
+              '" data-pos="' + pos + '">' +
+              '<div class="scaler">' + Carcassonne.tileHTML(tile.id, tile.rot) + "</div>" +
+              meepleMarksHTML(tile, pending) + "</div>"
             );
             continue;
           }
@@ -970,7 +1147,7 @@
     }
 
     function rotateClockwise() {
-      if (game.finished || !game.current) return;
+      if (game.finished || game.pendingMeeple || !game.current) return;
       game.rotate(1);
       render({ keep: true });
     }
@@ -1039,6 +1216,18 @@
         setBoardZoom(boardZoom - ZOOM_STEP);
         return;
       }
+      if (button.id === "skip-meeple") {
+        if (game.skipMeeple()) render({ keep: true });
+        return;
+      }
+      if (button.id === "undo-place") {
+        if (game.undoPlace()) render({ keep: true });
+        return;
+      }
+      if (button.dataset.meepleSlot) {
+        if (game.placeMeeple(button.dataset.meepleSlot)) render({ keep: true });
+        return;
+      }
       if (button.dataset.rotate != null) {
         rotateClockwise();
         return;
@@ -1073,7 +1262,7 @@
 
     document.addEventListener("contextmenu", (event) => {
       if (!event.target.closest("#scroller")) return;
-      if (game.finished || !game.current) return;
+      if (game.finished || game.pendingMeeple || !game.current) return;
       event.preventDefault();
       rotateClockwise();
     });
@@ -1233,6 +1422,24 @@
       expect(placed.classList.contains("filled"), "東に置いた");
       expect(!!placed.querySelector(".rot-90"), "置いたタイルは90°");
       expect(game.board.get("1,0").id === "U", "盤の東は U");
+      expect(!!game.pendingMeeple, "ミープル配置待ち");
+      expect(document.querySelectorAll(".meeple-spot").length > 0, "ミープルの印がある");
+      expect(!!document.querySelector(".meeple-prompt"), "案内がタイル上にある");
+      expect(!!document.getElementById("skip-meeple"), "skip がタイル下にある");
+      expect(document.getElementById("skip-meeple").closest(".slot.meeple-target") != null, "skip は配置タイル側");
+      expect(!!document.getElementById("undo-place"), "戻るボタンがある");
+      expect(document.querySelector(".meeple-spot").classList.contains("red"), "印はプレイヤカラー");
+      expect(game.player === 0, "ミープル待ちではまだ赤");
+      document.getElementById("undo-place").click();
+      expect(game.pendingMeeple == null, "戻るで配置待ちが終わる");
+      expect(game.current && game.current.id === "U", "戻ると手札のタイルが戻る");
+      expect(!game.board.has("1,0"), "戻ると盤から消える");
+      game.setRotation(1);
+      render();
+      document.querySelector('[data-pos="1,0"]').click();
+      expect(!!game.pendingMeeple, "再配置でミープル待ち");
+      document.getElementById("skip-meeple").click();
+      expect(game.pendingMeeple == null, "skip でミープル待ちが終わる");
       expect(game.player === 1, "次は青");
       game.current = Carcassonne.makeTile("E");
       game.rotation = 2;

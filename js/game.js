@@ -145,7 +145,179 @@
       start: !!tile.start,
       rot: ((rot % 4) + 4) % 4,
       owner: owner || null,
+      meeple: null,
     };
+  }
+
+  // Meeple anchors in catalog orientation (rot 0). Screen y grows downward.
+  // Fields are true regions (not one-per-edge), matching base-game tile art.
+  const MEEPLE_LAYOUTS = {
+    A: [
+      { id: "monastery", kind: "monastery", x: 0.5, y: 0.4 },
+      { id: "road-0", kind: "road", index: 0, x: 0.5, y: 0.78 },
+      { id: "field-0", kind: "field", index: 0, x: 0.78, y: 0.28 },
+    ],
+    B: [
+      { id: "monastery", kind: "monastery", x: 0.5, y: 0.4 },
+      { id: "field-0", kind: "field", index: 0, x: 0.78, y: 0.72 },
+    ],
+    C: [
+      { id: "city-0", kind: "city", index: 0, x: 0.5, y: 0.5 },
+    ],
+    D: [
+      { id: "city-0", kind: "city", index: 0, x: 0.5, y: 0.18 },
+      { id: "road-0", kind: "road", index: 0, x: 0.5, y: 0.5 },
+      // Gap under the city tip joins left/right above the road into one field.
+      { id: "field-0", kind: "field", index: 0, x: 0.2, y: 0.38 },
+      { id: "field-1", kind: "field", index: 1, x: 0.5, y: 0.8 },
+    ],
+    E: [
+      { id: "city-0", kind: "city", index: 0, x: 0.5, y: 0.18 },
+      { id: "field-0", kind: "field", index: 0, x: 0.5, y: 0.68 },
+    ],
+    F: [
+      { id: "city-0", kind: "city", index: 0, x: 0.5, y: 0.5 },
+      { id: "field-0", kind: "field", index: 0, x: 0.5, y: 0.16 },
+      { id: "field-1", kind: "field", index: 1, x: 0.5, y: 0.84 },
+    ],
+    G: [
+      { id: "city-0", kind: "city", index: 0, x: 0.5, y: 0.5 },
+      { id: "field-0", kind: "field", index: 0, x: 0.5, y: 0.16 },
+      { id: "field-1", kind: "field", index: 1, x: 0.5, y: 0.84 },
+    ],
+    H: [
+      { id: "city-0", kind: "city", index: 0, x: 0.5, y: 0.16 },
+      { id: "city-1", kind: "city", index: 1, x: 0.5, y: 0.84 },
+      // East/west grass joins through the middle gap between the two cities.
+      { id: "field-0", kind: "field", index: 0, x: 0.5, y: 0.5 },
+    ],
+    I: [
+      { id: "city-0", kind: "city", index: 0, x: 0.5, y: 0.16 },
+      { id: "city-1", kind: "city", index: 1, x: 0.16, y: 0.5 },
+      { id: "field-0", kind: "field", index: 0, x: 0.72, y: 0.72 },
+    ],
+    J: [
+      { id: "city-0", kind: "city", index: 0, x: 0.5, y: 0.16 },
+      // SE bend: road on the arc, inner field in the SE pocket, large field west.
+      { id: "road-0", kind: "road", index: 0, x: 0.62, y: 0.62 },
+      { id: "field-0", kind: "field", index: 0, x: 0.24, y: 0.42 },
+      { id: "field-1", kind: "field", index: 1, x: 0.84, y: 0.84 },
+    ],
+    K: [
+      { id: "city-0", kind: "city", index: 0, x: 0.5, y: 0.16 },
+      { id: "road-0", kind: "road", index: 0, x: 0.38, y: 0.62 },
+      { id: "field-0", kind: "field", index: 0, x: 0.76, y: 0.42 },
+      { id: "field-1", kind: "field", index: 1, x: 0.16, y: 0.84 },
+    ],
+    L: [
+      { id: "city-0", kind: "city", index: 0, x: 0.5, y: 0.16 },
+      { id: "road-0", kind: "road", index: 0, x: 0.78, y: 0.5 },
+      { id: "road-1", kind: "road", index: 1, x: 0.5, y: 0.78 },
+      { id: "road-2", kind: "road", index: 2, x: 0.22, y: 0.5 },
+      { id: "field-0", kind: "field", index: 0, x: 0.86, y: 0.86 },
+      { id: "field-1", kind: "field", index: 1, x: 0.14, y: 0.86 },
+      // Northern strip field: outer NE pocket (top corners are city).
+      { id: "field-2", kind: "field", index: 2, x: 0.86, y: 0.16 },
+    ],
+    M: [
+      { id: "city-0", kind: "city", index: 0, x: 0.68, y: 0.24 },
+      { id: "field-0", kind: "field", index: 0, x: 0.28, y: 0.72 },
+    ],
+    N: [
+      { id: "city-0", kind: "city", index: 0, x: 0.68, y: 0.24 },
+      { id: "field-0", kind: "field", index: 0, x: 0.28, y: 0.72 },
+    ],
+    O: [
+      { id: "city-0", kind: "city", index: 0, x: 0.28, y: 0.22 },
+      { id: "road-0", kind: "road", index: 0, x: 0.62, y: 0.62 },
+      { id: "field-0", kind: "field", index: 0, x: 0.78, y: 0.28 },
+      { id: "field-1", kind: "field", index: 1, x: 0.84, y: 0.84 },
+    ],
+    P: [
+      { id: "city-0", kind: "city", index: 0, x: 0.28, y: 0.22 },
+      { id: "road-0", kind: "road", index: 0, x: 0.62, y: 0.62 },
+      { id: "field-0", kind: "field", index: 0, x: 0.78, y: 0.28 },
+      { id: "field-1", kind: "field", index: 1, x: 0.84, y: 0.84 },
+    ],
+    Q: [
+      { id: "city-0", kind: "city", index: 0, x: 0.5, y: 0.32 },
+      { id: "field-0", kind: "field", index: 0, x: 0.5, y: 0.82 },
+    ],
+    R: [
+      { id: "city-0", kind: "city", index: 0, x: 0.5, y: 0.32 },
+      { id: "field-0", kind: "field", index: 0, x: 0.5, y: 0.82 },
+    ],
+    S: [
+      { id: "city-0", kind: "city", index: 0, x: 0.5, y: 0.28 },
+      { id: "road-0", kind: "road", index: 0, x: 0.5, y: 0.78 },
+      { id: "field-0", kind: "field", index: 0, x: 0.14, y: 0.86 },
+      { id: "field-1", kind: "field", index: 1, x: 0.86, y: 0.86 },
+    ],
+    T: [
+      { id: "city-0", kind: "city", index: 0, x: 0.5, y: 0.28 },
+      { id: "road-0", kind: "road", index: 0, x: 0.5, y: 0.78 },
+      { id: "field-0", kind: "field", index: 0, x: 0.14, y: 0.86 },
+      { id: "field-1", kind: "field", index: 1, x: 0.86, y: 0.86 },
+    ],
+    U: [
+      { id: "road-0", kind: "road", index: 0, x: 0.5, y: 0.5 },
+      { id: "field-0", kind: "field", index: 0, x: 0.22, y: 0.5 },
+      { id: "field-1", kind: "field", index: 1, x: 0.78, y: 0.5 },
+    ],
+    // Large outer field (N/E) and small field inside the SW curve.
+    V: [
+      { id: "road-0", kind: "road", index: 0, x: 0.38, y: 0.62 },
+      { id: "field-0", kind: "field", index: 0, x: 0.7, y: 0.3 },
+      { id: "field-1", kind: "field", index: 1, x: 0.16, y: 0.84 },
+    ],
+    W: [
+      { id: "road-0", kind: "road", index: 0, x: 0.78, y: 0.5 },
+      { id: "road-1", kind: "road", index: 1, x: 0.5, y: 0.78 },
+      { id: "road-2", kind: "road", index: 2, x: 0.22, y: 0.5 },
+      { id: "field-0", kind: "field", index: 0, x: 0.5, y: 0.14 },
+      { id: "field-1", kind: "field", index: 1, x: 0.86, y: 0.86 },
+      { id: "field-2", kind: "field", index: 2, x: 0.14, y: 0.86 },
+    ],
+    X: [
+      { id: "road-0", kind: "road", index: 0, x: 0.5, y: 0.22 },
+      { id: "road-1", kind: "road", index: 1, x: 0.78, y: 0.5 },
+      { id: "road-2", kind: "road", index: 2, x: 0.5, y: 0.78 },
+      { id: "road-3", kind: "road", index: 3, x: 0.22, y: 0.5 },
+      { id: "field-0", kind: "field", index: 0, x: 0.14, y: 0.14 },
+      { id: "field-1", kind: "field", index: 1, x: 0.86, y: 0.14 },
+      { id: "field-2", kind: "field", index: 2, x: 0.86, y: 0.86 },
+      { id: "field-3", kind: "field", index: 3, x: 0.14, y: 0.86 },
+    ],
+  };
+
+  // Clockwise 90° in screen coordinates (y grows down).
+  function rotatePoint(point, rot) {
+    let x = point.x - 0.5;
+    let y = point.y - 0.5;
+    const turns = ((rot % 4) + 4) % 4;
+    for (let i = 0; i < turns; i++) {
+      const nextX = -y;
+      y = x;
+      x = nextX;
+    }
+    return { x: x + 0.5, y: y + 0.5 };
+  }
+
+  // Candidate meeple spots on a placed tile. Occupied-feature legality is deferred.
+  function listMeepleSlots(tile) {
+    const layout = MEEPLE_LAYOUTS[tile.id];
+    if (!layout) return [];
+    const rot = tile.rot || 0;
+    return layout.map((slot) => {
+      const point = rotatePoint(slot, rot);
+      return {
+        id: slot.id,
+        kind: slot.kind,
+        index: slot.index == null ? null : slot.index,
+        x: point.x,
+        y: point.y,
+      };
+    });
   }
 
   function shuffle(list, random) {
@@ -225,6 +397,7 @@
       this.scores = PLAYERS.map(() => 0);
       this.meeples = PLAYERS.map(() => MEEPLES_EACH);
       this.lastPlacedBy = Object.fromEntries(PLAYERS.map((player) => [player.id, null]));
+      this.pendingMeeple = null;
     }
 
     placedEdges(rot) {
@@ -323,27 +496,90 @@
     }
 
     rotate(delta) {
-      if (this.finished || !this.current) return;
+      if (this.finished || this.pendingMeeple || !this.current) return;
       this.rotation = (this.rotation + (delta % 4) + 4) % 4;
     }
 
     setRotation(rot) {
-      if (this.finished || !this.current) return;
+      if (this.finished || this.pendingMeeple || !this.current) return;
       this.rotation = ((rot % 4) + 4) % 4;
     }
 
     place(x, y) {
-      if (this.finished || !this.current) return false;
+      if (this.finished || this.pendingMeeple || !this.current) return false;
       const edges = rotateEdges(this.current.edges, this.rotation);
       if (!canPlace(this.board, x, y, edges)) return false;
       const key = keyOf(x, y);
       const owner = PLAYERS[this.player].id;
       this.board.set(key, clonePlaced(this.current, this.rotation, owner));
+      const prevLastPlaced = this.lastPlacedBy[owner];
       this.lastPlacedBy[owner] = key;
       this.current = null;
+      this.pendingMeeple = {
+        x: x,
+        y: y,
+        player: this.player,
+        prevLastPlaced: prevLastPlaced,
+      };
+      return true;
+    }
+
+    meepleSlots() {
+      if (!this.pendingMeeple) return [];
+      const tile = this.board.get(keyOf(this.pendingMeeple.x, this.pendingMeeple.y));
+      if (!tile) return [];
+      return listMeepleSlots(tile);
+    }
+
+    placeMeeple(slotId) {
+      if (!this.pendingMeeple) return false;
+      const key = keyOf(this.pendingMeeple.x, this.pendingMeeple.y);
+      const tile = this.board.get(key);
+      if (!tile) return false;
+      const slot = listMeepleSlots(tile).find((item) => item.id === slotId);
+      if (!slot) return false;
+      const player = this.pendingMeeple.player;
+      tile.meeple = {
+        player: player,
+        color: PLAYERS[player].id,
+        slot: slot.id,
+        kind: slot.kind,
+        index: slot.index == null ? null : slot.index,
+        x: slot.x,
+        y: slot.y,
+      };
+      this.meeples[player] = Math.max(0, this.meeples[player] - 1);
+      this.finishMeeplePhase();
+      return true;
+    }
+
+    skipMeeple() {
+      if (!this.pendingMeeple) return false;
+      this.finishMeeplePhase();
+      return true;
+    }
+
+    undoPlace() {
+      if (!this.pendingMeeple) return false;
+      const pending = this.pendingMeeple;
+      const key = keyOf(pending.x, pending.y);
+      const tile = this.board.get(key);
+      if (!tile) return false;
+      this.board.delete(key);
+      this.current = makeTile(tile.id, tile.start);
+      this.rotation = tile.rot;
+      this.player = pending.player;
+      this.lastPlacedBy[PLAYERS[pending.player].id] = pending.prevLastPlaced;
+      this.pendingMeeple = null;
+      this.finished = false;
+      this.note = "";
+      return true;
+    }
+
+    finishMeeplePhase() {
+      this.pendingMeeple = null;
       this.player = (this.player + 1) % PLAYERS.length;
       this.pull();
-      return true;
     }
   }
 
@@ -373,6 +609,8 @@
     boardErrors,
     edgeText,
     tileHTML,
+    listMeepleSlots,
+    MEEPLE_LAYOUTS,
     createGame,
   };
 });
