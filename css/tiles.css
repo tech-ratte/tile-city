@@ -1,0 +1,501 @@
+
+    :root {
+      --field: #7eae46;
+      --road: #f4e5c2;
+      --road-line: #c6ad76;
+      --city: #c44732;
+      --ink: #2c261f;
+      --muted: #6d6458;
+      --paper: #f7f1e6;
+      --card: #fffdf8;
+      --line: #e4d8c4;
+      --s: 120px;
+      --road-w: 16px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at top, #fffaf1, var(--paper) 42%);
+      font-family: "Yu Gothic UI", "Yu Gothic", Meiryo, sans-serif;
+      line-height: 1.55;
+    }
+
+    .wrap {
+      width: min(1080px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 28px 0 64px;
+    }
+
+    header h1 {
+      margin: 0 0 8px;
+      font-size: 28px;
+      letter-spacing: 0.02em;
+    }
+
+    header p, .note, .rules li, figcaption, .demo p {
+      margin: 0;
+    }
+
+    .lead {
+      color: var(--muted);
+      max-width: 46rem;
+    }
+
+    .stats {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin: 16px 0 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .stats li {
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 4px 12px;
+      font-size: 14px;
+    }
+
+    section { margin-top: 36px; }
+
+    h2 {
+      margin: 0 0 8px;
+      font-size: 20px;
+    }
+
+    h3 {
+      margin: 22px 0 8px;
+      font-size: 16px;
+    }
+
+    .note { color: var(--muted); font-size: 14px; max-width: 46rem; }
+
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px 18px;
+      margin-top: 14px;
+      padding: 0;
+      list-style: none;
+    }
+
+    .legend li {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+    }
+
+    .swatch {
+      width: 28px;
+      height: 18px;
+      border-radius: 3px;
+      border: 1px solid rgba(0, 0, 0, 0.18);
+    }
+
+    .swatch.field { background: var(--field); }
+    .swatch.road { background: var(--road); box-shadow: inset 0 0 0 2px var(--road-line); }
+    .swatch.city { background: var(--city); }
+    .swatch.pennant {
+      width: 14px;
+      height: 16px;
+      background: #1f4f8a;
+      border: 0;
+      clip-path: polygon(0 0, 100% 0, 100% 68%, 50% 100%, 0 68%);
+    }
+
+    .demos {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 18px;
+    }
+
+    .demo {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 14px;
+    }
+
+    .demo h3 { margin-top: 0; }
+
+    .ok { color: #1f7a3a; }
+    .bad { color: #a32626; }
+
+    .board {
+      display: grid;
+      width: max-content;
+      margin-top: 10px;
+      background: #67943a;
+      padding: 10px;
+      border-radius: 8px;
+      gap: 0;
+    }
+
+    .board.fit {
+      grid-template-columns: var(--s) var(--s) var(--s);
+      grid-template-rows: var(--s) var(--s) var(--s);
+    }
+
+    .board.stack {
+      grid-template-columns: var(--s);
+      grid-template-rows: var(--s) var(--s);
+    }
+
+    .board.pair {
+      grid-template-columns: var(--s) var(--s);
+    }
+
+    .board.quad {
+      grid-template-columns: var(--s) var(--s);
+      grid-template-rows: var(--s) var(--s);
+    }
+
+    .board.badfit {
+      grid-template-columns: var(--s) var(--s);
+    }
+
+    .corner-box {
+      position: relative;
+      width: 250px;
+      height: 250px;
+      margin-top: 10px;
+      background: #67943a;
+      border-radius: 8px;
+    }
+
+    .corner-box .tile:nth-child(2) {
+      position: absolute;
+      left: 120px;
+      top: 120px;
+    }
+
+    .catalog {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 12px;
+    }
+
+    .card {
+      display: grid;
+      grid-template-columns: var(--s) 1fr;
+      gap: 12px;
+      align-items: center;
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 12px;
+    }
+
+    .meta .id {
+      margin: 0;
+      font-size: 22px;
+      font-weight: 700;
+    }
+
+    .meta .id span {
+      font-size: 16px;
+      font-weight: 600;
+    }
+
+    .meta .name { margin: 2px 0; font-weight: 600; }
+
+    .meta .edges, .meta .extra {
+      margin: 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .badges { display: flex; gap: 6px; margin-top: 6px; }
+
+    .badge {
+      font-size: 12px;
+      border-radius: 999px;
+      padding: 1px 8px;
+      background: #e8eef8;
+      color: #1f4f8a;
+    }
+
+    .badge.start { background: #f8efe0; color: #8a5a12; }
+
+    .rules {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 8px 18px 14px;
+    }
+
+    .rules li { margin: 6px 0; }
+
+    .meeples {
+      display: flex;
+      gap: 18px;
+      padding: 0;
+      list-style: none;
+      margin: 12px 0 0;
+    }
+
+    .meeples li {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .meeple {
+      width: 28px;
+      height: 34px;
+      background: var(--c);
+      clip-path: polygon(
+        32% 0, 68% 0, 68% 16%, 90% 30%, 100% 30%, 100% 46%,
+        76% 46%, 74% 58%, 96% 100%, 60% 100%, 50% 74%,
+        40% 100%, 4% 100%, 26% 58%, 24% 46%, 0 46%, 0 30%,
+        10% 30%, 32% 16%
+      );
+      filter: drop-shadow(0 1px 0 rgba(0, 0, 0, 0.3));
+    }
+
+    .meeple.red { --c: #ff5d78; }
+    .meeple.blue { --c: #49c4ff; }
+    .meeple.green { --c: #3dff9a; }
+    .meeple.yellow { --c: #ffe14a; }
+
+    /* ---- tile ---- */
+    .tile {
+      position: relative;
+      width: var(--s);
+      height: var(--s);
+      background-color: var(--field);
+      background-image:
+        radial-gradient(circle at 22% 28%, rgba(255, 255, 255, 0.18) 0 1.5px, transparent 2px),
+        radial-gradient(circle at 72% 64%, rgba(0, 0, 0, 0.08) 0 1.5px, transparent 2px);
+      overflow: hidden;
+      border-radius: 0;
+      flex: none;
+    }
+
+    .rot-90 { transform: rotate(90deg); }
+    .rot-180 { transform: rotate(180deg); }
+
+    .city {
+      position: absolute;
+      z-index: 3;
+      background-color: var(--city);
+      background-image:
+        radial-gradient(circle at 22% 42%, #f3e2a4 0 1.4px, transparent 1.8px),
+        radial-gradient(circle at 48% 58%, #f3e2a4 0 1.4px, transparent 1.8px),
+        radial-gradient(circle at 70% 36%, #f3e2a4 0 1.4px, transparent 1.8px),
+        repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.08) 0 9px, transparent 9px 16px);
+    }
+
+    /* A city edge is city from corner to corner.
+       The shape turns inward at the corner, so the next edge stays field or road. */
+    .city.cap.n {
+      inset: 0;
+      clip-path: polygon(0 0, 100% 0, 68% 30%, 50% 38%, 32% 30%);
+    }
+
+    .city.cap.s {
+      inset: 0;
+      clip-path: polygon(0 100%, 100% 100%, 68% 70%, 50% 62%, 32% 70%);
+    }
+
+    .city.cap.w {
+      inset: 0;
+      clip-path: polygon(0 0, 30% 32%, 38% 50%, 30% 68%, 0 100%);
+    }
+
+    /* Same full edge as other cities, kept shallow so I's two cities meet only at the corner. */
+    .city.cap.n.gap-w {
+      clip-path: polygon(0 0, 100% 0, 70% 22%, 50% 28%, 30% 22%);
+    }
+
+    .city.cap.w.gap-n {
+      clip-path: polygon(0 0, 22% 30%, 28% 50%, 22% 70%, 0 100%);
+    }
+
+    .city.bar.h {
+      inset: 0;
+      clip-path: polygon(
+        0 0,
+        0 100%,
+        22% 66%,
+        78% 66%,
+        100% 100%,
+        100% 0,
+        78% 34%,
+        22% 34%
+      );
+    }
+
+    .city.elbow.ne {
+      inset: 0;
+      clip-path: polygon(0 0, 100% 0, 100% 100%, 72% 72%, 34% 30%, 0 0);
+    }
+
+    .city.elbow.nw {
+      inset: 0;
+      clip-path: polygon(0 0, 100% 0, 68% 34%, 34% 34%, 34% 68%, 0 100%, 0 0);
+    }
+
+    .city.mouth.s {
+      inset: 0;
+      clip-path: polygon(0 0, 100% 0, 100% 100%, 72% 74%, 50% 60%, 28% 74%, 0 100%, 0 0);
+    }
+
+    .city.fill {
+      inset: 0;
+      clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%);
+    }
+
+    .road {
+      position: absolute;
+      z-index: 2;
+      background: var(--road);
+      box-shadow: 0 0 0 2px var(--road-line);
+    }
+
+    .road.h { left: 0; right: 0; top: calc(50% - 8px); height: var(--road-w); }
+    .road.v { top: 0; bottom: 0; left: calc(50% - 8px); width: var(--road-w); }
+    .road.h-w { left: 0; width: 42%; top: calc(50% - 8px); height: var(--road-w); }
+    .road.h-e { right: 0; width: 42%; top: calc(50% - 8px); height: var(--road-w); }
+    .road.v-n { top: 0; height: 42%; left: calc(50% - 8px); width: var(--road-w); }
+    .road.v-s { bottom: 0; height: 42%; left: calc(50% - 8px); width: var(--road-w); }
+    .road.to-s { top: 40%; bottom: 0; left: calc(50% - 8px); width: var(--road-w); }
+    .road.gate { bottom: 0; height: 38%; left: calc(50% - 8px); width: var(--road-w); }
+
+    .bend {
+      position: absolute;
+      z-index: 2;
+      box-sizing: border-box;
+      border-radius: 50%;
+      background: transparent;
+    }
+
+    .bend.se.edge { width: 140px; height: 140px; left: 50px; top: 50px; border: 20px solid var(--road-line); }
+    .bend.se.line { width: 136px; height: 136px; left: 52px; top: 52px; border: 16px solid var(--road); z-index: 2; }
+    .bend.sw.edge { width: 140px; height: 140px; left: -70px; top: 50px; border: 20px solid var(--road-line); }
+    .bend.sw.line { width: 136px; height: 136px; left: -68px; top: 52px; border: 16px solid var(--road); z-index: 2; }
+
+    .pennant {
+      position: absolute;
+      z-index: 6;
+      width: 14px;
+      height: 16px;
+      background: #1f4f8a;
+      clip-path: polygon(0 0, 100% 0, 100% 68%, 50% 100%, 0 68%);
+    }
+
+    .pennant::before {
+      content: "";
+      position: absolute;
+      left: 2px; right: 2px; top: 2px;
+      height: 6px;
+      background: #f7f4ea;
+    }
+
+    .p-c { left: 64%; top: 26%; }
+    .p-bar { left: calc(50% - 7px); top: calc(50% - 8px); }
+    .p-ne { right: 16px; top: 12px; }
+    .p-nw { left: 12px; top: 12px; }
+    .p-u { left: calc(50% - 7px); top: 14px; }
+
+    .keep {
+      position: absolute;
+      z-index: 4;
+      left: 50%;
+      top: 48%;
+      width: 16px;
+      height: 26px;
+      transform: translate(-50%, -50%);
+      background: #ece6da;
+      border: 2px solid #5c5348;
+    }
+
+    .keep::before {
+      content: "";
+      position: absolute;
+      left: -5px; right: -5px; top: -9px;
+      height: 9px;
+      background: #6d342c;
+      clip-path: polygon(0 100%, 50% 0, 100% 100%);
+    }
+
+    .monastery {
+      position: absolute;
+      z-index: 5;
+      left: 50%;
+      top: 42%;
+      width: 36px;
+      transform: translate(-50%, -50%);
+    }
+
+    .monastery .cross {
+      position: absolute;
+      left: 50%;
+      top: 0;
+      width: 2px;
+      height: 8px;
+      background: #f3efe4;
+      transform: translate(-50%, -7px);
+    }
+
+    .monastery .cross::after {
+      content: "";
+      position: absolute;
+      left: -3px;
+      top: 2px;
+      width: 8px;
+      height: 2px;
+      background: #f3efe4;
+    }
+
+    .monastery .roof {
+      display: block;
+      width: 0;
+      height: 0;
+      margin: 0 auto;
+      border-left: 16px solid transparent;
+      border-right: 16px solid transparent;
+      border-bottom: 12px solid #7c2f2a;
+    }
+
+    .monastery .body {
+      display: block;
+      width: 24px;
+      height: 14px;
+      margin: -1px auto 0;
+      background: #f4efe4;
+      border: 2px solid #5c4636;
+    }
+
+    .monastery .body::after {
+      content: "";
+      display: block;
+      width: 4px;
+      height: 7px;
+      margin: 5px auto 0;
+      background: #6b3a2a;
+    }
+
+    .village {
+      position: absolute;
+      z-index: 5;
+      left: 50%;
+      top: 50%;
+      width: 20px;
+      height: 20px;
+      transform: translate(-50%, -50%);
+      background:
+        linear-gradient(#f0d78a, #f0d78a) center 4px / 8px 5px no-repeat,
+        #8a4632;
+      border: 2px solid #f6edd8;
+      border-radius: 3px;
+    }
+
+.rot-270 { transform: rotate(270deg); }

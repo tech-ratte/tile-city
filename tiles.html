@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>カルカソンヌ 基本セット タイル見本</title>
+  <link rel="stylesheet" href="css/tiles.css">
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>カルカソンヌ 基本セット タイル見本</h1>
+      <p class="lead"><a href="play.html">配置はこちら</a>で試せます。このページはタイルの見本です。出版社の絵は使っていません。辺の端から端で都市・道・草原が一致するか、都市がタイルの中でつながるか、道がどこで止まるか、旗の有無、枚数が公式の72枚と一致するように描いています。</p>
+      <ul class="stats">
+        <li>24種類</li>
+        <li>72枚</li>
+        <li>旗 10</li>
+        <li>スタートは D の1枚</li>
+        <li>川・拡張は入れない</li>
+      </ul>
+    </header>
+
+    <section>
+      <h2>色の意味</h2>
+      <p class="note">接続は辺の端から端で見ます。接した辺の上にある地形が、向かいの辺とすべて同じ並びになります。都市の辺は端から端まで都市です。その角から内側に切るので、隣の辺は草原か道です。角だけが隣のタイルに触れていても、地形はつながりません。</p>
+      <ul class="legend">
+        <li><i class="swatch field"></i>草原</li>
+        <li><i class="swatch road"></i>道</li>
+        <li><i class="swatch city"></i>都市</li>
+        <li><i class="swatch pennant"></i>旗（紋章）</li>
+        <li><i class="meeple red"></i>ミープル案（この段階では置かない）</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>並べたときに合うか</h2>
+      <div class="demos">
+        <article class="demo">
+          <h3 class="ok">置ける</h3>
+          <p>中央がスタートと同じ D。北の辺は端から端まで都市で、180度回した E の都市と一致する。東の辺は上の草原・中央の道・下の草原で、90度回した U と一致する。南の辺は端から端まで草原で、V の北の草原と一致する。</p>
+          <div class="board fit">
+            <div class="tile rot-180" style="grid-column: 2; grid-row: 1" aria-label="Eを180度回転">
+              <i class="city cap n"></i>
+            </div>
+            <div class="tile" style="grid-column: 2; grid-row: 2" aria-label="D">
+              <i class="city cap n"></i>
+              <i class="road h"></i>
+            </div>
+            <div class="tile rot-90" style="grid-column: 3; grid-row: 2" aria-label="Uを90度回転">
+              <i class="road v"></i>
+            </div>
+            <div class="tile" style="grid-column: 2; grid-row: 3" aria-label="V">
+              <i class="bend sw edge"></i>
+              <i class="bend sw line"></i>
+            </div>
+          </div>
+        </article>
+
+        <article class="demo">
+          <h3 class="bad">置けない（辺が一致しない）</h3>
+          <p>D の東は道、回転していない E の西は草原。1辺でも違えば置けない。</p>
+          <div class="board badfit">
+            <div class="tile" aria-label="D">
+              <i class="city cap n"></i>
+              <i class="road h"></i>
+            </div>
+            <div class="tile" aria-label="E">
+              <i class="city cap n"></i>
+            </div>
+          </div>
+        </article>
+
+        <article class="demo">
+          <h3 class="bad">置けない（角だけ）</h3>
+          <p>角と角だけが触れる置き方は、辺が接していないので不可。斜めの都市や道は、この接触ではつながらない。</p>
+          <div class="corner-box">
+            <div class="tile" aria-label="D">
+              <i class="city cap n"></i>
+              <i class="road h"></i>
+            </div>
+            <div class="tile" aria-label="E">
+              <i class="city cap n"></i>
+            </div>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section>
+      <h2>I の二つの都市</h2>
+      <p class="note">I には都市が二つあります。北の辺と西の辺は、ほかの都市と同じく端から端まで都市です。東と南は草原です。二つの都市は北西の角の一点を共有します。一つの都市になるのは、辺が端から端まで接したときです。</p>
+      <div class="demos">
+        <article class="demo">
+          <h3 class="ok">北の都市につながる</h3>
+          <p>上の E を180度回すと、南の辺が都市になります。I の北の辺とその並びが一致し、一つの都市になります。I の西の都市は、この都市には入りません。</p>
+          <div class="board stack">
+            <div class="tile rot-180" aria-label="Eを180度回転">
+              <i class="city cap n"></i>
+            </div>
+            <div class="tile" aria-label="I">
+              <i class="city cap n gap-w"></i>
+              <i class="city cap w gap-n"></i>
+            </div>
+          </div>
+        </article>
+
+        <article class="demo">
+          <h3 class="ok">西の都市につながる</h3>
+          <p>左の E を90度回すと、東の辺が都市になります。I の西の辺とその並びが一致し、一つの都市になります。I の北の都市は、この都市には入りません。</p>
+          <div class="board pair">
+            <div class="tile rot-90" aria-label="Eを90度回転">
+              <i class="city cap n"></i>
+            </div>
+            <div class="tile" aria-label="I">
+              <i class="city cap n gap-w"></i>
+              <i class="city cap w gap-n"></i>
+            </div>
+          </div>
+        </article>
+
+        <article class="demo">
+          <h3 class="ok">二つは別の都市のまま</h3>
+          <p>北と西に同時に都市を付けても、I の中の草原で分かれたままです。左上の二つの E は角で接するだけなので、そこでも都市は一つになりません。</p>
+          <div class="board quad">
+            <div></div>
+            <div class="tile rot-180" aria-label="Eを180度回転">
+              <i class="city cap n"></i>
+            </div>
+            <div class="tile rot-90" aria-label="Eを90度回転">
+              <i class="city cap n"></i>
+            </div>
+            <div class="tile" aria-label="I">
+              <i class="city cap n gap-w"></i>
+              <i class="city cap w gap-n"></i>
+            </div>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section>
+      <h2>A〜X（ルールシートと同じ記号と枚数）</h2>
+      <p class="note">向きは、北を上にした基準です。ゲーム中は90度単位で回します。裏返して鏡像にはしません。J と K は回しても同じタイルになりません。羊や家の絵柄差は種類に数えません。旗の有無だけ枚数を分けています。</p>
+
+      <div class="catalog">
+        <article class="card">
+          <div class="tile" data-id="A" data-count="2" data-edges="F,F,R,F" data-roads="S" data-monastery="1">
+            <i class="road to-s"></i>
+            <span class="monastery"><i class="cross"></i><i class="roof"></i><i class="body"></i></span>
+          </div>
+          <div class="meta">
+            <p class="id">A <span>×2</span></p>
+            <p class="name">修道院と道</p>
+            <p class="edges">北 草原 · 東 草原 · 南 道 · 西 草原</p>
+            <p class="extra">道は修道院で終わる。道の左右で草原は2つ。</p>
+          </div>
+        </article>
+
+        <article class="card">
+          <div class="tile" data-id="B" data-count="4" data-edges="F,F,F,F" data-monastery="1">
+            <span class="monastery"><i class="cross"></i><i class="roof"></i><i class="body"></i></span>
+          </div>
+          <div class="meta">
+            <p class="id">B <span>×4</span></p>
+            <p class="name">修道院</p>
+            <p class="edges">四辺とも草原</p>
+            <p class="extra">草原は1つ。修道院は道や都市とはつながらない。</p>
+          </div>
+        </article>
+
+        <article class="card">
+          <div class="tile" data-id="C" data-count="1" data-edges="C,C,C,C" data-cities="N+E+S+W*">
+            <i class="city fill"></i>
+            <i class="keep"></i>
+            <i class="pennant p-c" title="旗"></i>
+          </div>
+          <div class="meta">
+            <p class="id">C <span>×1</span></p>
+            <p class="name">四辺が都市</p>
+            <p class="edges">四辺とも都市。中では1つの都市。</p>
+            <div class="badges"><span class="badge">旗</span></div>
+          </div>
+        </article>
+
+        <article class="card">
+          <div class="tile" data-id="D" data-count="4" data-edges="C,R,F,R" data-cities="N" data-roads="E-W" data-start="1">
+            <i class="city cap n"></i>
+            <i class="road h"></i>
+          </div>
+          <div class="meta">
+            <p class="id">D <span>×4</span></p>
+            <p class="name">都市と直線の道</p>
+            <p class="edges">北 都市 · 東 道 · 南 草原 · 西 道</p>
+            <p class="extra">都市は北の辺を端から端まで覆う。東と西の辺は道で、都市はそこへ続かない。道は都市に触れない。草原は道の北と南で2つ。</p>
+            <div class="badges"><span class="badge start">1枚がスタート</span></div>
+          </div>
+        </article>
+
+        <article class="card">
+          <div class="tile" data-id="E" data-count="5" data-edges="C,F,F,F" data-cities="N">
+            <i class="city cap n"></i>
+          </div>
+          <div class="meta">
+            <p class="id">E <span>×5</span></p>
+            <p class="name">一方だけの都市</p>
+            <p class="edges">北 都市 · ほか3辺は草原</p>
+            <p class="extra">草原は1つ。</p>
+          </div>
+        </article>
+
+        <article class="card">
+          <div class="tile" data-id="F" data-count="2" data-edges="F,C,F,C" data-cities="E+W*">
+            <i class="city bar h"></i>
+            <i class="pennant p-bar" title="旗"></i>
+          </div>
+          <div class="meta">
+            <p class="id">F <span>×2</span></p>
+            <p class="name">向かいの都市がつながる</p>
+            <p class="edges">東 都市 · 西 都市 · 北 草原 · 南 草原</p>
+            <p class="extra">都市は1本。草原は上下で分かれる。</p>
+            <div class="badges"><span class="badge">旗</span></div>
+          </div>
+        </article>
+
+        <article class="card">
+          <div class="tile" data-id="G" data-count="1" data-edges="F,C,F,C" data-cities="E+W">
+            <i class="city bar h"></i>
+          </div>
+          <div class="meta">
+            <p class="id">G <span>×1</span></p>
+            <p class="name">向かいの都市がつながる</p>
+            <p class="edges">F と同じ地形。旗はない。</p>
+          </div>
+        </article>
+
+        <article class="card">
+          <div class="tile" data-id="H" data-count="3" data-edges="C,F,C,F" data-cities="N,S">
+            <i class="city cap n"></i>
+            <i class="city cap s"></i>
+          </div>
+          <div class="meta">
+            <p class="id">H <span>×3</span></p>
+            <p class="name">向かいの都市が分かれる</p>
+            <p class="edges">北 都市 · 南 都市 · 東 草原 · 西 草原</p>
+            <p class="extra">都市は2つ。間の草原は1つで、東西の辺につながる。</p>
+          </div>
+        </article>
+
+        <article class="card">
+          <div class="tile" data-id="I" data-count="2" data-edges="C,F,F,C" data-cities="N,W">
+            <i class="city cap n gap-w"></i>
+            <i class="city cap w gap-n"></i>
+          </div>
+          <div class="meta">
+            <p class="id">I <span>×2</span></p>
+            <p class="name">隣の都市が分かれる</p>
+            <p class="edges">北 都市 · 西 都市 · 東 草原 · 南 草原</p>
+            <p class="extra">北と西は端から端まで都市で、ほかの都市辺とつながる。二つの都市は角の一点を共有し、辺では分かれている。</p>
+          </div>
+        </article>
+
+        <article class="card">
+          <div class="tile" data-id="J" data-count="3" data-edges="C,R,R,F" data-cities="N" data-roads="E-S">
+            <i class="city cap n"></i>
+            <i class="bend se edge"></i>
+            <i class="bend se line"></i>
+          </div>
+          <div class="meta">
+            <p class="id">J <span>×3</span></p>
+            <p class="name">都市と右のカーブ</p>
+            <p class="edges">北 都市 · 東 道 · 南 道 · 西 草原</p>
+            <p class="extra">道は1本。K の鏡像で、回転では K にならない。</p>
+          </div>
+        </article>
+
+        <article class="card">
+          <div class="tile" data-id="K" data-count="3" data-edges="C,F,R,R" data-cities="N" data-roads="S-W">
+            <i class="city cap n"></i>
+            <i class="bend sw edge"></i>
+            <i class="bend sw line"></i>
+          </div>
+          <div class="meta">
+            <p class="id">K <span>×3</span></p>
+            <p class="name">都市と左のカーブ</p>
+            <p class="edges">北 都市 · 東 草原 · 南 道 · 西 道</p>
+            <p class="extra">道は1本。</p>
+          </div>
+        </article>
+
+        <article class="card">
+          <div class="tile" data-id="L" data-count="3" data-edges="C,R,R,R" data-cities="N" data-roads="E|S|W">
+            <i class="city cap n"></i>
+            <i class="road h-e"></i>
+            <i class="road h-w"></i>
+            <i class="road v-s"></i>
+            <i class="village"></i>
+          </div>
+          <div class="meta">
+            <p class="id">L <span>×3</span></p>
+            <p class="name">都市と三叉路</p>
+            <p class="edges">北 都市 · 東 道 · 南 道 · 西 道</p>
+            <p class="extra">中央で道は3本に分かれて終わる。東西は突き抜けない。</p>
+          </div>
+        </article>
+
+        <article class="card">
+          <div class="tile" data-id="M" data-count="2" data-edges="C,C,F,F" data-cities="N+E*">
+            <i class="city elbow ne"></i>
+            <i class="pennant p-ne" title="旗"></i>
+          </div>
+          <div class="meta">
+            <p class="id">M <span>×2</span></p>
+            <p class="name">角の都市</p>
+            <p class="edges">北 都市 · 東 都市 · 南 草原 · 西 草原</p>
+            <p class="extra">北と東は1つの都市。I とは逆で、角を通ってつながる。</p>
+            <div class="badges"><span class="badge">旗</span></div>
+          </div>
+        </article>
+
+        <article class="card">
+          <div class="tile" data-id="N" data-count="3" data-edges="C,C,F,F" data-cities="N+E">
+            <i class="city elbow ne"></i>
+          </div>
+          <div class="meta">
+            <p class="id">N <span>×3</span></p>
+            <p class="name">角の都市</p>
+            <p class="edges">M と同じ地形。旗はない。</p>
+          </div>
+        </article>
+
+        <article class="card">
+          <div class="tile" data-id="O" data-count="2" data-edges="C,R,R,C" data-cities="N+W*" data-roads="E-S">
+            <i class="city elbow nw"></i>
+            <i class="bend se edge"></i>
+            <i class="bend se line"></i>
+            <i class="pennant p-nw" title="旗"></i>
+          </div>
+          <div class="meta">
+            <p class="id">O <span>×2</span></p>
+            <p class="name">角の都市と道</p>
+            <p class="edges">北 都市 · 東 道 · 南 道 · 西 都市</p>
+            <p class="extra">都市は左上で1つ。道は右下のカーブ1本。</p>
+            <div class="badges"><span class="badge">旗</span></div>
+          </div>
+        </article>
+
+        <article class="card">
+          <div class="tile" data-id="P" data-count="3" data-edges="C,R,R,C" data-cities="N+W" data-roads="E-S">
+            <i class="city elbow nw"></i>
+            <i class="bend se edge"></i>
+            <i class="bend se line"></i>
+          </div>
+          <div class="meta">
+            <p class="id">P <span>×3</span></p>
+            <p class="name">角の都市と道</p>
+            <p class="edges">O と同じ地形。旗はない。</p>
+          </div>
+        </article>
+
+        <article class="card">
+          <div class="tile" data-id="Q" data-count="1" data-edges="C,C,F,C" data-cities="N+E+W*">
+            <i class="city mouth s"></i>
+            <i class="pennant p-u" title="旗"></i>
+          </div>
+          <div class="meta">
+            <p class="id">Q <span>×1</span></p>
+            <p class="name">三方が都市</p>
+            <p class="edges">北 都市 · 東 都市 · 南 草原 · 西 都市</p>
+            <p class="extra">都市は1つ。開口部の草原は1つ。</p>
+            <div class="badges"><span class="badge">旗</span></div>
+          </div>
+        </article>
+
+        <article class="card">
+          <div class="tile" data-id="R" data-count="3" data-edges="C,C,F,C" data-cities="N+E+W">
+            <i class="city mouth s"></i>
+          </div>
+          <div class="meta">
+            <p class="id">R <span>×3</span></p>
+            <p class="name">三方が都市</p>
+            <p class="edges">Q と同じ地形。旗はない。</p>
+          </div>
+        </article>
+
+        <article class="card">
+          <div class="tile" data-id="S" data-count="2" data-edges="C,C,R,C" data-cities="N+E+W*" data-roads="S">
+            <i class="city mouth s"></i>
+            <i class="road gate"></i>
+            <i class="pennant p-u" title="旗"></i>
+          </div>
+          <div class="meta">
+            <p class="id">S <span>×2</span></p>
+            <p class="name">三方の都市と入口の道</p>
+            <p class="edges">北 都市 · 東 都市 · 南 道 · 西 都市</p>
+            <p class="extra">道は都市の入口で終わる。草原は道の左右で2つ。</p>
+            <div class="badges"><span class="badge">旗</span></div>
+          </div>
+        </article>
+
+        <article class="card">
+          <div class="tile" data-id="T" data-count="1" data-edges="C,C,R,C" data-cities="N+E+W" data-roads="S">
+            <i class="city mouth s"></i>
+            <i class="road gate"></i>
+          </div>
+          <div class="meta">
+            <p class="id">T <span>×1</span></p>
+            <p class="name">三方の都市と入口の道</p>
+            <p class="edges">S と同じ地形。旗はない。</p>
+          </div>
+        </article>
+
+        <article class="card">
+          <div class="tile" data-id="U" data-count="8" data-edges="R,F,R,F" data-roads="N-S">
+            <i class="road v"></i>
+          </div>
+          <div class="meta">
+            <p class="id">U <span>×8</span></p>
+            <p class="name">直線の道</p>
+            <p class="edges">北 道 · 南 道 · 東 草原 · 西 草原</p>
+            <p class="extra">道は1本。草原は左右で2つ。</p>
+          </div>
+        </article>
+
+        <article class="card">
+          <div class="tile" data-id="V" data-count="9" data-edges="F,F,R,R" data-roads="S-W">
+            <i class="bend sw edge"></i>
+            <i class="bend sw line"></i>
+          </div>
+          <div class="meta">
+            <p class="id">V <span>×9</span></p>
+            <p class="name">カーブ</p>
+            <p class="edges">北 草原 · 東 草原 · 南 道 · 西 道</p>
+            <p class="extra">道は1本。内側の草原と外側の草原は別。</p>
+          </div>
+        </article>
+
+        <article class="card">
+          <div class="tile" data-id="W" data-count="4" data-edges="F,R,R,R" data-roads="E|S|W">
+            <i class="road h-e"></i>
+            <i class="road h-w"></i>
+            <i class="road v-s"></i>
+            <i class="village"></i>
+          </div>
+          <div class="meta">
+            <p class="id">W <span>×4</span></p>
+            <p class="name">三叉路</p>
+            <p class="edges">北 草原 · 東 道 · 南 道 · 西 道</p>
+            <p class="extra">道は3本。中央の集落でそれぞれ終わる。</p>
+          </div>
+        </article>
+
+        <article class="card">
+          <div class="tile" data-id="X" data-count="1" data-edges="R,R,R,R" data-roads="N|E|S|W">
+            <i class="road v-n"></i>
+            <i class="road h-e"></i>
+            <i class="road v-s"></i>
+            <i class="road h-w"></i>
+            <i class="village"></i>
+          </div>
+          <div class="meta">
+            <p class="id">X <span>×1</span></p>
+            <p class="name">十字路</p>
+            <p class="edges">四辺とも道</p>
+            <p class="extra">道は4本。十字に突き抜けない。草原は4つの角。</p>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section>
+      <h2>ミープルのマーク案</h2>
+      <p class="note">4人固定。基本セットの5色のうち赤・青・緑・黄を使い、黒は余らせます。この見本では盤に置きません。マークは単色のミープル型で、顔や服の描き込みはありません。</p>
+      <ul class="meeples">
+        <li><i class="meeple red"></i>赤</li>
+        <li><i class="meeple blue"></i>青</li>
+        <li><i class="meeple green"></i>緑</li>
+        <li><i class="meeple yellow"></i>黄</li>
+      </ul>
+    </section>
+
+    <section class="rules">
+      <h2>配置で実装するルール</h2>
+      <ul>
+        <li>開始時、D のうち裏面指定の1枚だけを中央に表で置く。残り71枚をシャッフルして山札にする。</li>
+        <li>手番では山札から1枚を全員に見える状態で出し、90度単位で回してから置く。置いたタイルは動かさない。</li>
+        <li>新しいタイルは、既存のタイルと少なくとも1辺を接する。角だけが触れるマスには置けない。</li>
+        <li>接したすべての辺で、端から端までの地形が一致する。都市は都市、道は道、草原は草原。その並びが辺の端まで同じである。</li>
+        <li>空いている辺は制約にしない。2〜4辺が接するときは、接している辺をすべて満たす。</li>
+        <li>盤の大きさは固定しない。上下左右に広がる。</li>
+        <li>4回転のすべてで置けるマスが無いタイルは、ゲームから除外して引き直す。手番は消費しない。</li>
+        <li>この段階ではミープルを置かず、点数も計算しない。スタートの1枚のあと、山札の71枚を4人の手番で置き切るところまで。</li>
+      </ul>
+      <p class="note">枚数の出典はメビウスゲームズのルールシート（A×2 から X×1、合計72）と、同じ内訳の現行基本ルール。辺の地形は、その記号順のタイル（A 修道院と道、D 都市と直線の道、X 十字路）に合わせています。旗は C1・F2・M2・O2・Q1・S2 の10枚です。</p>
+    </section>
+  </div>
+</body>
+</html>
