@@ -10,6 +10,7 @@ import {
 
 const t = (key) => TileCityI18n.t(key);
 const playSound = (name) => TileCityAudio.playSound(name);
+const playMeepleSound = (color) => TileCityAudio.playMeepleSound(color);
 
 function scoresGained(before) {
   return game.scores.some((score, index) => score > (before[index] || 0));
@@ -18,8 +19,11 @@ const ZOOM_MIN = 0.35;
 const ZOOM_MAX = 1.6;
 const ZOOM_STEP = 0.05;
 const ZOOM_WHEEL = 0.025;
+const LEAVE_FX_MS = 2000;
 const TILE_TOTAL = Carcassonne.TYPES.reduce((sum, type) => sum + type.count, 0);
 let exitConfirmOpen = false;
+let leaveFxTimer = null;
+let endFanfareStarted = false;
 
 function loadRoster() {
   return loadRosterFromStorage(Carcassonne);
@@ -69,6 +73,7 @@ let game = saved ? saved.game : Carcassonne.createGame(undefined, roster);
 let pan = null;
 let skipClick = false;
 let boardZoom = 0.8;
+endFanfareStarted = !!game.finished;
 window.__game = game;
 
 function zoomPercent() {
@@ -251,20 +256,21 @@ function footHTML() {
   return '<button type="button" class="exit-chip js-exit">' + t("exit") + "</button>";
 }
 
+function meeplePinHTML(pin, leaving) {
+  const fieldClass = pin.kind === "field" ? " field-meeple" : "";
+  const earned = pin.earned
+    ? '<span class="meeple-earned">+' + pin.earned + "</span>"
+    : "";
+  return '<span class="meeple-pin' + (leaving ? " leaving" : "") +
+    '" style="left:' + (pin.x * 100) + "%;top:" + (pin.y * 100) + '%">' +
+    '<i class="meeple on-tile ' + pin.color + fieldClass + '" aria-hidden="true"></i>' +
+    earned + "</span>";
+}
+
 function meepleMarksHTML(tile, pending) {
   const marks = [];
-  if (tile.meeple) {
-    const fieldClass = tile.meeple.kind === "field" ? " field-meeple" : "";
-    const earned = tile.meeple.earned
-      ? '<span class="meeple-earned">+' + tile.meeple.earned + "</span>"
-      : "";
-    marks.push(
-      '<span class="meeple-pin" style="left:' + (tile.meeple.x * 100) + "%;top:" +
-      (tile.meeple.y * 100) + '%">' +
-      '<i class="meeple on-tile ' + tile.meeple.color + fieldClass + '" aria-hidden="true"></i>' +
-      earned + "</span>"
-    );
-  }
+  if (tile.meeple) marks.push(meeplePinHTML(tile.meeple, false));
+  if (tile.leaveFx) marks.push(meeplePinHTML(tile.leaveFx, true));
   if (!pending) return marks.join("");
   const color = game.players[game.pendingMeeple.player].id;
   const slots = game.meepleSlots();
@@ -494,6 +500,54 @@ function rotateClockwise() {
   render({ keep: true });
 }
 
+function applyHandRotation(button) {
+  if (!button) return false;
+  if (button.dataset.rotate != null) {
+    rotateClockwise();
+    return true;
+  }
+  if (button.dataset.setRot != null) {
+    game.setRotation(Number(button.dataset.setRot));
+    render({ keep: true });
+    return true;
+  }
+  return false;
+}
+
+function firstPlaceColors() {
+  const order = game.standings || [];
+  if (!order.length) return [];
+  const top = game.scores[order[0]];
+  const colors = [];
+  for (const index of order) {
+    if (game.scores[index] !== top) break;
+    colors.push(game.players[index].id);
+  }
+  return colors;
+}
+
+function armLeaveFxClear() {
+  let has = false;
+  for (const tile of game.board.values()) {
+    if (tile.leaveFx) {
+      has = true;
+      break;
+    }
+  }
+  if (!has) return;
+  clearTimeout(leaveFxTimer);
+  leaveFxTimer = setTimeout(() => {
+    for (const tile of game.board.values()) tile.leaveFx = null;
+    document.querySelectorAll(".meeple-pin.leaving").forEach((el) => el.remove());
+  }, LEAVE_FX_MS);
+}
+
+function maybePlayEndFanfare() {
+  if (!game.finished || endFanfareStarted) return;
+  endFanfareStarted = true;
+  void TileCityAudio.playEndFanfare(firstPlaceColors());
+}
+
 function render(opts) {
   opts = opts || {};
   game.reconcileHand();
@@ -501,6 +555,8 @@ function render(opts) {
   paintSide();
   paintGrid();
   persistGame();
+  armLeaveFxClear();
+  maybePlayEndFanfare();
   if (opts.center) requestAnimationFrame(() => centerOn(opts.center));
   else if (anchor) restoreAnchor(anchor);
 }
@@ -538,6 +594,17 @@ document.addEventListener("mouseup", () => {
   }
   pan = null;
   scroller().classList.remove("dragging");
+});
+
+// Touch/pen: rotate on pointerdown so rapid taps are not lost when the hand
+// DOM is replaced mid-gesture (click would fire too late / on a dead node).
+document.addEventListener("pointerdown", (event) => {
+  if (event.pointerType !== "touch" && event.pointerType !== "pen") return;
+  if (event.button !== 0 && event.button !== -1) return;
+  const button = event.target.closest("button[data-rotate], button[data-set-rot]");
+  if (!button) return;
+  event.preventDefault();
+  applyHandRotation(button);
 });
 
 document.addEventListener("click", (event) => {
@@ -610,21 +677,15 @@ document.addEventListener("click", (event) => {
   }
   if (button.dataset.meepleSlot) {
     const before = game.scores.slice();
+    const color = game.players[game.pendingMeeple.player].id;
     if (game.placeMeeple(button.dataset.meepleSlot)) {
+      playMeepleSound(color);
       if (scoresGained(before)) playSound("point");
       render({ keep: true });
     }
     return;
   }
-  if (button.dataset.rotate != null) {
-    rotateClockwise();
-    return;
-  }
-  if (button.dataset.setRot != null) {
-    game.setRotation(Number(button.dataset.setRot));
-    render({ keep: true });
-    return;
-  }
+  if (applyHandRotation(button)) return;
   if (button.dataset.place) {
     const parts = button.dataset.place.split(",").map(Number);
     if (game.place(parts[0], parts[1])) {

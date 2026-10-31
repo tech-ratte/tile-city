@@ -487,6 +487,8 @@ assert.strictEqual(MEEPLES_EACH, 7);
   assert.strictEqual(game.scores[1], 8);
   assert.strictEqual(game.board.get("0,0").meeple, null);
   assert.strictEqual(game.board.get("-1,0").meeple, null);
+  assert.strictEqual(game.board.get("0,0").leaveFx.earned, 8);
+  assert.strictEqual(game.board.get("-1,0").leaveFx.earned, 8);
 }
 
 // End-game: incomplete road/city/monastery + field (3 per completed city) + meeple tiebreak.

@@ -63,7 +63,17 @@ export function returnMeepleFromTile(game, tile, kind, index) {
   if (kind === "road" || kind === "city" || kind === "field") {
     if (tile.meeple.index !== index) return false;
   }
-  game.meeples[tile.meeple.player] += 1;
+  const meeple = tile.meeple;
+  game.meeples[meeple.player] += 1;
+  // Keep a short-lived visual so the UI can fade meeple + score out.
+  tile.leaveFx = {
+    color: meeple.color,
+    kind: meeple.kind,
+    x: meeple.x,
+    y: meeple.y,
+    earned: meeple.earned || 0,
+    at: Date.now(),
+  };
   tile.meeple = null;
   return true;
 }
@@ -100,7 +110,8 @@ export function scoreFeature(game, kind, parts, points, options) {
   );
   if (winners.length && points > 0) {
     awardPoints(game, winners, points);
-    if (!opts.returnMeeples) labelMeepleEarnings(game.board, kind, parts, winners, points);
+    // Label before return so mid-game leaveFx can show the earned points.
+    labelMeepleEarnings(game.board, kind, parts, winners, points);
   }
   if (opts.returnMeeples) return returnMeeplesOnFeature(game, kind, parts);
   return 0;

@@ -3,8 +3,19 @@
   var VOLUME_KEY = "tile-city-volume";
   var SOUNDS = {
     tile: "assets/sound/tile.mp3",
-    point: "assets/sound/point.mp3"
+    point: "assets/sound/point.mp3",
+    clear: "assets/sound/clear.mp3"
   };
+  var MEEPLE_COLORS = [
+    "red",
+    "blue",
+    "green",
+    "yellow",
+    "orange",
+    "purple",
+    "white",
+    "brown"
+  ];
   function loadVolume() {
     try {
       const raw = localStorage.getItem(VOLUME_KEY);
@@ -28,10 +39,8 @@
     }
     syncVolumeInputs();
   }
-  function playSound(name) {
-    if (!(volume > 0)) return;
-    const src = SOUNDS[name];
-    if (!src) return;
+  function playSrc(src) {
+    if (!(volume > 0) || !src) return;
     try {
       const audio = new Audio(src);
       audio.volume = volume;
@@ -39,6 +48,45 @@
       });
     } catch (err) {
     }
+  }
+  function playSrcAsync(src) {
+    return new Promise((resolve) => {
+      if (!(volume > 0) || !src) {
+        resolve();
+        return;
+      }
+      try {
+        const audio = new Audio(src);
+        audio.volume = volume;
+        const done = () => resolve();
+        audio.addEventListener("ended", done, { once: true });
+        audio.addEventListener("error", done, { once: true });
+        void audio.play().catch(() => resolve());
+      } catch (err) {
+        resolve();
+      }
+    });
+  }
+  function playSound(name) {
+    playSrc(SOUNDS[name]);
+  }
+  function playMeepleSound(color) {
+    if (!MEEPLE_COLORS.includes(color)) return;
+    const n = 1 + Math.floor(Math.random() * 3);
+    playSrc("assets/sound/meeple/" + color + "/" + color + n + ".mp3");
+  }
+  function playWinSound(color) {
+    if (!MEEPLE_COLORS.includes(color)) return;
+    playSrc("assets/sound/win/" + color + ".mp3");
+  }
+  async function playEndFanfare(colors) {
+    const clearDone = playSrcAsync(SOUNDS.clear);
+    await new Promise((resolve) => setTimeout(resolve, 1500));
+    for (const color of colors || []) {
+      if (!MEEPLE_COLORS.includes(color)) continue;
+      await playSrcAsync("assets/sound/win/" + color + ".mp3");
+    }
+    await clearDone;
   }
   function syncVolumeInputs() {
     const value = String(Math.round(volume * 100));
@@ -58,6 +106,9 @@
     getVolume,
     setVolume,
     playSound,
+    playMeepleSound,
+    playWinSound,
+    playEndFanfare,
     bindVolumeBar
   };
   if (typeof globalThis !== "undefined") globalThis.TileCityAudio = TileCityAudio;
@@ -763,7 +814,16 @@
     if (kind === "road" || kind === "city" || kind === "field") {
       if (tile.meeple.index !== index) return false;
     }
-    game.meeples[tile.meeple.player] += 1;
+    const meeple = tile.meeple;
+    game.meeples[meeple.player] += 1;
+    tile.leaveFx = {
+      color: meeple.color,
+      kind: meeple.kind,
+      x: meeple.x,
+      y: meeple.y,
+      earned: meeple.earned || 0,
+      at: Date.now()
+    };
     tile.meeple = null;
     return true;
   }
@@ -794,7 +854,7 @@
     );
     if (winners.length && points > 0) {
       awardPoints(game, winners, points);
-      if (!opts.returnMeeples) labelMeepleEarnings(game.board, kind, parts, winners, points);
+      labelMeepleEarnings(game.board, kind, parts, winners, points);
     }
     if (opts.returnMeeples) return returnMeeplesOnFeature(game, kind, parts);
     return 0;

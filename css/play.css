@@ -517,6 +517,9 @@ html, body { height: 100%; overflow: hidden; }
       cursor: pointer;
       font: inherit;
       color: inherit;
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
     }
 
     .preview-frame {
@@ -595,6 +598,9 @@ html, body { height: 100%; overflow: hidden; }
       display: flex;
       flex-direction: column;
       align-items: center;
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
     }
 
     .thumb.on {
@@ -973,6 +979,41 @@ html, body { height: 100%; overflow: hidden; }
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
     }
 
+    .slot .meeple-pin.leaving {
+      animation: meeple-leave 2s ease forwards;
+      will-change: opacity, transform;
+    }
+
+    .slot .meeple-pin.leaving .meeple-earned {
+      animation: meeple-earned-leave 2s ease forwards;
+    }
+
+    @keyframes meeple-leave {
+      0% {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
+      }
+      25% {
+        opacity: 1;
+        transform: translate(-50%, -52%) scale(1.05);
+      }
+      100% {
+        opacity: 0;
+        transform: translate(-50%, -62%) scale(0.85);
+      }
+    }
+
+    @keyframes meeple-earned-leave {
+      0% {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+      }
+      100% {
+        opacity: 0;
+        transform: translateX(-50%) translateY(-10px);
+      }
+    }
+
     .meeple-prompt {
       position: absolute;
       left: 50%;
@@ -1001,7 +1042,7 @@ html, body { height: 100%; overflow: hidden; }
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 22px;
+      gap: 8px;
       pointer-events: none;
     }
 
