@@ -1,3 +1,4 @@
+import TileCityAudio from "../audio.js";
 import Carcassonne from "../game/index.js";
 import TileCityI18n from "../i18n.js";
 
@@ -130,4 +131,5 @@ TileCityI18n.bindLangBar(() => {
   setErr("");
   paint();
 });
+TileCityAudio.bindVolumeBar();
 paint();

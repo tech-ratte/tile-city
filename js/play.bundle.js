@@ -1,4 +1,68 @@
 (() => {
+  // js/audio.js
+  var VOLUME_KEY = "tile-city-volume";
+  var SOUNDS = {
+    tile: "assets/sound/tile.mp3",
+    point: "assets/sound/point.mp3"
+  };
+  function loadVolume() {
+    try {
+      const raw = localStorage.getItem(VOLUME_KEY);
+      if (raw == null || raw === "") return 0.7;
+      const n = Number(raw);
+      if (!Number.isFinite(n)) return 0.7;
+      return Math.min(1, Math.max(0, n / 100));
+    } catch (err) {
+      return 0.7;
+    }
+  }
+  var volume = loadVolume();
+  function getVolume() {
+    return volume;
+  }
+  function setVolume(next) {
+    volume = Math.min(1, Math.max(0, Number(next) || 0));
+    try {
+      localStorage.setItem(VOLUME_KEY, String(Math.round(volume * 100)));
+    } catch (err) {
+    }
+    syncVolumeInputs();
+  }
+  function playSound(name) {
+    if (!(volume > 0)) return;
+    const src = SOUNDS[name];
+    if (!src) return;
+    try {
+      const audio = new Audio(src);
+      audio.volume = volume;
+      void audio.play().catch(() => {
+      });
+    } catch (err) {
+    }
+  }
+  function syncVolumeInputs() {
+    const value = String(Math.round(volume * 100));
+    document.querySelectorAll(".volume-range").forEach((input) => {
+      input.value = value;
+    });
+  }
+  function bindVolumeBar() {
+    syncVolumeInputs();
+    document.querySelectorAll(".volume-range").forEach((input) => {
+      input.addEventListener("input", () => {
+        setVolume(Number(input.value) / 100);
+      });
+    });
+  }
+  var TileCityAudio = {
+    getVolume,
+    setVolume,
+    playSound,
+    bindVolumeBar
+  };
+  if (typeof globalThis !== "undefined") globalThis.TileCityAudio = TileCityAudio;
+  var audio_default = TileCityAudio;
+
   // js/game/constants.js
   var COLOR_PALETTE = [
     { id: "red", hex: "#ff5d78", label: "Red" },
@@ -1270,6 +1334,7 @@
       langEn: "EN",
       langJa: "JA",
       langLabel: "Language",
+      volumeLabel: "Volume",
       setupTitle: "Players",
       setupLead: "2\u20138 players. Name max 6 letters. Each color once.",
       addPlayer: "Add player",
@@ -1458,6 +1523,7 @@
       langEn: "EN",
       langJa: "JA",
       langLabel: "\u8A00\u8A9E",
+      volumeLabel: "\u97F3\u91CF",
       setupTitle: "\u30D7\u30EC\u30A4\u30E4\u30FC",
       setupLead: "2\u301C8\u4EBA\u3002\u540D\u524D\u306F\u6700\u59276\u6587\u5B57\u3002\u8272\u306F\u91CD\u8907\u4E0D\u53EF\u3002",
       addPlayer: "\u8FFD\u52A0",
@@ -1694,6 +1760,9 @@
     });
     const bar = (root || document).querySelector(".lang-bar");
     if (bar) bar.setAttribute("aria-label", t("langLabel", lang));
+    document.querySelectorAll(".volume-bar").forEach((node) => {
+      node.setAttribute("aria-label", t("volumeLabel", lang));
+    });
     return lang;
   }
   function bindLangBar(onChange) {
@@ -1773,6 +1842,10 @@
 
   // js/play/main.js
   var t2 = (key) => i18n_default.t(key);
+  var playSound2 = (name) => audio_default.playSound(name);
+  function scoresGained(before) {
+    return game.scores.some((score, index) => score > (before[index] || 0));
+  }
   var ZOOM_MIN = 0.35;
   var ZOOM_MAX = 1.6;
   var ZOOM_STEP = 0.05;
@@ -1972,7 +2045,7 @@
     const stock = game.meeples[game.pendingMeeple.player];
     const prompt = slots.length ? t2("pickMeeple") : stock <= 0 ? t2("noMeeplesLeft") : t2("noOpenSpot");
     marks.push(
-      '<div class="meeple-layer"><p class="meeple-prompt">' + prompt + "</p>" + spots + '<button type="button" id="skip-meeple">' + t2("skip") + '</button><button type="button" id="undo-place" aria-label="' + t2("undoPlace") + '" title="' + t2("undoPlace") + '"><svg class="undo-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M12.5 8C9.85 8 7.45 9 5.6 10.6L2 7v9h9l-3.62-3.62C8.77 11.22 10.54 10.5 12.5 10.5c3.54 0 6.55 2.31 7.6 5.5l2.37-.78C21.08 11.03 17.15 8 12.5 8z"/></svg></button></div>'
+      '<div class="meeple-layer"><p class="meeple-prompt">' + prompt + "</p>" + spots + '<div class="meeple-actions"><button type="button" id="undo-place" aria-label="' + t2("undoPlace") + '" title="' + t2("undoPlace") + '"><svg class="undo-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M12.5 8C9.85 8 7.45 9 5.6 10.6L2 7v9h9l-3.62-3.62C8.77 11.22 10.54 10.5 12.5 10.5c3.54 0 6.55 2.31 7.6 5.5l2.37-.78C21.08 11.03 17.15 8 12.5 8z"/></svg></button><button type="button" id="skip-meeple">' + t2("skip") + "</button></div></div>"
     );
     return marks.join("");
   }
@@ -2250,7 +2323,11 @@
       return;
     }
     if (button.id === "skip-meeple") {
-      if (game.skipMeeple()) render({ keep: true });
+      const before = game.scores.slice();
+      if (game.skipMeeple()) {
+        if (scoresGained(before)) playSound2("point");
+        render({ keep: true });
+      }
       return;
     }
     if (button.id === "undo-place") {
@@ -2258,7 +2335,11 @@
       return;
     }
     if (button.dataset.meepleSlot) {
-      if (game.placeMeeple(button.dataset.meepleSlot)) render({ keep: true });
+      const before = game.scores.slice();
+      if (game.placeMeeple(button.dataset.meepleSlot)) {
+        if (scoresGained(before)) playSound2("point");
+        render({ keep: true });
+      }
       return;
     }
     if (button.dataset.rotate != null) {
@@ -2272,7 +2353,10 @@
     }
     if (button.dataset.place) {
       const parts = button.dataset.place.split(",").map(Number);
-      if (game.place(parts[0], parts[1])) render({ keep: true });
+      if (game.place(parts[0], parts[1])) {
+        playSound2("tile");
+        render({ keep: true });
+      }
     }
   });
   var pointerOnBoard = false;

@@ -177,9 +177,17 @@
   <div class="wrap">
     <div class="page-top">
       <div></div>
-      <div class="lang-bar" role="group" aria-label="Language">
-        <button type="button" data-lang="en">EN</button>
-        <button type="button" data-lang="ja">JA</button>
+      <div class="chrome-controls">
+        <label class="volume-bar" data-i18n-aria="volumeLabel" aria-label="Volume">
+          <svg class="volume-ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <path fill="currentColor" d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1-3.29-2.5-4.03v8.05c1.5-.74 2.5-2.26 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
+          </svg>
+          <input class="volume-range" type="range" min="0" max="100" step="1" value="70">
+        </label>
+        <div class="lang-bar" role="group" aria-label="Language">
+          <button type="button" data-lang="en">EN</button>
+          <button type="button" data-lang="ja">JA</button>
+        </div>
       </div>
     </div>
     <div class="setup">

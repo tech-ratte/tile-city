@@ -1,3 +1,4 @@
+import TileCityAudio from "../audio.js";
 import Carcassonne from "../game/index.js";
 import TileCityI18n from "../i18n.js";
 import {
@@ -8,6 +9,11 @@ import {
 } from "./storage.js";
 
 const t = (key) => TileCityI18n.t(key);
+const playSound = (name) => TileCityAudio.playSound(name);
+
+function scoresGained(before) {
+  return game.scores.some((score, index) => score > (before[index] || 0));
+}
 const ZOOM_MIN = 0.35;
 const ZOOM_MAX = 1.6;
 const ZOOM_STEP = 0.05;
@@ -278,14 +284,15 @@ function meepleMarksHTML(tile, pending) {
     '<div class="meeple-layer">' +
     '<p class="meeple-prompt">' + prompt + "</p>" +
     spots +
-    '<button type="button" id="skip-meeple">' + t("skip") + "</button>" +
+    '<div class="meeple-actions">' +
     '<button type="button" id="undo-place" aria-label="' + t("undoPlace") +
     '" title="' + t("undoPlace") + '">' +
     '<svg class="undo-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">' +
     '<path fill="currentColor" d="M12.5 8C9.85 8 7.45 9 5.6 10.6L2 7v9h9l-3.62-3.62' +
     'C8.77 11.22 10.54 10.5 12.5 10.5c3.54 0 6.55 2.31 7.6 5.5l2.37-.78C21.08 11.03 17.15 8 12.5 8z"/>' +
     '</svg></button>' +
-    "</div>"
+    '<button type="button" id="skip-meeple">' + t("skip") + "</button>" +
+    "</div></div>"
   );
   return marks.join("");
 }
@@ -590,7 +597,11 @@ document.addEventListener("click", (event) => {
     return;
   }
   if (button.id === "skip-meeple") {
-    if (game.skipMeeple()) render({ keep: true });
+    const before = game.scores.slice();
+    if (game.skipMeeple()) {
+      if (scoresGained(before)) playSound("point");
+      render({ keep: true });
+    }
     return;
   }
   if (button.id === "undo-place") {
@@ -598,7 +609,11 @@ document.addEventListener("click", (event) => {
     return;
   }
   if (button.dataset.meepleSlot) {
-    if (game.placeMeeple(button.dataset.meepleSlot)) render({ keep: true });
+    const before = game.scores.slice();
+    if (game.placeMeeple(button.dataset.meepleSlot)) {
+      if (scoresGained(before)) playSound("point");
+      render({ keep: true });
+    }
     return;
   }
   if (button.dataset.rotate != null) {
@@ -612,7 +627,10 @@ document.addEventListener("click", (event) => {
   }
   if (button.dataset.place) {
     const parts = button.dataset.place.split(",").map(Number);
-    if (game.place(parts[0], parts[1])) render({ keep: true });
+    if (game.place(parts[0], parts[1])) {
+      playSound("tile");
+      render({ keep: true });
+    }
   }
 });
 

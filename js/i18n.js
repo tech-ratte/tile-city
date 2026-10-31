@@ -10,6 +10,7 @@ const dict = {
     langEn: "EN",
     langJa: "JA",
     langLabel: "Language",
+    volumeLabel: "Volume",
 
     setupTitle: "Players",
     setupLead: "2–8 players. Name max 6 letters. Each color once.",
@@ -201,6 +202,7 @@ const dict = {
     langEn: "EN",
     langJa: "JA",
     langLabel: "言語",
+    volumeLabel: "音量",
 
     setupTitle: "プレイヤー",
     setupLead: "2〜8人。名前は最大6文字。色は重複不可。",
@@ -443,6 +445,9 @@ function apply(root) {
   });
   const bar = (root || document).querySelector(".lang-bar");
   if (bar) bar.setAttribute("aria-label", t("langLabel", lang));
+  document.querySelectorAll(".volume-bar").forEach((node) => {
+    node.setAttribute("aria-label", t("volumeLabel", lang));
+  });
   return lang;
 }
 

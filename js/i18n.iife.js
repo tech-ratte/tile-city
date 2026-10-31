@@ -42,6 +42,7 @@ var TileCityI18n = (() => {
       langEn: "EN",
       langJa: "JA",
       langLabel: "Language",
+      volumeLabel: "Volume",
       setupTitle: "Players",
       setupLead: "2\u20138 players. Name max 6 letters. Each color once.",
       addPlayer: "Add player",
@@ -230,6 +231,7 @@ var TileCityI18n = (() => {
       langEn: "EN",
       langJa: "JA",
       langLabel: "\u8A00\u8A9E",
+      volumeLabel: "\u97F3\u91CF",
       setupTitle: "\u30D7\u30EC\u30A4\u30E4\u30FC",
       setupLead: "2\u301C8\u4EBA\u3002\u540D\u524D\u306F\u6700\u59276\u6587\u5B57\u3002\u8272\u306F\u91CD\u8907\u4E0D\u53EF\u3002",
       addPlayer: "\u8FFD\u52A0",
@@ -466,6 +468,9 @@ var TileCityI18n = (() => {
     });
     const bar = (root || document).querySelector(".lang-bar");
     if (bar) bar.setAttribute("aria-label", t("langLabel", lang));
+    document.querySelectorAll(".volume-bar").forEach((node) => {
+      node.setAttribute("aria-label", t("volumeLabel", lang));
+    });
     return lang;
   }
   function bindLangBar(onChange) {

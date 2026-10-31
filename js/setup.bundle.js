@@ -1,4 +1,68 @@
 (() => {
+  // js/audio.js
+  var VOLUME_KEY = "tile-city-volume";
+  var SOUNDS = {
+    tile: "assets/sound/tile.mp3",
+    point: "assets/sound/point.mp3"
+  };
+  function loadVolume() {
+    try {
+      const raw = localStorage.getItem(VOLUME_KEY);
+      if (raw == null || raw === "") return 0.7;
+      const n = Number(raw);
+      if (!Number.isFinite(n)) return 0.7;
+      return Math.min(1, Math.max(0, n / 100));
+    } catch (err) {
+      return 0.7;
+    }
+  }
+  var volume = loadVolume();
+  function getVolume() {
+    return volume;
+  }
+  function setVolume(next) {
+    volume = Math.min(1, Math.max(0, Number(next) || 0));
+    try {
+      localStorage.setItem(VOLUME_KEY, String(Math.round(volume * 100)));
+    } catch (err) {
+    }
+    syncVolumeInputs();
+  }
+  function playSound(name) {
+    if (!(volume > 0)) return;
+    const src = SOUNDS[name];
+    if (!src) return;
+    try {
+      const audio = new Audio(src);
+      audio.volume = volume;
+      void audio.play().catch(() => {
+      });
+    } catch (err) {
+    }
+  }
+  function syncVolumeInputs() {
+    const value = String(Math.round(volume * 100));
+    document.querySelectorAll(".volume-range").forEach((input) => {
+      input.value = value;
+    });
+  }
+  function bindVolumeBar() {
+    syncVolumeInputs();
+    document.querySelectorAll(".volume-range").forEach((input) => {
+      input.addEventListener("input", () => {
+        setVolume(Number(input.value) / 100);
+      });
+    });
+  }
+  var TileCityAudio = {
+    getVolume,
+    setVolume,
+    playSound,
+    bindVolumeBar
+  };
+  if (typeof globalThis !== "undefined") globalThis.TileCityAudio = TileCityAudio;
+  var audio_default = TileCityAudio;
+
   // js/game/constants.js
   var COLOR_PALETTE = [
     { id: "red", hex: "#ff5d78", label: "Red" },
@@ -1270,6 +1334,7 @@
       langEn: "EN",
       langJa: "JA",
       langLabel: "Language",
+      volumeLabel: "Volume",
       setupTitle: "Players",
       setupLead: "2\u20138 players. Name max 6 letters. Each color once.",
       addPlayer: "Add player",
@@ -1458,6 +1523,7 @@
       langEn: "EN",
       langJa: "JA",
       langLabel: "\u8A00\u8A9E",
+      volumeLabel: "\u97F3\u91CF",
       setupTitle: "\u30D7\u30EC\u30A4\u30E4\u30FC",
       setupLead: "2\u301C8\u4EBA\u3002\u540D\u524D\u306F\u6700\u59276\u6587\u5B57\u3002\u8272\u306F\u91CD\u8907\u4E0D\u53EF\u3002",
       addPlayer: "\u8FFD\u52A0",
@@ -1694,6 +1760,9 @@
     });
     const bar = (root || document).querySelector(".lang-bar");
     if (bar) bar.setAttribute("aria-label", t("langLabel", lang));
+    document.querySelectorAll(".volume-bar").forEach((node) => {
+      node.setAttribute("aria-label", t("volumeLabel", lang));
+    });
     return lang;
   }
   function bindLangBar(onChange) {
@@ -1829,5 +1898,6 @@
     setErr("");
     paint();
   });
+  audio_default.bindVolumeBar();
   paint();
 })();

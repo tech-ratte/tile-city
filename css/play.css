@@ -992,45 +992,47 @@ html, body { height: 100%; overflow: hidden; }
       text-shadow: 0 0 8px rgba(100, 220, 255, 0.45);
     }
 
-    #skip-meeple {
+    .meeple-actions {
       position: absolute;
       left: 50%;
       top: calc(100% + 8px);
       transform: translateX(-50%);
       z-index: 22;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 22px;
+      pointer-events: none;
+    }
+
+    #skip-meeple,
+    #undo-place {
+      position: static;
+      transform: none;
       font: inherit;
       color: #dfffee;
       background: rgba(10, 16, 28, 0.88);
       border: 1px solid rgba(140, 255, 210, 0.45);
       border-radius: 999px;
-      padding: 6px 18px;
       cursor: pointer;
       box-shadow: 0 0 12px rgba(80, 255, 180, 0.12);
       pointer-events: auto;
       white-space: nowrap;
     }
 
+    #skip-meeple {
+      padding: 6px 18px;
+    }
+
     #skip-meeple:hover { border-color: #d6ff6a; color: #f4ffd2; }
 
     #undo-place {
-      position: absolute;
-      left: calc(100% + 8px);
-      top: 50%;
-      transform: translateY(-50%);
-      z-index: 22;
       display: inline-flex;
       align-items: center;
       justify-content: center;
       width: 36px;
       height: 36px;
       padding: 0;
-      color: #dfffee;
-      background: rgba(10, 16, 28, 0.88);
-      border: 1px solid rgba(140, 255, 210, 0.45);
-      border-radius: 999px;
-      cursor: pointer;
-      box-shadow: 0 0 12px rgba(80, 255, 180, 0.12);
-      pointer-events: auto;
     }
 
     #undo-place .undo-icon {

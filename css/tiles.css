@@ -30,6 +30,40 @@
       padding: 28px 0 64px;
     }
 
+    .chrome-controls {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .volume-bar {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px 4px 8px;
+      border-radius: 999px;
+      background: rgba(44, 38, 31, 0.08);
+      border: 1px solid var(--line);
+      cursor: pointer;
+    }
+
+    .volume-bar .volume-ico {
+      width: 14px;
+      height: 14px;
+      flex: none;
+      display: block;
+      color: var(--muted);
+    }
+
+    .volume-bar .volume-range {
+      width: 72px;
+      height: 4px;
+      margin: 0;
+      padding: 0;
+      accent-color: var(--city);
+      cursor: pointer;
+    }
+
     .lang-bar {
       display: inline-flex;
       align-items: center;
