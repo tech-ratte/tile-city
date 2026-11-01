@@ -126,21 +126,21 @@
     { id: "brown", hex: "#a67c52", label: "Brown" }
   ];
   var BOT_NAMES = {
-    red: "\u30EC\u30C3\u30AF\u30B9",
+    red: { en: "Rex", ja: "\u30EC\u30C3\u30AF\u30B9" },
     // hot-blooded warrior, boy ~17
-    blue: "\u30AB\u30A4\u30F3",
+    blue: { en: "Cain", ja: "\u30AB\u30A4\u30F3" },
     // cold sage, boy ~18
-    green: "\u30ED\u30C3\u30AF",
+    green: { en: "Rock", ja: "\u30ED\u30C3\u30AF" },
     // young thief, boy ~11
-    yellow: "\u30EB\u30CA",
+    yellow: { en: "Luna", ja: "\u30EB\u30CA" },
     // mischievous princess, girl ~10
-    orange: "\u30A2\u30B9\u30AB",
+    orange: { en: "Asuka", ja: "\u30A2\u30B9\u30AB" },
     // energetic fighter, girl ~17
-    purple: "\u30E2\u30FC\u30E9",
+    purple: { en: "Mora", ja: "\u30E2\u30FC\u30E9" },
     // necromancer, woman ~80
-    white: "\u30BB\u30B7\u30EB",
+    white: { en: "Cecil", ja: "\u30BB\u30B7\u30EB" },
     // apprentice cleric, girl ~15
-    brown: "\u30A8\u30EA\u30B6"
+    brown: { en: "Eliza", ja: "\u30A8\u30EA\u30B6" }
     // haughty mage, woman ~23
   };
   function defaultPlayerName(index) {
@@ -156,8 +156,12 @@
     }
     return "Player" + (max2 + 1);
   }
-  function botNameForColor(id) {
-    if (BOT_NAMES[id]) return BOT_NAMES[id];
+  function botNameForColor(id, lang) {
+    const entry = BOT_NAMES[id];
+    if (entry) {
+      if (typeof entry === "string") return entry;
+      return lang === "en" ? entry.en : entry.ja;
+    }
     const color = COLOR_PALETTE.find((item) => item.id === id);
     return color ? color.label : "Bot";
   }
@@ -2051,7 +2055,7 @@
       board: "board",
       discards: "discards",
       exit: "Exit",
-      rank: "Rank",
+      rank: "Ranking",
       again: "Again",
       skip: "Skip",
       ok: "OK",
@@ -2064,7 +2068,7 @@
       undoPlace: "Undo place",
       noLegalPlace: "No legal place for this tile",
       endThisGame: "End this game?",
-      gameOver: "Game over",
+      gameOver: "Ranking",
       pickMeeple: "Pick a mark to place a meeple",
       noMeeplesLeft: "No meeples left",
       noOpenSpot: "No open spot for a meeple"
@@ -2248,7 +2252,7 @@
       board: "\u76E4\u9762",
       discards: "\u6368\u3066\u672D",
       exit: "\u9000\u51FA",
-      rank: "\u9806\u4F4D",
+      rank: "\u30E9\u30F3\u30AD\u30F3\u30B0",
       again: "\u3082\u3046\u4E00\u5EA6",
       skip: "\u30B9\u30AD\u30C3\u30D7",
       ok: "OK",
@@ -2261,7 +2265,7 @@
       undoPlace: "\u914D\u7F6E\u3092\u623B\u3059",
       noLegalPlace: "\u3053\u306E\u30BF\u30A4\u30EB\u3092\u7F6E\u3051\u308B\u5834\u6240\u304C\u3042\u308A\u307E\u305B\u3093",
       endThisGame: "\u3053\u306E\u30B2\u30FC\u30E0\u3092\u7D42\u4E86\u3057\u307E\u3059\u304B\uFF1F",
-      gameOver: "\u30B2\u30FC\u30E0\u7D42\u4E86",
+      gameOver: "\u30E9\u30F3\u30AD\u30F3\u30B0",
       pickMeeple: "\u30DE\u30FC\u30AF\u3092\u9078\u3093\u3067\u30DF\u30FC\u30D7\u30EB\u3092\u7F6E\u304F",
       noMeeplesLeft: "\u30DF\u30FC\u30D7\u30EB\u304C\u3042\u308A\u307E\u305B\u3093",
       noOpenSpot: "\u7F6E\u3051\u308B\u5834\u6240\u304C\u3042\u308A\u307E\u305B\u3093"
@@ -2412,6 +2416,9 @@
     const list = document.getElementById("player-list");
     const canRemove = players.length > min;
     const lang = i18n_default.getLang();
+    players.forEach((player) => {
+      if (player.bot) player.name = game_default.botNameForColor(player.id, lang);
+    });
     list.innerHTML = players.map((player, index) => {
       const used = usedColors(index);
       const swatches = palette.map((color) => {
@@ -2445,7 +2452,7 @@
       const player = players[index];
       if (bot && !player.bot) {
         player.humanName = player.name;
-        player.name = game_default.botNameForColor(player.id);
+        player.name = game_default.botNameForColor(player.id, i18n_default.getLang());
       } else if (!bot && player.bot) {
         const restored = (player.humanName || "").trim().slice(0, nameMax);
         player.name = restored || game_default.nextPlayerName(players);
@@ -2470,7 +2477,7 @@
       const index = Number(colorBtn.getAttribute("data-index"));
       players[index].id = colorBtn.getAttribute("data-color");
       if (players[index].bot) {
-        players[index].name = game_default.botNameForColor(players[index].id);
+        players[index].name = game_default.botNameForColor(players[index].id, i18n_default.getLang());
       }
       setErr("");
       paint();
@@ -2500,7 +2507,7 @@
     const lang = i18n_default.getLang();
     const cleaned = [];
     for (const player of players) {
-      const name = player.bot ? game_default.botNameForColor(player.id) : (player.name || "").trim().slice(0, nameMax) || game_default.nextPlayerName(cleaned);
+      const name = player.bot ? game_default.botNameForColor(player.id, lang) : (player.name || "").trim().slice(0, nameMax) || game_default.nextPlayerName(cleaned);
       cleaned.push({
         id: player.id,
         name,

@@ -126,21 +126,21 @@
     { id: "brown", hex: "#a67c52", label: "Brown" }
   ];
   var BOT_NAMES = {
-    red: "\u30EC\u30C3\u30AF\u30B9",
+    red: { en: "Rex", ja: "\u30EC\u30C3\u30AF\u30B9" },
     // hot-blooded warrior, boy ~17
-    blue: "\u30AB\u30A4\u30F3",
+    blue: { en: "Cain", ja: "\u30AB\u30A4\u30F3" },
     // cold sage, boy ~18
-    green: "\u30ED\u30C3\u30AF",
+    green: { en: "Rock", ja: "\u30ED\u30C3\u30AF" },
     // young thief, boy ~11
-    yellow: "\u30EB\u30CA",
+    yellow: { en: "Luna", ja: "\u30EB\u30CA" },
     // mischievous princess, girl ~10
-    orange: "\u30A2\u30B9\u30AB",
+    orange: { en: "Asuka", ja: "\u30A2\u30B9\u30AB" },
     // energetic fighter, girl ~17
-    purple: "\u30E2\u30FC\u30E9",
+    purple: { en: "Mora", ja: "\u30E2\u30FC\u30E9" },
     // necromancer, woman ~80
-    white: "\u30BB\u30B7\u30EB",
+    white: { en: "Cecil", ja: "\u30BB\u30B7\u30EB" },
     // apprentice cleric, girl ~15
-    brown: "\u30A8\u30EA\u30B6"
+    brown: { en: "Eliza", ja: "\u30A8\u30EA\u30B6" }
     // haughty mage, woman ~23
   };
   function defaultPlayerName(index) {
@@ -156,8 +156,12 @@
     }
     return "Player" + (max + 1);
   }
-  function botNameForColor(id) {
-    if (BOT_NAMES[id]) return BOT_NAMES[id];
+  function botNameForColor(id, lang) {
+    const entry = BOT_NAMES[id];
+    if (entry) {
+      if (typeof entry === "string") return entry;
+      return lang === "en" ? entry.en : entry.ja;
+    }
     const color = COLOR_PALETTE.find((item) => item.id === id);
     return color ? color.label : "Bot";
   }
@@ -2051,7 +2055,7 @@
       board: "board",
       discards: "discards",
       exit: "Exit",
-      rank: "Rank",
+      rank: "Ranking",
       again: "Again",
       skip: "Skip",
       ok: "OK",
@@ -2064,7 +2068,7 @@
       undoPlace: "Undo place",
       noLegalPlace: "No legal place for this tile",
       endThisGame: "End this game?",
-      gameOver: "Game over",
+      gameOver: "Ranking",
       pickMeeple: "Pick a mark to place a meeple",
       noMeeplesLeft: "No meeples left",
       noOpenSpot: "No open spot for a meeple"
@@ -2248,7 +2252,7 @@
       board: "\u76E4\u9762",
       discards: "\u6368\u3066\u672D",
       exit: "\u9000\u51FA",
-      rank: "\u9806\u4F4D",
+      rank: "\u30E9\u30F3\u30AD\u30F3\u30B0",
       again: "\u3082\u3046\u4E00\u5EA6",
       skip: "\u30B9\u30AD\u30C3\u30D7",
       ok: "OK",
@@ -2261,7 +2265,7 @@
       undoPlace: "\u914D\u7F6E\u3092\u623B\u3059",
       noLegalPlace: "\u3053\u306E\u30BF\u30A4\u30EB\u3092\u7F6E\u3051\u308B\u5834\u6240\u304C\u3042\u308A\u307E\u305B\u3093",
       endThisGame: "\u3053\u306E\u30B2\u30FC\u30E0\u3092\u7D42\u4E86\u3057\u307E\u3059\u304B\uFF1F",
-      gameOver: "\u30B2\u30FC\u30E0\u7D42\u4E86",
+      gameOver: "\u30E9\u30F3\u30AD\u30F3\u30B0",
       pickMeeple: "\u30DE\u30FC\u30AF\u3092\u9078\u3093\u3067\u30DF\u30FC\u30D7\u30EB\u3092\u7F6E\u304F",
       noMeeplesLeft: "\u30DF\u30FC\u30D7\u30EB\u304C\u3042\u308A\u307E\u305B\u3093",
       noOpenSpot: "\u7F6E\u3051\u308B\u5834\u6240\u304C\u3042\u308A\u307E\u305B\u3093"
@@ -2418,12 +2422,15 @@
   var BOT_MOVE_MS = 450;
   var BOT_MEEPLE_MS = 380;
   var BOT_DISCARD_MS = 550;
+  var BOT_CENTER_MS = 1e3;
   var TILE_TOTAL = game_default.TYPES.reduce((sum, type) => sum + type.count, 0);
   var exitConfirmOpen = false;
   var leaveFxTimer = null;
   var endFanfareStarted = false;
   var botTimer = null;
   var botBusy = false;
+  var centerAnim = null;
+  var centerAnimDone = null;
   function loadRoster2() {
     return loadRoster(game_default);
   }
@@ -2572,14 +2579,21 @@
   function humanControlsLocked() {
     return isBotTurn() || botBusy;
   }
+  function displayPlayerName(player) {
+    if (player.bot) return game_default.botNameForColor(player.id, i18n_default.getLang());
+    return player.name;
+  }
+  function botBadgeHTML() {
+    return '<span class="bot-badge" title="' + t2("botThinking") + '" aria-label="' + t2("playerKindBot") + '"><svg class="bot-ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M9 3h6v2h3a2 2 0 0 1 2 2v5h-2V7H6v5H4V7a2 2 0 0 1 2-2h3V3zm-3 9h12a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2zm2.5 3a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3zm7 0a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3zM11 2h2v2h-2V2z"/></svg></span>';
+  }
   function playersHTML() {
     const order = game.finished && game.standings ? game.standings : game.players.map((_, index) => index);
     return '<ul class="players">' + order.map((index) => {
       const player = game.players[index];
       const on = !game.finished && index === game.player ? " on" : "";
       const rank = game.finished ? '<span class="rank">' + (order.indexOf(index) + 1) + "</span>" : "";
-      const bot = player.bot ? '<span class="bot-badge" title="' + t2("botThinking") + '">' + t2("botBadge") + "</span>" : "";
-      return '<li class="' + player.id + on + (player.bot ? " bot" : "") + '">' + rank + '<span class="pname">' + player.name + bot + '</span><span class="meeple-count"><i class="meeple ' + player.id + '" aria-hidden="true"></i>\xD7' + game.meeples[index] + '</span><b class="score">' + game.scores[index] + "</b></li>";
+      const bot = player.bot ? botBadgeHTML() : "";
+      return '<li class="' + player.id + on + (player.bot ? " bot" : "") + '">' + rank + '<span class="pname">' + displayPlayerName(player) + bot + '</span><span class="meeple-count"><i class="meeple ' + player.id + '" aria-hidden="true"></i>\xD7' + game.meeples[index] + '</span><b class="score">' + game.scores[index] + "</b></li>";
     }).join("") + "</ul>";
   }
   function endActionsHTML(layout) {
@@ -2646,7 +2660,7 @@
     const stock = game.meeples[game.pendingMeeple.player];
     const prompt = slots.length ? t2("pickMeeple") : stock <= 0 ? t2("noMeeplesLeft") : t2("noOpenSpot");
     marks.push(
-      '<div class="meeple-layer"><p class="meeple-prompt">' + prompt + "</p>" + spots + '<div class="meeple-actions"><button type="button" id="undo-place" aria-label="' + t2("undoPlace") + '" title="' + t2("undoPlace") + '"><svg class="undo-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M12.5 8C9.85 8 7.45 9 5.6 10.6L2 7v9h9l-3.62-3.62C8.77 11.22 10.54 10.5 12.5 10.5c3.54 0 6.55 2.31 7.6 5.5l2.37-.78C21.08 11.03 17.15 8 12.5 8z"/></svg></button><button type="button" id="skip-meeple">' + t2("skip") + "</button></div></div>"
+      '<div class="meeple-layer"><p class="meeple-prompt">' + prompt + "</p>" + spots + '<div class="meeple-actions"><button type="button" id="skip-meeple">' + t2("skip") + '</button><button type="button" id="undo-place" aria-label="' + t2("undoPlace") + '" title="' + t2("undoPlace") + '"><svg class="undo-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg></button></div></div>'
     );
     return marks.join("");
   }
@@ -2654,7 +2668,7 @@
     const order = game.standings || game.players.map((_, index) => index);
     const rows = order.map((index, rank) => {
       const player = game.players[index];
-      return '<li><span class="rank-num">' + (rank + 1) + '</span><span class="rank-name ' + player.id + '">' + player.name + '</span><b class="rank-score">' + game.scores[index] + "</b></li>";
+      return '<li><span class="rank-num">' + (rank + 1) + '</span><span class="rank-name ' + player.id + '">' + displayPlayerName(player) + '</span><b class="rank-score">' + game.scores[index] + "</b></li>";
     }).join("");
     return '<ul class="ranking-list">' + rows + "</ul>";
   }
@@ -2715,6 +2729,8 @@
     showActions("discard");
   }
   function paintSide() {
+    const hudTop = document.querySelector(".hud-top");
+    if (hudTop) hudTop.hidden = !!game.finished;
     document.getElementById("players-root").innerHTML = playersHTML();
     document.getElementById("stats-root").innerHTML = statsHTML();
     document.getElementById("hand-root").innerHTML = handHTML();
@@ -2791,14 +2807,58 @@
       dy: rect.top + rect.height / 2 - cy
     };
   }
-  function centerOn(pos) {
+  function finishCenterAnim(runDone) {
+    if (centerAnim != null) {
+      cancelAnimationFrame(centerAnim);
+      centerAnim = null;
+    }
+    const done = centerAnimDone;
+    centerAnimDone = null;
+    if (runDone && done) done();
+  }
+  function cancelCenterAnim() {
+    finishCenterAnim(true);
+  }
+  function easeInOutCubic(t3) {
+    return t3 < 0.5 ? 4 * t3 * t3 * t3 : 1 - Math.pow(-2 * t3 + 2, 3) / 2;
+  }
+  function centerOn(pos, durationMs, onDone) {
+    const done = typeof onDone === "function" ? onDone : null;
     const el = document.querySelector('#grid [data-pos="' + pos + '"]');
-    if (!el) return;
+    finishCenterAnim(false);
+    if (!el) {
+      if (done) done();
+      return;
+    }
     const frame = scroller().getBoundingClientRect();
     const rect = el.getBoundingClientRect();
     const box = scroller();
-    box.scrollLeft += rect.left + rect.width / 2 - (frame.left + frame.width / 2);
-    box.scrollTop += rect.top + rect.height / 2 - (frame.top + frame.height / 2);
+    const dx = rect.left + rect.width / 2 - (frame.left + frame.width / 2);
+    const dy = rect.top + rect.height / 2 - (frame.top + frame.height / 2);
+    if (!durationMs || durationMs <= 0 || Math.abs(dx) < 2 && Math.abs(dy) < 2) {
+      box.scrollLeft += dx;
+      box.scrollTop += dy;
+      if (done) done();
+      return;
+    }
+    const startLeft = box.scrollLeft;
+    const startTop = box.scrollTop;
+    const endLeft = startLeft + dx;
+    const endTop = startTop + dy;
+    const start = performance.now();
+    centerAnimDone = done;
+    function tick(now) {
+      const t3 = Math.min(1, (now - start) / durationMs);
+      const e = easeInOutCubic(t3);
+      box.scrollLeft = startLeft + (endLeft - startLeft) * e;
+      box.scrollTop = startTop + (endTop - startTop) * e;
+      if (t3 < 1) {
+        centerAnim = requestAnimationFrame(tick);
+        return;
+      }
+      finishCenterAnim(true);
+    }
+    centerAnim = requestAnimationFrame(tick);
   }
   function restoreAnchor(anchor) {
     const el = document.querySelector('#grid [data-pos="' + anchor.pos + '"]');
@@ -2853,7 +2913,24 @@
     if (!ok && game.pendingMeeple) ok = game.skipMeeple();
     if (ok && scoresGained(before)) playSound2("point");
     botBusy = false;
-    render({ keep: true, center: game.lastPlacedBy[color] || void 0 });
+    render({ keep: true });
+  }
+  function commitBotPlace(action) {
+    if (!isBotTurn() || game.finished) {
+      botBusy = false;
+      return;
+    }
+    game.setRotation(action.rot);
+    if (!game.place(action.x, action.y)) {
+      botBusy = false;
+      render({ keep: true });
+      return;
+    }
+    playSound2("tile");
+    render({ keep: true, skipBot: true });
+    clearBotTimer();
+    botBusy = true;
+    botTimer = setTimeout(() => finishBotMeeple(action.slotId), BOT_MEEPLE_MS);
   }
   function runBotStep() {
     botTimer = null;
@@ -2883,17 +2960,13 @@
     }
     if (action.type === "place") {
       game.setRotation(action.rot);
-      if (!game.place(action.x, action.y)) {
-        botBusy = false;
-        render({ keep: true });
-        return;
-      }
-      playSound2("tile");
+      paintSide();
       const center = action.x + "," + action.y;
-      render({ keep: true, center });
       clearBotTimer();
       botBusy = true;
-      botTimer = setTimeout(() => finishBotMeeple(action.slotId), BOT_MEEPLE_MS);
+      requestAnimationFrame(() => {
+        centerOn(center, BOT_CENTER_MS, () => commitBotPlace(action));
+      });
     }
   }
   function applyHandRotation(button) {
@@ -2970,8 +3043,12 @@
     persistGame();
     armLeaveFxClear();
     maybePlayEndFanfare();
-    if (opts.center) requestAnimationFrame(() => centerOn(opts.center));
-    else if (anchor) restoreAnchor(anchor);
+    if (opts.center) {
+      requestAnimationFrame(() => centerOn(opts.center, opts.centerMs));
+    } else if (anchor) {
+      cancelCenterAnim();
+      restoreAnchor(anchor);
+    }
     if (opts.skipBot) return;
     if (isBotTurn()) {
       const delay = game.pendingDiscard ? BOT_DISCARD_MS : BOT_MOVE_MS;
@@ -2985,6 +3062,7 @@
     if (event.button !== 0) return;
     if (event.target.closest(".slot")) event.preventDefault();
     if (!event.target.closest("#scroller")) return;
+    cancelCenterAnim();
     pan = {
       x: event.clientX,
       y: event.clientY,
@@ -3213,6 +3291,25 @@
   document.addEventListener("focusin", (event) => {
     showGhost(event.target.closest("[data-preview-rot]"));
   });
+  function syncLayoutMode() {
+    const root = document.documentElement;
+    const ua = navigator.userAgent || "";
+    const isIPhone = /iPhone|iPod/i.test(ua);
+    const isIPad = /iPad/i.test(ua) || !isIPhone && navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1;
+    const narrow = window.matchMedia("(max-width: 1024px)").matches;
+    const classicPadViewport = window.matchMedia(
+      "(min-width: 768px) and (max-width: 1024px) and (min-height: 700px)"
+    ).matches;
+    if (isIPhone) {
+      root.classList.remove("is-pad");
+      root.classList.add("is-overlay");
+      return;
+    }
+    const isPad = isIPad || classicPadViewport;
+    root.classList.toggle("is-pad", isPad);
+    root.classList.toggle("is-overlay", isPad || narrow);
+  }
+  syncLayoutMode();
   applyBoardZoom();
   syncBoardPadding();
   i18n_default.apply();
@@ -3224,6 +3321,7 @@
     render({ center: "0,0" });
   }
   window.addEventListener("resize", () => {
+    syncLayoutMode();
     syncBoardPadding();
   });
   window.addEventListener("pagehide", () => {

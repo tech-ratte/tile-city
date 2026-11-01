@@ -9,16 +9,16 @@ export const COLOR_PALETTE = [
   { id: "brown", hex: "#a67c52", label: "Brown" },
 ];
 
-/** Fixed katakana persona names for bots (by meeple color). */
+/** Fixed persona names for bots (by meeple color). */
 export const BOT_NAMES = {
-  red: "レックス", // hot-blooded warrior, boy ~17
-  blue: "カイン", // cold sage, boy ~18
-  green: "ロック", // young thief, boy ~11
-  yellow: "ルナ", // mischievous princess, girl ~10
-  orange: "アスカ", // energetic fighter, girl ~17
-  purple: "モーラ", // necromancer, woman ~80
-  white: "セシル", // apprentice cleric, girl ~15
-  brown: "エリザ", // haughty mage, woman ~23
+  red: { en: "Rex", ja: "レックス" }, // hot-blooded warrior, boy ~17
+  blue: { en: "Cain", ja: "カイン" }, // cold sage, boy ~18
+  green: { en: "Rock", ja: "ロック" }, // young thief, boy ~11
+  yellow: { en: "Luna", ja: "ルナ" }, // mischievous princess, girl ~10
+  orange: { en: "Asuka", ja: "アスカ" }, // energetic fighter, girl ~17
+  purple: { en: "Mora", ja: "モーラ" }, // necromancer, woman ~80
+  white: { en: "Cecil", ja: "セシル" }, // apprentice cleric, girl ~15
+  brown: { en: "Eliza", ja: "エリザ" }, // haughty mage, woman ~23
 };
 
 export function defaultPlayerName(index) {
@@ -37,8 +37,12 @@ export function nextPlayerName(list) {
   return "Player" + (max + 1);
 }
 
-export function botNameForColor(id) {
-  if (BOT_NAMES[id]) return BOT_NAMES[id];
+export function botNameForColor(id, lang) {
+  const entry = BOT_NAMES[id];
+  if (entry) {
+    if (typeof entry === "string") return entry;
+    return lang === "en" ? entry.en : entry.ja;
+  }
   const color = COLOR_PALETTE.find((item) => item.id === id);
   return color ? color.label : "Bot";
 }

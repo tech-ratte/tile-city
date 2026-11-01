@@ -31,6 +31,7 @@ import {
   PLAYERS_MAX,
   NAME_MAX,
   nextPlayerName,
+  botNameForColor,
   chooseBotAction,
 } from "./game/index.js";
 
@@ -582,6 +583,8 @@ assert.strictEqual(MEEPLES_EACH, 7);
   assert.strictEqual(withBot[0].bot, true);
   assert.strictEqual(withBot[0].botStrength, "standard");
   assert.strictEqual(withBot[0].name, "レックス");
+  assert.strictEqual(botNameForColor("red", "en"), "Rex");
+  assert.strictEqual(botNameForColor("red", "ja"), "レックス");
   assert.strictEqual(withBot[1].bot, false);
   assert.strictEqual(withBot[1].botStrength, null);
   assert.strictEqual(NAME_MAX, 10);

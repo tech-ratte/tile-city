@@ -71,6 +71,9 @@ function paint() {
   const list = document.getElementById("player-list");
   const canRemove = players.length > min;
   const lang = TileCityI18n.getLang();
+  players.forEach((player) => {
+    if (player.bot) player.name = Carcassonne.botNameForColor(player.id, lang);
+  });
   list.innerHTML = players.map((player, index) => {
     const used = usedColors(index);
     const swatches = palette.map((color) => {
@@ -131,7 +134,7 @@ document.getElementById("player-list").addEventListener("change", (event) => {
     const player = players[index];
     if (bot && !player.bot) {
       player.humanName = player.name;
-      player.name = Carcassonne.botNameForColor(player.id);
+      player.name = Carcassonne.botNameForColor(player.id, TileCityI18n.getLang());
     } else if (!bot && player.bot) {
       const restored = (player.humanName || "").trim().slice(0, nameMax);
       player.name = restored || Carcassonne.nextPlayerName(players);
@@ -159,7 +162,7 @@ document.getElementById("player-list").addEventListener("click", (event) => {
     const index = Number(colorBtn.getAttribute("data-index"));
     players[index].id = colorBtn.getAttribute("data-color");
     if (players[index].bot) {
-      players[index].name = Carcassonne.botNameForColor(players[index].id);
+      players[index].name = Carcassonne.botNameForColor(players[index].id, TileCityI18n.getLang());
     }
     setErr("");
     paint();
@@ -192,7 +195,7 @@ document.getElementById("start-game").addEventListener("click", () => {
   const cleaned = [];
   for (const player of players) {
     const name = player.bot
-      ? Carcassonne.botNameForColor(player.id)
+      ? Carcassonne.botNameForColor(player.id, lang)
       : ((player.name || "").trim().slice(0, nameMax) ||
         Carcassonne.nextPlayerName(cleaned));
     cleaned.push({

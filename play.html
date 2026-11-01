@@ -4,6 +4,21 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Tile City</title>
+  <script>
+    (function () {
+      var ua = navigator.userAgent || "";
+      var phone = /iPhone|iPod/i.test(ua);
+      var pad = /iPad/i.test(ua) || (!phone && navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+      var narrow = matchMedia("(max-width: 1024px)").matches;
+      var classicPad = matchMedia("(min-width: 768px) and (max-width: 1024px) and (min-height: 700px)").matches;
+      if (phone) {
+        document.documentElement.classList.add("is-overlay");
+        return;
+      }
+      if (pad || classicPad) document.documentElement.classList.add("is-pad");
+      if (pad || classicPad || narrow) document.documentElement.classList.add("is-overlay");
+    })();
+  </script>
   <link rel="stylesheet" href="css/tiles.css">
   <link rel="stylesheet" href="css/play.css">
 

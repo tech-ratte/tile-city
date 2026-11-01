@@ -23,12 +23,15 @@ const LEAVE_FX_MS = 2000;
 const BOT_MOVE_MS = 450;
 const BOT_MEEPLE_MS = 380;
 const BOT_DISCARD_MS = 550;
+const BOT_CENTER_MS = 1000;
 const TILE_TOTAL = Carcassonne.TYPES.reduce((sum, type) => sum + type.count, 0);
 let exitConfirmOpen = false;
 let leaveFxTimer = null;
 let endFanfareStarted = false;
 let botTimer = null;
 let botBusy = false;
+let centerAnim = null;
+let centerAnimDone = null;
 
 function loadRoster() {
   return loadRosterFromStorage(Carcassonne);
@@ -201,6 +204,18 @@ function humanControlsLocked() {
   return isBotTurn() || botBusy;
 }
 
+function displayPlayerName(player) {
+  if (player.bot) return Carcassonne.botNameForColor(player.id, TileCityI18n.getLang());
+  return player.name;
+}
+
+function botBadgeHTML() {
+  return '<span class="bot-badge" title="' + t("botThinking") + '" aria-label="' + t("playerKindBot") + '">' +
+    '<svg class="bot-ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false">' +
+    '<path fill="currentColor" d="M9 3h6v2h3a2 2 0 0 1 2 2v5h-2V7H6v5H4V7a2 2 0 0 1 2-2h3V3zm-3 9h12a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2zm2.5 3a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3zm7 0a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3zM11 2h2v2h-2V2z"/>' +
+    "</svg></span>";
+}
+
 function playersHTML() {
   const order = game.finished && game.standings
     ? game.standings
@@ -209,12 +224,10 @@ function playersHTML() {
     const player = game.players[index];
     const on = !game.finished && index === game.player ? " on" : "";
     const rank = game.finished ? '<span class="rank">' + (order.indexOf(index) + 1) + "</span>" : "";
-    const bot = player.bot
-      ? '<span class="bot-badge" title="' + t("botThinking") + '">' + t("botBadge") + "</span>"
-      : "";
+    const bot = player.bot ? botBadgeHTML() : "";
     return '<li class="' + player.id + on + (player.bot ? " bot" : "") + '">' +
       rank +
-      '<span class="pname">' + player.name + bot + "</span>" +
+      '<span class="pname">' + displayPlayerName(player) + bot + "</span>" +
       '<span class="meeple-count"><i class="meeple ' + player.id + '" aria-hidden="true"></i>×' +
       game.meeples[index] + "</span>" +
       '<b class="score">' + game.scores[index] + "</b>" +
@@ -335,13 +348,12 @@ function meepleMarksHTML(tile, pending) {
     '<p class="meeple-prompt">' + prompt + "</p>" +
     spots +
     '<div class="meeple-actions">' +
+    '<button type="button" id="skip-meeple">' + t("skip") + "</button>" +
     '<button type="button" id="undo-place" aria-label="' + t("undoPlace") +
     '" title="' + t("undoPlace") + '">' +
     '<svg class="undo-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">' +
-    '<path fill="currentColor" d="M12.5 8C9.85 8 7.45 9 5.6 10.6L2 7v9h9l-3.62-3.62' +
-    'C8.77 11.22 10.54 10.5 12.5 10.5c3.54 0 6.55 2.31 7.6 5.5l2.37-.78C21.08 11.03 17.15 8 12.5 8z"/>' +
+    '<path fill="currentColor" d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/>' +
     '</svg></button>' +
-    '<button type="button" id="skip-meeple">' + t("skip") + "</button>" +
     "</div></div>"
   );
   return marks.join("");
@@ -353,7 +365,7 @@ function rankingHTML() {
     const player = game.players[index];
     return '<li>' +
       '<span class="rank-num">' + (rank + 1) + "</span>" +
-      '<span class="rank-name ' + player.id + '">' + player.name + "</span>" +
+      '<span class="rank-name ' + player.id + '">' + displayPlayerName(player) + "</span>" +
       '<b class="rank-score">' + game.scores[index] + "</b></li>";
   }).join("");
   return '<ul class="ranking-list">' + rows + "</ul>";
@@ -419,6 +431,8 @@ function paintDiscardOverlay() {
 }
 
 function paintSide() {
+  const hudTop = document.querySelector(".hud-top");
+  if (hudTop) hudTop.hidden = !!game.finished;
   document.getElementById("players-root").innerHTML = playersHTML();
   document.getElementById("stats-root").innerHTML = statsHTML();
   document.getElementById("hand-root").innerHTML = handHTML();
@@ -506,14 +520,61 @@ function captureAnchor() {
   };
 }
 
-function centerOn(pos) {
+function finishCenterAnim(runDone) {
+  if (centerAnim != null) {
+    cancelAnimationFrame(centerAnim);
+    centerAnim = null;
+  }
+  const done = centerAnimDone;
+  centerAnimDone = null;
+  if (runDone && done) done();
+}
+
+function cancelCenterAnim() {
+  finishCenterAnim(true);
+}
+
+function easeInOutCubic(t) {
+  return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+}
+
+function centerOn(pos, durationMs, onDone) {
+  const done = typeof onDone === "function" ? onDone : null;
   const el = document.querySelector('#grid [data-pos="' + pos + '"]');
-  if (!el) return;
+  finishCenterAnim(false);
+  if (!el) {
+    if (done) done();
+    return;
+  }
   const frame = scroller().getBoundingClientRect();
   const rect = el.getBoundingClientRect();
   const box = scroller();
-  box.scrollLeft += rect.left + rect.width / 2 - (frame.left + frame.width / 2);
-  box.scrollTop += rect.top + rect.height / 2 - (frame.top + frame.height / 2);
+  const dx = rect.left + rect.width / 2 - (frame.left + frame.width / 2);
+  const dy = rect.top + rect.height / 2 - (frame.top + frame.height / 2);
+  if (!durationMs || durationMs <= 0 || (Math.abs(dx) < 2 && Math.abs(dy) < 2)) {
+    box.scrollLeft += dx;
+    box.scrollTop += dy;
+    if (done) done();
+    return;
+  }
+  const startLeft = box.scrollLeft;
+  const startTop = box.scrollTop;
+  const endLeft = startLeft + dx;
+  const endTop = startTop + dy;
+  const start = performance.now();
+  centerAnimDone = done;
+  function tick(now) {
+    const t = Math.min(1, (now - start) / durationMs);
+    const e = easeInOutCubic(t);
+    box.scrollLeft = startLeft + (endLeft - startLeft) * e;
+    box.scrollTop = startTop + (endTop - startTop) * e;
+    if (t < 1) {
+      centerAnim = requestAnimationFrame(tick);
+      return;
+    }
+    finishCenterAnim(true);
+  }
+  centerAnim = requestAnimationFrame(tick);
 }
 
 function restoreAnchor(anchor) {
@@ -574,7 +635,25 @@ function finishBotMeeple(slotId) {
   if (!ok && game.pendingMeeple) ok = game.skipMeeple();
   if (ok && scoresGained(before)) playSound("point");
   botBusy = false;
-  render({ keep: true, center: game.lastPlacedBy[color] || undefined });
+  render({ keep: true });
+}
+
+function commitBotPlace(action) {
+  if (!isBotTurn() || game.finished) {
+    botBusy = false;
+    return;
+  }
+  game.setRotation(action.rot);
+  if (!game.place(action.x, action.y)) {
+    botBusy = false;
+    render({ keep: true });
+    return;
+  }
+  playSound("tile");
+  render({ keep: true, skipBot: true });
+  clearBotTimer();
+  botBusy = true;
+  botTimer = setTimeout(() => finishBotMeeple(action.slotId), BOT_MEEPLE_MS);
 }
 
 function runBotStep() {
@@ -605,17 +684,13 @@ function runBotStep() {
   }
   if (action.type === "place") {
     game.setRotation(action.rot);
-    if (!game.place(action.x, action.y)) {
-      botBusy = false;
-      render({ keep: true });
-      return;
-    }
-    playSound("tile");
+    paintSide();
     const center = action.x + "," + action.y;
-    render({ keep: true, center: center });
     clearBotTimer();
     botBusy = true;
-    botTimer = setTimeout(() => finishBotMeeple(action.slotId), BOT_MEEPLE_MS);
+    requestAnimationFrame(() => {
+      centerOn(center, BOT_CENTER_MS, () => commitBotPlace(action));
+    });
   }
 }
 
@@ -698,8 +773,12 @@ function render(opts) {
   persistGame();
   armLeaveFxClear();
   maybePlayEndFanfare();
-  if (opts.center) requestAnimationFrame(() => centerOn(opts.center));
-  else if (anchor) restoreAnchor(anchor);
+  if (opts.center) {
+    requestAnimationFrame(() => centerOn(opts.center, opts.centerMs));
+  } else if (anchor) {
+    cancelCenterAnim();
+    restoreAnchor(anchor);
+  }
   if (opts.skipBot) return;
   if (isBotTurn()) {
     const delay = game.pendingDiscard ? BOT_DISCARD_MS : BOT_MOVE_MS;
@@ -714,6 +793,7 @@ document.addEventListener("mousedown", (event) => {
   if (event.button !== 0) return;
   if (event.target.closest(".slot")) event.preventDefault();
   if (!event.target.closest("#scroller")) return;
+  cancelCenterAnim();
   pan = {
     x: event.clientX,
     y: event.clientY,
@@ -969,6 +1049,32 @@ document.addEventListener("focusin", (event) => {
   showGhost(event.target.closest("[data-preview-rot]"));
 });
 
+function syncLayoutMode() {
+  const root = document.documentElement;
+  const ua = navigator.userAgent || "";
+  const isIPhone = /iPhone|iPod/i.test(ua);
+  // iPadOS 13+ may report as Macintosh + touch; iPad Pro 11/13 exceed 1024px CSS width.
+  const isIPad =
+    /iPad/i.test(ua) ||
+    (!isIPhone && navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  const narrow = window.matchMedia("(max-width: 1024px)").matches;
+  const classicPadViewport = window.matchMedia(
+    "(min-width: 768px) and (max-width: 1024px) and (min-height: 700px)"
+  ).matches;
+
+  if (isIPhone) {
+    root.classList.remove("is-pad");
+    root.classList.add("is-overlay");
+    return;
+  }
+
+  const isPad = isIPad || classicPadViewport;
+  root.classList.toggle("is-pad", isPad);
+  // Overlay HUD for phones, all iPads (incl. Pro >1024), and narrow windows.
+  root.classList.toggle("is-overlay", isPad || narrow);
+}
+
+syncLayoutMode();
 applyBoardZoom();
 syncBoardPadding();
 TileCityI18n.apply();
@@ -980,6 +1086,7 @@ if (saved) {
   render({ center: "0,0" });
 }
 window.addEventListener("resize", () => {
+  syncLayoutMode();
   syncBoardPadding();
 });
 window.addEventListener("pagehide", () => {

@@ -105,14 +105,21 @@ html, body { height: 100%; overflow: hidden; }
     .players .bot-badge {
       display: inline-flex;
       align-items: center;
-      padding: 1px 5px;
+      justify-content: center;
+      width: 1.15em;
+      height: 1.15em;
+      padding: 0;
       border-radius: 4px;
       border: 1px solid rgba(255, 255, 255, 0.28);
-      font-size: 10px;
-      font-weight: 800;
-      letter-spacing: 0.06em;
       color: #d7e6f5;
       background: rgba(255, 255, 255, 0.08);
+      flex: none;
+    }
+
+    .players .bot-badge .bot-ico {
+      width: 0.85em;
+      height: 0.85em;
+      display: block;
     }
 
     .hand.bot-hand {
@@ -258,11 +265,11 @@ html, body { height: 100%; overflow: hidden; }
       pointer-events: auto;
     }
 
-    /* Ranking sits lower-center so it clears the top HUD. */
+    /* Ranking centered (top HUD is hidden after game end). */
     .discard-overlay:has(.discard-card.ranking-open) {
-      align-items: flex-end;
-      padding-top: max(56px, 8vh);
-      padding-bottom: max(48px, 14vh);
+      align-items: center;
+      padding-top: max(24px, 4vh);
+      padding-bottom: max(24px, 4vh);
     }
 
     .discard-overlay[hidden] {
@@ -289,7 +296,7 @@ html, body { height: 100%; overflow: hidden; }
       width: min(17.5em, 100%);
       max-width: 17.5em;
       max-height: min(76vh, 560px);
-      margin: 0 auto;
+      margin: auto;
       padding: 14px 14px 12px;
       gap: 8px;
       overflow: hidden;
@@ -1125,10 +1132,10 @@ html, body { height: 100%; overflow: hidden; }
     details summary { cursor: pointer; font-weight: 700; }
     details li { margin: 4px 0; }
 
-    @media (max-width: 1024px) {
-      .wrap { padding: 0; }
+    /* Phone + pad overlay. Class set by JS (covers iPad Pro >1024px). */
+    html.is-overlay .wrap { padding: 0; }
 
-      .play {
+    html.is-overlay .play {
         display: grid;
         grid-template-columns: 1fr;
         grid-template-rows: 1fr;
@@ -1137,37 +1144,38 @@ html, body { height: 100%; overflow: hidden; }
       }
 
       /* Sit above the HUD overlay so 8-player ranking stays visible. */
-      .discard-overlay {
+      html.is-overlay .discard-overlay {
         position: fixed;
         inset: 0;
         z-index: 50;
         padding: 12px 10px calc(12px + env(safe-area-inset-bottom, 0px));
       }
 
-      .discard-overlay:has(.discard-card.ranking-open) {
-        padding-top: max(48px, 7vh);
-        padding-bottom: max(40px, calc(12vh + env(safe-area-inset-bottom, 0px)));
+      html.is-overlay .discard-overlay:has(.discard-card.ranking-open) {
+        align-items: center;
+        padding-top: max(24px, 4vh);
+        padding-bottom: max(24px, calc(4vh + env(safe-area-inset-bottom, 0px)));
       }
 
-      .discard-card.ranking-open {
+      html.is-overlay .discard-card.ranking-open {
         max-height: min(74dvh, 560px);
       }
 
-      .board-panel {
+      html.is-overlay .board-panel {
         grid-area: 1 / 1;
         min-height: 0;
         height: 100%;
       }
 
-      #legend { display: none; }
+      html.is-overlay #legend { display: none; }
 
-      .scroller {
+      html.is-overlay .scroller {
         margin-top: 0;
         border-radius: 0;
         border: 0;
       }
 
-      .side {
+      html.is-overlay .side {
         grid-area: 1 / 1;
         z-index: 20;
         min-height: 0;
@@ -1184,42 +1192,42 @@ html, body { height: 100%; overflow: hidden; }
         justify-content: space-between;
       }
 
-      .hud-top,
-      .hud-bottom {
+      html.is-overlay .hud-top,
+      html.is-overlay .hud-bottom {
         pointer-events: auto;
       }
 
-      .discard-card p {
+      html.is-overlay .discard-card p {
         font-size: 16px;
       }
 
-      .hud-top {
+      html.is-overlay .hud-top {
         position: relative;
         z-index: 21;
         padding: 10px 10px 18px;
         background: linear-gradient(to bottom, rgba(9, 13, 20, 0.88), rgba(9, 13, 20, 0.45), transparent);
       }
 
-      .players {
+      html.is-overlay .players {
         display: grid;
         grid-template-columns: 1fr 1fr;
         gap: 6px;
       }
 
-      .players li {
+      html.is-overlay .players li {
         padding: 6px 8px;
         gap: 6px 8px;
         background: rgba(10, 16, 28, 0.78);
       }
 
-      .players .pname { font-size: 13px; }
-      .players .meeple-count { font-size: 12px; }
-      .players .meeple-count .meeple { width: 13px; height: 16px; }
-      .score { font-size: 15px; }
+      html.is-overlay .players .pname { font-size: 13px; }
+      html.is-overlay .players .meeple-count { font-size: 12px; }
+      html.is-overlay .players .meeple-count .meeple { width: 13px; height: 16px; }
+      html.is-overlay .score { font-size: 15px; }
 
-      .meters { display: none; }
+      html.is-overlay .meters { display: none; }
 
-      .hud-meta {
+      html.is-overlay .hud-meta {
         display: flex;
         align-items: center;
         justify-content: space-between;
@@ -1228,14 +1236,14 @@ html, body { height: 100%; overflow: hidden; }
         width: 100%;
       }
 
-      .hud-meta .exit-chip {
+      html.is-overlay .hud-meta .exit-chip {
         flex: none;
         padding: 4px 10px;
         font-size: 13px;
         text-shadow: none;
       }
 
-      .deck-short {
+      html.is-overlay .deck-short {
         display: inline-flex;
         align-items: center;
         gap: 6px;
@@ -1249,7 +1257,7 @@ html, body { height: 100%; overflow: hidden; }
         text-shadow: 0 0 8px rgba(100, 220, 255, 0.45);
       }
 
-      .deck-chip {
+      html.is-overlay .deck-chip {
         display: inline-flex;
         align-items: baseline;
         gap: 4px;
@@ -1259,18 +1267,18 @@ html, body { height: 100%; overflow: hidden; }
         border: 1px solid rgba(140, 220, 255, 0.28);
       }
 
-      .hud-top #stats-root {
+      html.is-overlay .hud-top #stats-root {
         display: flex;
         flex-direction: column;
         align-items: stretch;
       }
 
-      .hud-bottom {
+      html.is-overlay .hud-bottom {
         padding: 14px 10px calc(10px + env(safe-area-inset-bottom, 0px));
         background: linear-gradient(to top, rgba(9, 13, 20, 0.92), rgba(9, 13, 20, 0.5), transparent);
       }
 
-      .hand {
+      html.is-overlay .hand {
         display: flex;
         flex-direction: row;
         align-items: center;
@@ -1279,7 +1287,7 @@ html, body { height: 100%; overflow: hidden; }
       }
 
       /* Phone + pad: discarded tile as centered my-tile at bottom. */
-      .hand.discard-only {
+      html.is-overlay .hand.discard-only {
         position: fixed;
         left: 50%;
         bottom: calc(14px + env(safe-area-inset-bottom, 0px));
@@ -1291,35 +1299,35 @@ html, body { height: 100%; overflow: hidden; }
         pointer-events: none;
       }
 
-      .hand.discard-only .preview {
+      html.is-overlay .hand.discard-only .preview {
         margin: 0;
       }
 
-      .hand.discard-only .preview-frame {
+      html.is-overlay .hand.discard-only .preview-frame {
         box-shadow: 0 8px 28px rgba(0, 0, 0, 0.45);
       }
 
-      .hud-bottom:has(.hand.discard-only) {
+      html.is-overlay .hud-bottom:has(.hand.discard-only) {
         padding: 0;
         background: transparent;
         pointer-events: none;
       }
 
-      .hand .preview {
+      html.is-overlay .hand .preview {
         margin-top: 0;
         flex: none;
       }
 
-      .hand .preview-frame {
+      html.is-overlay .hand .preview-frame {
         width: 72px;
         height: 72px;
       }
 
-      .hand .preview-frame .tile {
+      html.is-overlay .hand .preview-frame .tile {
         zoom: 0.6;
       }
 
-      .hand .rots {
+      html.is-overlay .hand .rots {
         margin-top: 0;
         flex: 1;
         min-width: 0;
@@ -1328,7 +1336,7 @@ html, body { height: 100%; overflow: hidden; }
         justify-content: space-between;
       }
 
-      .hand .thumb {
+      html.is-overlay .hand .thumb {
         --thumb-scale: 0.4;
         flex: 1;
         min-width: 0;
@@ -1336,11 +1344,11 @@ html, body { height: 100%; overflow: hidden; }
         padding: 3px 2px 4px;
       }
 
-      .hand .deg { font-size: 11px; }
+      html.is-overlay .hand .deg { font-size: 11px; }
 
-      .foot { display: none !important; }
+      html.is-overlay .foot { display: none !important; }
 
-      .hand.ranking-hand {
+      html.is-overlay .hand.ranking-hand {
         display: flex;
         justify-content: center;
         align-items: center;
@@ -1348,38 +1356,98 @@ html, body { height: 100%; overflow: hidden; }
         width: 100%;
       }
 
-      .hand.ranking-hand .again-chip,
-      .hand.ranking-hand .ranking-chip,
-      .hand.ranking-hand .quit-chip {
+      html.is-overlay .hand.ranking-hand .again-chip,
+      html.is-overlay .hand.ranking-hand .ranking-chip,
+      html.is-overlay .hand.ranking-hand .quit-chip {
         flex: 1;
         text-align: center;
         background: rgba(10, 16, 28, 0.78);
       }
+
+    /*
+      Pad enlargements — toggled by html.is-pad from JS.
+      iPhone / iPod never get this class, so SE / 16 stay on the phone HUD sizes above.
+    */
+    html.is-pad .hud-top,
+    html.is-pad .hud-bottom,
+    html.is-pad .discard-card {
+      zoom: 1.4;
     }
-    /* Pad only: larger my-tile; keep thumb scale, just tighten the 4-angle width. */
-    @media (min-width: 768px) and (max-width: 1024px) {
-      .hand {
-        justify-content: center;
-      }
 
-      .hand .preview-frame {
-        width: 108px;
-        height: 108px;
-      }
+    /* My-tile + 4 rotations as one centered group; no stretch/overlap. */
+    html.is-pad .hand {
+      display: flex;
+      flex-direction: row;
+      flex-wrap: nowrap;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      width: 100%;
+      max-width: 100%;
+      box-sizing: border-box;
+      padding-inline: 8px;
+    }
 
-      .hand .preview-frame .tile {
-        zoom: 0.9;
-      }
+    html.is-pad .hand .preview {
+      flex: 0 0 auto;
+      margin: 0;
+    }
 
-      .hand .rots {
-        flex: 0 1 auto;
-        max-width: 46%;
-        justify-content: center;
-      }
+    html.is-pad .hand .rots {
+      flex: 0 0 auto;
+      width: auto;
+      min-width: 0;
+      max-width: none;
+      margin-top: 0;
+      display: flex;
+      gap: 6px;
+      justify-content: center;
+    }
 
-      .hand .thumb {
-        --thumb-scale: 0.65;
-        flex: 0 0 auto;
-      }
+    html.is-pad .hand .thumb {
+      flex: 0 0 auto;
+      width: auto;
+      --thumb-scale: 0.38;
+      padding: 2px;
+    }
+
+    html.is-pad .hand.discard-only,
+    html.is-pad .hand.ranking-hand,
+    html.is-pad .hand.bot-hand {
+      display: flex;
+      grid-template-columns: none;
+      justify-content: center;
+      width: auto;
+      max-width: none;
+      padding-inline: 0;
+    }
+
+    html.is-pad .meeple-prompt {
+      bottom: calc(100% + 10px);
+      padding: 8px 14px;
+      font-size: 16px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+    }
+
+    html.is-pad .meeple-actions {
+      top: calc(100% + 10px);
+      gap: 10px;
+    }
+
+    html.is-pad #skip-meeple {
+      padding: 10px 22px;
+      font-size: 16px;
+      font-weight: 700;
+    }
+
+    html.is-pad #undo-place {
+      width: 42px;
+      height: 42px;
+    }
+
+    html.is-pad #undo-place .undo-icon {
+      width: 22px;
+      height: 22px;
     }
 

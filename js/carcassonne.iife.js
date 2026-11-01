@@ -86,21 +86,21 @@ var Carcassonne = (() => {
     { id: "brown", hex: "#a67c52", label: "Brown" }
   ];
   var BOT_NAMES = {
-    red: "\u30EC\u30C3\u30AF\u30B9",
+    red: { en: "Rex", ja: "\u30EC\u30C3\u30AF\u30B9" },
     // hot-blooded warrior, boy ~17
-    blue: "\u30AB\u30A4\u30F3",
+    blue: { en: "Cain", ja: "\u30AB\u30A4\u30F3" },
     // cold sage, boy ~18
-    green: "\u30ED\u30C3\u30AF",
+    green: { en: "Rock", ja: "\u30ED\u30C3\u30AF" },
     // young thief, boy ~11
-    yellow: "\u30EB\u30CA",
+    yellow: { en: "Luna", ja: "\u30EB\u30CA" },
     // mischievous princess, girl ~10
-    orange: "\u30A2\u30B9\u30AB",
+    orange: { en: "Asuka", ja: "\u30A2\u30B9\u30AB" },
     // energetic fighter, girl ~17
-    purple: "\u30E2\u30FC\u30E9",
+    purple: { en: "Mora", ja: "\u30E2\u30FC\u30E9" },
     // necromancer, woman ~80
-    white: "\u30BB\u30B7\u30EB",
+    white: { en: "Cecil", ja: "\u30BB\u30B7\u30EB" },
     // apprentice cleric, girl ~15
-    brown: "\u30A8\u30EA\u30B6"
+    brown: { en: "Eliza", ja: "\u30A8\u30EA\u30B6" }
     // haughty mage, woman ~23
   };
   function defaultPlayerName(index) {
@@ -116,8 +116,12 @@ var Carcassonne = (() => {
     }
     return "Player" + (max + 1);
   }
-  function botNameForColor(id) {
-    if (BOT_NAMES[id]) return BOT_NAMES[id];
+  function botNameForColor(id, lang) {
+    const entry = BOT_NAMES[id];
+    if (entry) {
+      if (typeof entry === "string") return entry;
+      return lang === "en" ? entry.en : entry.ja;
+    }
     const color = COLOR_PALETTE.find((item) => item.id === id);
     return color ? color.label : "Bot";
   }
