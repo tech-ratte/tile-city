@@ -7,9 +7,12 @@ const palette = Carcassonne.COLOR_PALETTE;
 const min = Carcassonne.PLAYERS_MIN;
 const max = Carcassonne.PLAYERS_MAX;
 const nameMax = Carcassonne.NAME_MAX;
+const strengths = Carcassonne.BOT_STRENGTHS;
 
 function defaultRoster() {
-  return Carcassonne.PLAYERS.map((player) => ({ id: player.id, name: player.name }));
+  return Carcassonne.normalizePlayers(
+    Carcassonne.PLAYERS.map((player) => ({ id: player.id, name: player.name, bot: false }))
+  );
 }
 
 function load() {
@@ -40,6 +43,11 @@ function setErr(msg) {
   document.getElementById("err").textContent = msg || "";
 }
 
+function strengthLabel(id, lang) {
+  if (id === "standard") return TileCityI18n.t("botStrengthStandard", lang);
+  return id;
+}
+
 function paint() {
   const list = document.getElementById("player-list");
   const canRemove = players.length > min;
@@ -54,9 +62,28 @@ function paint() {
         '" data-index="' + index + '" style="--swatch:' + color.hex + '"' + disabled +
         ' aria-label="' + TileCityI18n.colorLabel(color.id, lang) + '"></button>';
     }).join("");
-    return '<li class="player-row" data-index="' + index + '">' +
+    const strengthOpts = strengths.map((item) => {
+      const selected = (player.botStrength || "standard") === item.id ? " selected" : "";
+      return '<option value="' + item.id + '"' + selected + ">" +
+        strengthLabel(item.id, lang) + "</option>";
+    }).join("");
+    return '<li class="player-row' + (player.bot ? " is-bot" : "") + '" data-index="' + index + '">' +
       '<input type="text" maxlength="' + nameMax + '" value="' + player.name.replace(/"/g, "&quot;") +
       '" data-name="' + index + '" aria-label="' + TileCityI18n.t("playerName", lang) + '">' +
+      '<div class="player-kind">' +
+      '<label class="kind-label">' +
+      '<span class="sr-only">' + TileCityI18n.t("playerKind", lang) + "</span>" +
+      '<select data-kind="' + index + '" aria-label="' + TileCityI18n.t("playerKind", lang) + '">' +
+      '<option value="human"' + (player.bot ? "" : " selected") + ">" +
+      TileCityI18n.t("playerKindHuman", lang) + "</option>" +
+      '<option value="bot"' + (player.bot ? " selected" : "") + ">" +
+      TileCityI18n.t("playerKindBot", lang) + "</option>" +
+      "</select></label>" +
+      '<label class="strength-label"' + (player.bot ? "" : " hidden") + ">" +
+      '<span class="sr-only">' + TileCityI18n.t("botStrength", lang) + "</span>" +
+      '<select data-strength="' + index + '" aria-label="' + TileCityI18n.t("botStrength", lang) + '"' +
+      (player.bot ? "" : " disabled") + ">" + strengthOpts + "</select></label>" +
+      "</div>" +
       '<div class="color-picks">' + swatches + "</div>" +
       '<button type="button" class="remove-player" data-remove="' + index + '"' +
       (canRemove ? "" : " disabled") + ' aria-label="' + TileCityI18n.t("removePlayer", lang) +
@@ -73,6 +100,27 @@ document.getElementById("player-list").addEventListener("input", (event) => {
   const index = Number(input.getAttribute("data-name"));
   players[index].name = input.value.slice(0, nameMax);
   setErr("");
+});
+
+document.getElementById("player-list").addEventListener("change", (event) => {
+  const kind = event.target.closest("[data-kind]");
+  if (kind) {
+    const index = Number(kind.getAttribute("data-kind"));
+    const bot = kind.value === "bot";
+    players[index].bot = bot;
+    players[index].botStrength = bot
+      ? Carcassonne.normalizeBotStrength(players[index].botStrength, true)
+      : null;
+    setErr("");
+    paint();
+    return;
+  }
+  const strength = event.target.closest("[data-strength]");
+  if (strength) {
+    const index = Number(strength.getAttribute("data-strength"));
+    players[index].botStrength = Carcassonne.normalizeBotStrength(strength.value, true);
+    setErr("");
+  }
 });
 
 document.getElementById("player-list").addEventListener("click", (event) => {
@@ -99,6 +147,8 @@ document.getElementById("add-player").addEventListener("click", () => {
   players.push({
     id: color.id,
     name: TileCityI18n.colorLabel(color.id).slice(0, nameMax),
+    bot: false,
+    botStrength: null,
   });
   setErr("");
   paint();
@@ -110,6 +160,10 @@ document.getElementById("start-game").addEventListener("click", () => {
     id: player.id,
     name: (player.name || "").trim().slice(0, nameMax) ||
       TileCityI18n.colorLabel(player.id, lang).slice(0, nameMax),
+    bot: !!player.bot,
+    botStrength: player.bot
+      ? Carcassonne.normalizeBotStrength(player.botStrength, true)
+      : null,
   }));
   const ids = cleaned.map((player) => player.id);
   if (cleaned.length < min || cleaned.length > max) {

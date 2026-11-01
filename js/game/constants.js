@@ -22,25 +22,58 @@ export const PLAYERS_MAX = 8;
 
 export const NAME_MAX = 6;
 
+/** Bot difficulty ids shown in setup. Only standard is implemented for now. */
+export const BOT_STRENGTHS = [
+  { id: "standard", label: "Standard" },
+];
+
+export const BOT_STRENGTH_IDS = BOT_STRENGTHS.map((item) => item.id);
+
+export function normalizeBotStrength(value, isBot) {
+  if (!isBot) return null;
+  if (typeof value === "string" && BOT_STRENGTH_IDS.includes(value)) return value;
+  return "standard";
+}
+
+export function normalizePlayerRecord(item) {
+  const known = new Set(COLOR_PALETTE.map((color) => color.id));
+  const id = item && known.has(item.id) ? item.id : null;
+  if (!id) return null;
+  const raw = item.name == null ? "" : String(item.name);
+  const name = raw.trim().slice(0, NAME_MAX) || COLOR_PALETTE.find((c) => c.id === id).label;
+  const bot = !!(item && item.bot);
+  return {
+    id: id,
+    name: name,
+    bot: bot,
+    botStrength: normalizeBotStrength(item && item.botStrength, bot),
+  };
+}
+
+export function defaultPlayerList() {
+  return PLAYERS.map((player) => ({
+    id: player.id,
+    name: player.name,
+    bot: false,
+    botStrength: null,
+  }));
+}
 
 export function normalizePlayers(list) {
   if (!Array.isArray(list) || !list.length) {
-    return PLAYERS.map((player) => ({ id: player.id, name: player.name }));
+    return defaultPlayerList();
   }
-  const known = new Set(COLOR_PALETTE.map((color) => color.id));
   const used = new Set();
   const out = [];
   for (const item of list) {
     if (out.length >= PLAYERS_MAX) break;
-    const id = item && known.has(item.id) ? item.id : null;
-    if (!id || used.has(id)) continue;
-    used.add(id);
-    const raw = item.name == null ? "" : String(item.name);
-    const name = raw.trim().slice(0, NAME_MAX) || COLOR_PALETTE.find((c) => c.id === id).label;
-    out.push({ id: id, name: name });
+    const player = normalizePlayerRecord(item);
+    if (!player || used.has(player.id)) continue;
+    used.add(player.id);
+    out.push(player);
   }
   if (out.length < PLAYERS_MIN) {
-    return PLAYERS.map((player) => ({ id: player.id, name: player.name }));
+    return defaultPlayerList();
   }
   return out;
 }

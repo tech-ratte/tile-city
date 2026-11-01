@@ -33,7 +33,12 @@ export function revivePlacedTile(data) {
 export function serializeGame(game) {
   return {
     v: SAVE_VERSION,
-    players: game.players.map((player) => ({ id: player.id, name: player.name })),
+    players: game.players.map((player) => ({
+      id: player.id,
+      name: player.name,
+      bot: !!player.bot,
+      botStrength: player.bot ? (player.botStrength || "standard") : null,
+    })),
     deck: game.deck.map(snapshotLooseTile),
     discards: game.discards.map(snapshotLooseTile),
     board: Array.from(game.board.entries()).map(([key, tile]) => [key, snapshotPlacedTile(tile)]),

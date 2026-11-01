@@ -20,10 +20,15 @@ const ZOOM_MAX = 1.6;
 const ZOOM_STEP = 0.05;
 const ZOOM_WHEEL = 0.025;
 const LEAVE_FX_MS = 2000;
+const BOT_MOVE_MS = 450;
+const BOT_MEEPLE_MS = 380;
+const BOT_DISCARD_MS = 550;
 const TILE_TOTAL = Carcassonne.TYPES.reduce((sum, type) => sum + type.count, 0);
 let exitConfirmOpen = false;
 let leaveFxTimer = null;
 let endFanfareStarted = false;
+let botTimer = null;
+let botBusy = false;
 
 function loadRoster() {
   return loadRosterFromStorage(Carcassonne);
@@ -176,6 +181,24 @@ function paintLegend() {
     '<p class="rot-hint">' + t("rotHint") + "</p>";
 }
 
+function activeSeat() {
+  if (game.pendingMeeple) return game.pendingMeeple.player;
+  return game.player;
+}
+
+function isBotSeat(index) {
+  return Carcassonne.isBotPlayer(game.players[index]);
+}
+
+function isBotTurn() {
+  if (game.finished || exitConfirmOpen) return false;
+  return isBotSeat(activeSeat());
+}
+
+function humanControlsLocked() {
+  return isBotTurn() || botBusy;
+}
+
 function playersHTML() {
   const order = game.finished && game.standings
     ? game.standings
@@ -184,9 +207,12 @@ function playersHTML() {
     const player = game.players[index];
     const on = !game.finished && index === game.player ? " on" : "";
     const rank = game.finished ? '<span class="rank">' + (order.indexOf(index) + 1) + "</span>" : "";
-    return '<li class="' + player.id + on + '">' +
+    const bot = player.bot
+      ? '<span class="bot-badge" title="' + t("botThinking") + '">' + t("botBadge") + "</span>"
+      : "";
+    return '<li class="' + player.id + on + (player.bot ? " bot" : "") + '">' +
       rank +
-      '<span class="pname">' + player.name + "</span>" +
+      '<span class="pname">' + player.name + bot + "</span>" +
       '<span class="meeple-count"><i class="meeple ' + player.id + '" aria-hidden="true"></i>×' +
       game.meeples[index] + "</span>" +
       '<b class="score">' + game.scores[index] + "</b>" +
@@ -234,6 +260,12 @@ function handHTML() {
       '<span class="preview-frame">' + Carcassonne.tileHTML(game.current.id, 0) +
       "</span></div></div>";
   }
+  if (humanControlsLocked()) {
+    return '<div class="hand bot-hand">' +
+      '<div class="preview" aria-label="' + t("botThinking") + '">' +
+      '<span class="preview-frame">' + Carcassonne.tileHTML(game.current.id, game.rotation) +
+      '</span></div><p class="bot-status">' + t("botThinking") + "</p></div>";
+  }
   const counts = game.rotationCounts();
   const thumbs = [0, 1, 2, 3].map((rot) => {
     const on = rot === game.rotation ? " on" : "";
@@ -272,6 +304,10 @@ function meepleMarksHTML(tile, pending) {
   if (tile.meeple) marks.push(meeplePinHTML(tile.meeple, false));
   if (tile.leaveFx) marks.push(meeplePinHTML(tile.leaveFx, true));
   if (!pending) return marks.join("");
+  if (humanControlsLocked()) {
+    marks.push('<div class="meeple-layer bot-meeple"><p class="meeple-prompt">' + t("botThinking") + "</p></div>");
+    return marks.join("");
+  }
   const color = game.players[game.pendingMeeple.player].id;
   const slots = game.meepleSlots();
   const spots = slots.map((slot) =>
@@ -385,9 +421,8 @@ function paintSide() {
 
 function paintGrid() {
   const bounds = game.bounds(1);
-  const hints = game.pendingMeeple || game.pendingDiscard || exitConfirmOpen
-    ? { now: [], later: [] }
-    : game.hints();
+  const lockHints = game.pendingMeeple || game.pendingDiscard || exitConfirmOpen || humanControlsLocked();
+  const hints = lockHints ? { now: [], later: [] } : game.hints();
   const now = new Set(hints.now.map((cell) => cell.x + "," + cell.y));
   const later = new Map(hints.later.map((cell) => [cell.x + "," + cell.y, cell.rots]));
   const pendingKey = game.pendingMeeple
@@ -495,9 +530,85 @@ function showGhost(slot) {
 }
 
 function rotateClockwise() {
+  if (humanControlsLocked()) return;
   if (game.finished || game.pendingMeeple || game.pendingDiscard || !game.current) return;
   game.rotate(1);
   render({ keep: true });
+}
+
+function clearBotTimer() {
+  if (botTimer != null) {
+    clearTimeout(botTimer);
+    botTimer = null;
+  }
+}
+
+function scheduleBot(delay) {
+  clearBotTimer();
+  if (!isBotTurn() || game.finished) {
+    botBusy = false;
+    return;
+  }
+  botBusy = true;
+  botTimer = setTimeout(runBotStep, delay == null ? BOT_MOVE_MS : delay);
+}
+
+function finishBotMeeple(slotId) {
+  const before = game.scores.slice();
+  const color = game.players[game.pendingMeeple.player].id;
+  let ok = false;
+  if (slotId) {
+    ok = game.placeMeeple(slotId);
+    if (ok) playMeepleSound(color);
+  } else {
+    ok = game.skipMeeple();
+  }
+  if (!ok && game.pendingMeeple) ok = game.skipMeeple();
+  if (ok && scoresGained(before)) playSound("point");
+  botBusy = false;
+  render({ keep: true, center: game.lastPlacedBy[color] || undefined });
+}
+
+function runBotStep() {
+  botTimer = null;
+  if (!isBotTurn() || game.finished) {
+    botBusy = false;
+    return;
+  }
+  const seat = activeSeat();
+  const strength = game.players[seat].botStrength || "standard";
+  const action = Carcassonne.chooseBotAction(game, strength);
+  if (!action) {
+    botBusy = false;
+    return;
+  }
+  if (action.type === "discard") {
+    if (game.acknowledgeDiscard()) {
+      botBusy = false;
+      render({ keep: true });
+    } else {
+      botBusy = false;
+    }
+    return;
+  }
+  if (action.type === "meeple") {
+    finishBotMeeple(action.slotId);
+    return;
+  }
+  if (action.type === "place") {
+    game.setRotation(action.rot);
+    if (!game.place(action.x, action.y)) {
+      botBusy = false;
+      render({ keep: true });
+      return;
+    }
+    playSound("tile");
+    const center = action.x + "," + action.y;
+    render({ keep: true, center: center });
+    clearBotTimer();
+    botBusy = true;
+    botTimer = setTimeout(() => finishBotMeeple(action.slotId), BOT_MEEPLE_MS);
+  }
 }
 
 function applyHandRotation(button) {
@@ -559,6 +670,14 @@ function render(opts) {
   maybePlayEndFanfare();
   if (opts.center) requestAnimationFrame(() => centerOn(opts.center));
   else if (anchor) restoreAnchor(anchor);
+  if (opts.skipBot) return;
+  if (isBotTurn()) {
+    const delay = game.pendingDiscard ? BOT_DISCARD_MS : BOT_MOVE_MS;
+    scheduleBot(delay);
+  } else {
+    botBusy = false;
+    clearBotTimer();
+  }
 }
 
 document.addEventListener("mousedown", (event) => {
@@ -601,6 +720,7 @@ document.addEventListener("mouseup", () => {
 document.addEventListener("pointerdown", (event) => {
   if (event.pointerType !== "touch" && event.pointerType !== "pen") return;
   if (event.button !== 0 && event.button !== -1) return;
+  if (humanControlsLocked()) return;
   const button = event.target.closest("button[data-rotate], button[data-set-rot]");
   if (!button) return;
   event.preventDefault();
@@ -623,6 +743,7 @@ document.addEventListener("click", (event) => {
     return;
   }
   if (button.id === "ok-discard") {
+    if (humanControlsLocked()) return;
     if (game.acknowledgeDiscard()) render({ keep: true });
     return;
   }
@@ -664,6 +785,7 @@ document.addEventListener("click", (event) => {
     return;
   }
   if (button.id === "skip-meeple") {
+    if (humanControlsLocked()) return;
     const before = game.scores.slice();
     if (game.skipMeeple()) {
       if (scoresGained(before)) playSound("point");
@@ -672,10 +794,12 @@ document.addEventListener("click", (event) => {
     return;
   }
   if (button.id === "undo-place") {
+    if (humanControlsLocked()) return;
     if (game.undoPlace()) render({ keep: true });
     return;
   }
   if (button.dataset.meepleSlot) {
+    if (humanControlsLocked()) return;
     const before = game.scores.slice();
     const color = game.players[game.pendingMeeple.player].id;
     if (game.placeMeeple(button.dataset.meepleSlot)) {
@@ -685,6 +809,7 @@ document.addEventListener("click", (event) => {
     }
     return;
   }
+  if (humanControlsLocked()) return;
   if (applyHandRotation(button)) return;
   if (button.dataset.place) {
     const parts = button.dataset.place.split(",").map(Number);
@@ -705,6 +830,7 @@ document.getElementById("scroller").addEventListener("pointerleave", () => {
 
 document.addEventListener("keydown", (event) => {
   if (event.repeat) return;
+  if (humanControlsLocked()) return;
   if (game.pendingDiscard && (event.key === "Enter" || event.key === " ")) {
     event.preventDefault();
     if (game.acknowledgeDiscard()) render({ keep: true });
@@ -719,6 +845,7 @@ document.addEventListener("keydown", (event) => {
 
 document.addEventListener("contextmenu", (event) => {
   if (!event.target.closest("#scroller")) return;
+  if (humanControlsLocked()) return;
   if (game.finished || game.pendingMeeple || game.pendingDiscard || !game.current) return;
   event.preventDefault();
   rotateClockwise();

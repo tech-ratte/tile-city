@@ -19,7 +19,10 @@ import {
   MEEPLES_EACH,
   EDGE_NAME,
   DIR_NAME,
+  BOT_STRENGTHS,
+  BOT_STRENGTH_IDS,
   normalizePlayers,
+  normalizeBotStrength,
 } from "./constants.js";
 import {
   TYPES,
@@ -65,6 +68,13 @@ import {
   restoreGame,
   SAVE_VERSION,
 } from "./persist.js";
+import {
+  BOT_WEIGHTS,
+  chooseBotAction,
+  cloneGame,
+  deckPhase,
+  isBotPlayer,
+} from "./bot.js";
 
 const Carcassonne = {
   PLAYERS,
@@ -73,6 +83,9 @@ const Carcassonne = {
   PLAYERS_MAX,
   NAME_MAX,
   MEEPLES_EACH,
+  BOT_STRENGTHS,
+  BOT_STRENGTH_IDS,
+  BOT_WEIGHTS,
   TYPES,
   MARKUP,
   EDGE_NAME,
@@ -106,6 +119,11 @@ const Carcassonne = {
   restoreGame,
   SAVE_VERSION,
   simulateToLastTile,
+  normalizeBotStrength,
+  chooseBotAction,
+  cloneGame,
+  deckPhase,
+  isBotPlayer,
 };
 
 export default Carcassonne;
@@ -116,6 +134,9 @@ export {
   PLAYERS_MAX,
   NAME_MAX,
   MEEPLES_EACH,
+  BOT_STRENGTHS,
+  BOT_STRENGTH_IDS,
+  BOT_WEIGHTS,
   TYPES,
   MARKUP,
   EDGE_NAME,
@@ -149,4 +170,9 @@ export {
   restoreGame,
   SAVE_VERSION,
   simulateToLastTile,
+  normalizeBotStrength,
+  chooseBotAction,
+  cloneGame,
+  deckPhase,
+  isBotPlayer,
 };

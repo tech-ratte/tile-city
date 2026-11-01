@@ -29,6 +29,7 @@ import {
   COLOR_PALETTE,
   PLAYERS_MIN,
   PLAYERS_MAX,
+  chooseBotAction,
 } from "./game/index.js";
 
 function makePlaced(id, rot, meeple) {
@@ -565,9 +566,21 @@ assert.strictEqual(MEEPLES_EACH, 7);
   assert.strictEqual(duo.players.length, 2);
   assert.strictEqual(duo.scores.length, 2);
   assert.strictEqual(duo.meeples.length, 2);
-  assert.deepStrictEqual(normalizePlayers([{ id: "red", name: "TooLongName" }]), PLAYERS.map((p) => ({ id: p.id, name: p.name })), "below min falls back");
+  assert.deepStrictEqual(
+    normalizePlayers([{ id: "red", name: "TooLongName" }]),
+    PLAYERS.map((p) => ({ id: p.id, name: p.name, bot: false, botStrength: null })),
+    "below min falls back"
+  );
   assert.strictEqual(COLOR_PALETTE.length >= PLAYERS_MAX, true);
   assert.strictEqual(PLAYERS_MIN, 2);
+  const withBot = normalizePlayers([
+    { id: "red", name: "A", bot: true, botStrength: "standard" },
+    { id: "blue", name: "B" },
+  ]);
+  assert.strictEqual(withBot[0].bot, true);
+  assert.strictEqual(withBot[0].botStrength, "standard");
+  assert.strictEqual(withBot[1].bot, false);
+  assert.strictEqual(withBot[1].botStrength, null);
 }
 
 // Start player is chosen at random from the roster.
@@ -775,5 +788,59 @@ assert.ok(tileHTML("U", 2).includes("rot-180"));
 assert.ok(tileHTML("V", 3).includes("rot-270"));
 assert.ok(tileHTML("E", 0).includes("city cap n"));
 assert.ok(!tileHTML("B", 0).includes("rot-"));
+
+// Bot chooses legal place/meeple actions and can finish a short game.
+{
+  const botGame = createGame(mulberry32(9), [
+    { id: "red", name: "Hum", bot: false },
+    { id: "blue", name: "CPU", bot: true, botStrength: "standard" },
+  ]);
+  assert.strictEqual(botGame.players[1].bot, true);
+  const snap = serializeGame(botGame);
+  const revived = restoreGame(snap);
+  assert.strictEqual(revived.players[1].bot, true);
+  assert.strictEqual(revived.players[1].botStrength, "standard");
+
+  drainDiscards(botGame);
+  const action = chooseBotAction(botGame, "standard");
+  assert.ok(action);
+  if (botGame.pendingDiscard) {
+    assert.strictEqual(action.type, "discard");
+  } else if (botGame.pendingMeeple) {
+    assert.strictEqual(action.type, "meeple");
+  } else {
+    assert.strictEqual(action.type, "place");
+    const edges = rotateEdges(botGame.current.edges, action.rot);
+    assert.strictEqual(canPlace(botGame.board, action.x, action.y, edges), true);
+  }
+}
+
+{
+  const auto = createGame(mulberry32(21), [
+    { id: "red", name: "A", bot: true, botStrength: "standard" },
+    { id: "blue", name: "B", bot: true, botStrength: "standard" },
+  ]);
+  let guard = 0;
+  while (!auto.finished && ++guard < 24) {
+    while (auto.pendingDiscard) assert.ok(auto.acknowledgeDiscard());
+    if (auto.finished) break;
+    if (auto.pendingMeeple) {
+      const action = chooseBotAction(auto, "standard");
+      assert.ok(action && action.type === "meeple");
+      if (action.slotId) assert.ok(auto.placeMeeple(action.slotId));
+      else assert.ok(auto.skipMeeple());
+      continue;
+    }
+    if (!auto.current) break;
+    const action = chooseBotAction(auto, "standard");
+    assert.ok(action && action.type === "place", "bot place on " + (auto.current && auto.current.id));
+    auto.setRotation(action.rot);
+    assert.ok(auto.place(action.x, action.y));
+    if (action.slotId) assert.ok(auto.placeMeeple(action.slotId));
+    else assert.ok(auto.skipMeeple());
+  }
+  assert.ok(auto.board.size >= 10, "bot should place multiple tiles");
+  assert.deepStrictEqual(boardErrors(auto.board), []);
+}
 
 console.log("placement checks passed");

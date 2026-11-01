@@ -133,24 +133,52 @@
   var PLAYERS_MIN = 2;
   var PLAYERS_MAX = 8;
   var NAME_MAX = 6;
+  var BOT_STRENGTHS = [
+    { id: "standard", label: "Standard" }
+  ];
+  var BOT_STRENGTH_IDS = BOT_STRENGTHS.map((item) => item.id);
+  function normalizeBotStrength(value, isBot) {
+    if (!isBot) return null;
+    if (typeof value === "string" && BOT_STRENGTH_IDS.includes(value)) return value;
+    return "standard";
+  }
+  function normalizePlayerRecord(item) {
+    const known = new Set(COLOR_PALETTE.map((color) => color.id));
+    const id = item && known.has(item.id) ? item.id : null;
+    if (!id) return null;
+    const raw = item.name == null ? "" : String(item.name);
+    const name = raw.trim().slice(0, NAME_MAX) || COLOR_PALETTE.find((c) => c.id === id).label;
+    const bot = !!(item && item.bot);
+    return {
+      id,
+      name,
+      bot,
+      botStrength: normalizeBotStrength(item && item.botStrength, bot)
+    };
+  }
+  function defaultPlayerList() {
+    return PLAYERS.map((player) => ({
+      id: player.id,
+      name: player.name,
+      bot: false,
+      botStrength: null
+    }));
+  }
   function normalizePlayers(list) {
     if (!Array.isArray(list) || !list.length) {
-      return PLAYERS.map((player) => ({ id: player.id, name: player.name }));
+      return defaultPlayerList();
     }
-    const known = new Set(COLOR_PALETTE.map((color) => color.id));
     const used = /* @__PURE__ */ new Set();
     const out = [];
     for (const item of list) {
       if (out.length >= PLAYERS_MAX) break;
-      const id = item && known.has(item.id) ? item.id : null;
-      if (!id || used.has(id)) continue;
-      used.add(id);
-      const raw = item.name == null ? "" : String(item.name);
-      const name = raw.trim().slice(0, NAME_MAX) || COLOR_PALETTE.find((c) => c.id === id).label;
-      out.push({ id, name });
+      const player = normalizePlayerRecord(item);
+      if (!player || used.has(player.id)) continue;
+      used.add(player.id);
+      out.push(player);
     }
     if (out.length < PLAYERS_MIN) {
-      return PLAYERS.map((player) => ({ id: player.id, name: player.name }));
+      return defaultPlayerList();
     }
     return out;
   }
@@ -1286,7 +1314,12 @@
   function serializeGame(game2) {
     return {
       v: SAVE_VERSION,
-      players: game2.players.map((player) => ({ id: player.id, name: player.name })),
+      players: game2.players.map((player) => ({
+        id: player.id,
+        name: player.name,
+        bot: !!player.bot,
+        botStrength: player.bot ? player.botStrength || "standard" : null
+      })),
       deck: game2.deck.map(snapshotLooseTile),
       discards: game2.discards.map(snapshotLooseTile),
       board: Array.from(game2.board.entries()).map(([key, tile]) => [key, snapshotPlacedTile(tile)]),
@@ -1338,6 +1371,412 @@
     return game2;
   }
 
+  // js/game/bot.js
+  var BOT_WEIGHTS = {
+    standard: {
+      immediateSelf: 1,
+      immediateOpp: 0.85,
+      endSelf: 0.55,
+      endOpp: 0.45,
+      meepleReturn: 0.35,
+      equity: 0.25,
+      gift: 0.4,
+      enemyCompleteGift: 6,
+      openWaste: 1.5,
+      earlyFieldBan: 3,
+      skipMonastery: 2.5
+    }
+  };
+  var FIELD_PHASE = { early: 0.15, mid: 0.45, late: 1, end: 1.2 };
+  var DECK_CUT = { early: 48, late: 24, end: 8 };
+  function cloneGame(game2) {
+    return restoreGame(serializeGame(game2));
+  }
+  function deckPhase(remaining) {
+    if (remaining <= DECK_CUT.end) return "end";
+    if (remaining <= DECK_CUT.late) return "late";
+    if (remaining <= DECK_CUT.early) return "mid";
+    return "early";
+  }
+  function projectedScores(game2) {
+    const clone = cloneGame(game2);
+    if (!clone.finalScored) finalizeScores(clone);
+    return clone.scores.slice();
+  }
+  function scoreDelta(before, after, index) {
+    return (after[index] || 0) - (before[index] || 0);
+  }
+  function bestOppDelta(before, after, me, playerCount) {
+    let best = 0;
+    for (let i = 0; i < playerCount; i++) {
+      if (i === me) continue;
+      const delta = scoreDelta(before, after, i);
+      if (delta > best) best = delta;
+    }
+    return best;
+  }
+  function countOpenEdges(board, kind, parts) {
+    let open = 0;
+    for (const part of parts) {
+      const tile = board.get(keyOf(part.x, part.y));
+      if (!tile) {
+        open += 1;
+        continue;
+      }
+      const rot = tile.rot || 0;
+      if (kind === "city") {
+        const city = tile.cities && tile.cities[part.index];
+        if (!city) {
+          open += 1;
+          continue;
+        }
+        for (const catalogDir of city.edges) {
+          const dir = absDir(catalogDir, rot);
+          const step = NEI[DIR_INDEX[dir]];
+          const neighbor = board.get(keyOf(part.x + step.dx, part.y + step.dy));
+          if (!neighbor || findCityIndexByAbsEdge(neighbor, OPP_DIR[dir]) < 0) open += 1;
+        }
+      } else if (kind === "road") {
+        const road = tile.roads && tile.roads[part.index];
+        if (!road) {
+          open += 1;
+          continue;
+        }
+        for (const catalogDir of road) {
+          const dir = absDir(catalogDir, rot);
+          const step = NEI[DIR_INDEX[dir]];
+          const neighbor = board.get(keyOf(part.x + step.dx, part.y + step.dy));
+          if (!neighbor || findRoadIndexByAbsEdge(neighbor, OPP_DIR[dir]) < 0) open += 1;
+        }
+      }
+    }
+    return open;
+  }
+  function featureMajority(board, kind, parts, playerCount) {
+    return majorityPlayers(meepleCountsOnFeature(board, kind, parts, playerCount));
+  }
+  function stockPenalty(stock, immediateSelf) {
+    if (immediateSelf >= 4) return 0;
+    if (stock >= 4) return 0;
+    if (stock === 3) return 0.4;
+    if (stock === 2) return 1;
+    if (stock === 1) return 2;
+    return 0;
+  }
+  function fieldAllowed(phase, completedCities, stock) {
+    if (phase === "early") return false;
+    if (phase === "mid") return completedCities >= 2 && stock >= 3;
+    return completedCities >= 1 || stock >= 2;
+  }
+  function meepleOptions(game2, phase) {
+    const options = [{ slotId: null, kind: null }];
+    if (!game2.pendingMeeple) return options;
+    const stock = game2.meeples[game2.pendingMeeple.player];
+    if (stock <= 0) return options;
+    const x = game2.pendingMeeple.x;
+    const y = game2.pendingMeeple.y;
+    for (const slot of game2.meepleSlots()) {
+      if (slot.kind === "field") {
+        const field = collectFieldComponent(game2.board, x, y, slot.index);
+        const cities = completedCitiesTouchingField(game2.board, field.parts);
+        if (!fieldAllowed(phase, cities, stock)) continue;
+        options.push({ slotId: slot.id, kind: slot.kind, cities });
+        continue;
+      }
+      options.push({ slotId: slot.id, kind: slot.kind });
+    }
+    return options;
+  }
+  function equityAndGift(game2, me, weights, phase) {
+    let equity = 0;
+    let gift = 0;
+    const board = game2.board;
+    const n = game2.players.length;
+    const seenCities = /* @__PURE__ */ new Set();
+    const seenRoads = /* @__PURE__ */ new Set();
+    const seenFields = /* @__PURE__ */ new Set();
+    const cityBonus = phase === "early" ? 1.15 : 1;
+    const roadBonus = phase === "early" ? 0.85 : 1;
+    const fieldPhase = FIELD_PHASE[phase] || FIELD_PHASE.mid;
+    for (const [pos, tile] of board) {
+      const [x, y] = pos.split(",").map(Number);
+      (tile.cities || []).forEach((_, index) => {
+        const seed = x + "," + y + "," + index;
+        if (seenCities.has(seed)) return;
+        const result = collectCityComponent(board, x, y, index);
+        for (const part of result.parts) seenCities.add(part.x + "," + part.y + "," + part.index);
+        if (result.complete) return;
+        const winners = featureMajority(board, "city", result.parts, n);
+        if (!winners.length) return;
+        const tiles = uniqueTileCount(result.parts);
+        const pennants = cityPennantCount(board, result.parts);
+        const openings = countOpenEdges(board, "city", result.parts);
+        const completeBonus = openings <= 1 ? 1.2 : openings === 2 ? 0.9 : 0.5;
+        const value = (tiles + pennants) * completeBonus * cityBonus;
+        if (winners.includes(me)) equity += value;
+        else gift += value;
+      });
+      (tile.roads || []).forEach((_, index) => {
+        const seed = x + "," + y + "," + index;
+        if (seenRoads.has(seed)) return;
+        const result = collectRoadComponent(board, x, y, index);
+        for (const part of result.parts) seenRoads.add(part.x + "," + part.y + "," + part.index);
+        if (result.complete) return;
+        const winners = featureMajority(board, "road", result.parts, n);
+        if (!winners.length) return;
+        const tiles = uniqueTileCount(result.parts);
+        const openings = countOpenEdges(board, "road", result.parts);
+        const value = tiles * (openings <= 1 ? 0.8 : 0.4) * roadBonus;
+        if (winners.includes(me)) equity += value;
+        else gift += value;
+      });
+      if (tile.monastery && tile.meeple && tile.meeple.kind === "monastery" && !monasteryComplete(board, x, y)) {
+        const filled = monasteryTileCount(board, x, y);
+        const value = filled * 0.7 + (9 - filled) * 0.35;
+        if (tile.meeple.player === me) equity += value;
+        else gift += value;
+      }
+      if (tile.meeple && tile.meeple.kind === "field") {
+        const seed = x + "," + y + "," + tile.meeple.index;
+        if (seenFields.has(seed)) continue;
+        const result = collectFieldComponent(board, x, y, tile.meeple.index);
+        for (const part of result.parts) seenFields.add(part.x + "," + part.y + "," + part.index);
+        const winners = featureMajority(board, "field", result.parts, n);
+        if (!winners.length) continue;
+        const cities = completedCitiesTouchingField(board, result.parts);
+        const value = cities * 3 * fieldPhase;
+        if (winners.includes(me)) equity += value;
+        else gift += value;
+      }
+    }
+    return {
+      equity: equity * weights.equity,
+      gift: gift * weights.gift
+    };
+  }
+  function openWastePenalty(beforeBoard, afterBoard, x, y, me, weights) {
+    const tile = afterBoard.get(keyOf(x, y));
+    if (!tile || !tile.cities) return 0;
+    let penalty = 0;
+    tile.cities.forEach((_, index) => {
+      const after = collectCityComponent(afterBoard, x, y, index);
+      if (after.complete) return;
+      const winners = featureMajority(afterBoard, "city", after.parts, 8);
+      if (!winners.includes(me)) return;
+      if (uniqueTileCount(after.parts) <= 1) return;
+      const beforeParts = after.parts.filter((part) => !(part.x === x && part.y === y));
+      if (!beforeParts.length) return;
+      const afterOpen = countOpenEdges(afterBoard, "city", after.parts);
+      const beforeOpen = countOpenEdges(beforeBoard, "city", beforeParts);
+      if (afterOpen > beforeOpen) penalty += weights.openWaste;
+    });
+    return penalty;
+  }
+  function betterScore(scored, place, best) {
+    if (!best) return true;
+    if (scored.value !== best.scored.value) return scored.value > best.scored.value;
+    if (scored.immSelf !== best.scored.immSelf) return scored.immSelf > best.scored.immSelf;
+    if (scored.returned !== best.scored.returned) return scored.returned > best.scored.returned;
+    if (scored.stock !== best.scored.stock) return scored.stock > best.scored.stock;
+    if (!place || !best.place) return false;
+    return place.y < best.place.y || place.y === best.place.y && place.x < best.place.x;
+  }
+  function evaluateApplied(before, after, me, weights, phase, placed, meepleUsed, stockBefore, optionKind, endBefore, deep) {
+    const n = before.players.length;
+    const immSelf = scoreDelta(before.scores, after.scores, me);
+    const immOpp = bestOppDelta(before.scores, after.scores, me, n);
+    const returned = Math.max(0, after.meeples[me] - (stockBefore - (meepleUsed ? 1 : 0)));
+    const eg = equityAndGift(after, me, weights, phase);
+    let value = weights.immediateSelf * immSelf - weights.immediateOpp * immOpp + weights.meepleReturn * returned + eg.equity - eg.gift;
+    if (deep && endBefore) {
+      const endAfter = projectedScores(after);
+      const endSelf = scoreDelta(endBefore, endAfter, me);
+      const endOpp = bestOppDelta(endBefore, endAfter, me, n);
+      value += weights.endSelf * (endSelf - immSelf) - weights.endOpp * (endOpp - immOpp);
+    }
+    if (immOpp > 0 && immSelf <= 0) value -= weights.enemyCompleteGift;
+    if (meepleUsed) value -= stockPenalty(stockBefore, immSelf);
+    if (placed) {
+      value -= openWastePenalty(before.board, after.board, placed.x, placed.y, me, weights);
+      const tile = after.board.get(keyOf(placed.x, placed.y));
+      if (tile && tile.monastery && meepleUsed && optionKind && optionKind !== "monastery") {
+        value -= weights.skipMonastery;
+      }
+      if (optionKind === "field" && (phase === "early" || phase === "mid" && stockBefore <= 2)) {
+        value -= weights.earlyFieldBan;
+      }
+    }
+    return {
+      value,
+      immSelf,
+      returned,
+      stock: after.meeples[me]
+    };
+  }
+  var DEEP_CANDIDATE_LIMIT = 10;
+  function listPlacements(game2) {
+    const out = [];
+    if (!game2.current) return out;
+    for (let rot = 0; rot < 4; rot++) {
+      const edges = rotateEdges(game2.current.edges, rot);
+      for (const cell of openCells(game2.board)) {
+        if (!canPlace(game2.board, cell.x, cell.y, edges)) continue;
+        out.push({ rot, x: cell.x, y: cell.y });
+      }
+    }
+    return out;
+  }
+  function considerOption(best, scored, place, slotId) {
+    const candidate = { place, slotId, scored };
+    return betterScore(scored, place, best) ? candidate : best;
+  }
+  function applyMeepleChoice(game2, slotId) {
+    const after = cloneGame(game2);
+    if (slotId) {
+      if (!after.placeMeeple(slotId)) return null;
+    } else if (!after.skipMeeple()) {
+      return null;
+    }
+    return after;
+  }
+  function applyPlaceChoice(game2, place, slotId) {
+    const placed = cloneGame(game2);
+    placed.setRotation(place.rot);
+    if (!placed.place(place.x, place.y)) return null;
+    if (slotId) {
+      if (!placed.placeMeeple(slotId)) return null;
+    } else if (!placed.skipMeeple()) {
+      return null;
+    }
+    return placed;
+  }
+  function chooseBotAction(game2, strength) {
+    const level = strength && BOT_WEIGHTS[strength] ? strength : "standard";
+    const weights = BOT_WEIGHTS[level];
+    if (!game2 || game2.finished) return null;
+    if (game2.pendingDiscard) return { type: "discard" };
+    const phase = deckPhase(game2.deck.length);
+    const endMul = phase === "end" ? 1.15 : 1;
+    const tuned = Object.assign({}, weights, {
+      endSelf: weights.endSelf * endMul,
+      endOpp: weights.endOpp * endMul
+    });
+    const endBefore = projectedScores(game2);
+    if (game2.pendingMeeple) {
+      const me2 = game2.pendingMeeple.player;
+      const place = { x: game2.pendingMeeple.x, y: game2.pendingMeeple.y, rot: 0 };
+      const stockBefore2 = game2.meeples[me2];
+      const shortlist2 = [];
+      for (const option of meepleOptions(game2, phase)) {
+        const after = applyMeepleChoice(game2, option.slotId);
+        if (!after) continue;
+        const scored = evaluateApplied(
+          game2,
+          after,
+          me2,
+          tuned,
+          phase,
+          place,
+          !!option.slotId,
+          stockBefore2,
+          option.kind,
+          endBefore,
+          false
+        );
+        shortlist2.push({ slotId: option.slotId, kind: option.kind, scored });
+      }
+      shortlist2.sort((a, b) => b.scored.value - a.scored.value);
+      let best2 = null;
+      for (const item of shortlist2.slice(0, DEEP_CANDIDATE_LIMIT)) {
+        const after = applyMeepleChoice(game2, item.slotId);
+        if (!after) continue;
+        const scored = evaluateApplied(
+          game2,
+          after,
+          me2,
+          tuned,
+          phase,
+          place,
+          !!item.slotId,
+          stockBefore2,
+          item.kind,
+          endBefore,
+          true
+        );
+        best2 = considerOption(best2, scored, place, item.slotId);
+      }
+      return { type: "meeple", slotId: best2 ? best2.slotId : null };
+    }
+    if (!game2.current) return null;
+    const me = game2.player;
+    const stockBefore = game2.meeples[me];
+    const placements = listPlacements(game2);
+    const shortlist = [];
+    for (const place of placements) {
+      const placedOnly = cloneGame(game2);
+      placedOnly.setRotation(place.rot);
+      if (!placedOnly.place(place.x, place.y)) continue;
+      for (const option of meepleOptions(placedOnly, phase)) {
+        const after = applyMeepleChoice(placedOnly, option.slotId);
+        if (!after) continue;
+        const scored = evaluateApplied(
+          game2,
+          after,
+          me,
+          tuned,
+          phase,
+          place,
+          !!option.slotId,
+          stockBefore,
+          option.kind,
+          endBefore,
+          false
+        );
+        shortlist.push({
+          place,
+          slotId: option.slotId,
+          kind: option.kind,
+          scored
+        });
+      }
+    }
+    shortlist.sort((a, b) => b.scored.value - a.scored.value || b.scored.immSelf - a.scored.immSelf);
+    let best = null;
+    for (const item of shortlist.slice(0, DEEP_CANDIDATE_LIMIT)) {
+      const after = applyPlaceChoice(game2, item.place, item.slotId);
+      if (!after) continue;
+      const scored = evaluateApplied(
+        game2,
+        after,
+        me,
+        tuned,
+        phase,
+        item.place,
+        !!item.slotId,
+        stockBefore,
+        item.kind,
+        endBefore,
+        true
+      );
+      best = considerOption(best, scored, item.place, item.slotId);
+    }
+    if (!best) {
+      const fallback = placements[0];
+      if (!fallback) return null;
+      return { type: "place", rot: fallback.rot, x: fallback.x, y: fallback.y, slotId: null };
+    }
+    return {
+      type: "place",
+      rot: best.place.rot,
+      x: best.place.x,
+      y: best.place.y,
+      slotId: best.slotId
+    };
+  }
+  function isBotPlayer(player) {
+    return !!(player && player.bot);
+  }
+
   // js/game/index.js
   var Carcassonne = {
     PLAYERS,
@@ -1346,6 +1785,9 @@
     PLAYERS_MAX,
     NAME_MAX,
     MEEPLES_EACH,
+    BOT_STRENGTHS,
+    BOT_STRENGTH_IDS,
+    BOT_WEIGHTS,
     TYPES,
     MARKUP,
     EDGE_NAME,
@@ -1378,7 +1820,12 @@
     serializeGame,
     restoreGame,
     SAVE_VERSION,
-    simulateToLastTile
+    simulateToLastTile,
+    normalizeBotStrength,
+    chooseBotAction,
+    cloneGame,
+    deckPhase,
+    isBotPlayer
   };
   var game_default = Carcassonne;
 
@@ -1396,7 +1843,7 @@
       langLabel: "Language",
       volumeLabel: "Volume",
       setupTitle: "Players",
-      setupLead: "2\u20138 players. Name max 6 letters. Each color once.",
+      setupLead: "2\u20138 players. Name max 6 letters. Each color once. Bots play automatically.",
       addPlayer: "Add player",
       start: "Start",
       back: "Back",
@@ -1405,6 +1852,13 @@
       playersCount: "{n} / {max} players",
       errNeedPlayers: "Need {min}\u2013{max} players.",
       errUniqueColor: "Each color can only be used once.",
+      playerKind: "Type",
+      playerKindHuman: "Human",
+      playerKindBot: "Bot",
+      botStrength: "Strength",
+      botStrengthStandard: "Standard",
+      botBadge: "BOT",
+      botThinking: "Bot is playing\u2026",
       colorRed: "Red",
       colorBlue: "Blue",
       colorGreen: "Green",
@@ -1585,7 +2039,7 @@
       langLabel: "\u8A00\u8A9E",
       volumeLabel: "\u97F3\u91CF",
       setupTitle: "\u30D7\u30EC\u30A4\u30E4\u30FC",
-      setupLead: "2\u301C8\u4EBA\u3002\u540D\u524D\u306F\u6700\u59276\u6587\u5B57\u3002\u8272\u306F\u91CD\u8907\u4E0D\u53EF\u3002",
+      setupLead: "2\u301C8\u4EBA\u3002\u540D\u524D\u306F\u6700\u59276\u6587\u5B57\u3002\u8272\u306F\u91CD\u8907\u4E0D\u53EF\u3002Bot\u306F\u81EA\u52D5\u3067\u624B\u756A\u3092\u9032\u3081\u307E\u3059\u3002",
       addPlayer: "\u8FFD\u52A0",
       start: "\u958B\u59CB",
       back: "\u623B\u308B",
@@ -1594,6 +2048,13 @@
       playersCount: "{n} / {max} \u4EBA",
       errNeedPlayers: "{min}\u301C{max} \u4EBA\u5FC5\u8981\u3067\u3059\u3002",
       errUniqueColor: "\u540C\u3058\u8272\u306F\u4F7F\u3048\u307E\u305B\u3093\u3002",
+      playerKind: "\u7A2E\u5225",
+      playerKindHuman: "\u4EBA",
+      playerKindBot: "Bot",
+      botStrength: "\u5F37\u3055",
+      botStrengthStandard: "\u6A19\u6E96",
+      botBadge: "BOT",
+      botThinking: "Bot\u306E\u624B\u756A\u2026",
       colorRed: "\u8D64",
       colorBlue: "\u9752",
       colorGreen: "\u7DD1",
@@ -1912,10 +2373,15 @@
   var ZOOM_STEP = 0.05;
   var ZOOM_WHEEL = 0.025;
   var LEAVE_FX_MS = 2e3;
+  var BOT_MOVE_MS = 450;
+  var BOT_MEEPLE_MS = 380;
+  var BOT_DISCARD_MS = 550;
   var TILE_TOTAL = game_default.TYPES.reduce((sum, type) => sum + type.count, 0);
   var exitConfirmOpen = false;
   var leaveFxTimer = null;
   var endFanfareStarted = false;
+  var botTimer = null;
+  var botBusy = false;
   function loadRoster2() {
     return loadRoster(game_default);
   }
@@ -2049,13 +2515,28 @@
     const legend = document.getElementById("legend");
     legend.innerHTML = '<div class="hint-legend"><p><i class="swatch-key now"></i>' + t2("canPlace") + '</p><p><i class="swatch-key later"></i>' + t2("needsRotate") + '</p><div class="zoom-controls"><button type="button" class="zoom-btn" id="zoom-out" aria-label="' + t2("zoomOut") + '">\u2212</button><span class="zoom-label" id="zoom-label">' + zoomPercent() + '</span><button type="button" class="zoom-btn" id="zoom-in" aria-label="' + t2("zoomIn") + '">+</button></div></div><p class="rot-hint">' + t2("rotHint") + "</p>";
   }
+  function activeSeat() {
+    if (game.pendingMeeple) return game.pendingMeeple.player;
+    return game.player;
+  }
+  function isBotSeat(index) {
+    return game_default.isBotPlayer(game.players[index]);
+  }
+  function isBotTurn() {
+    if (game.finished || exitConfirmOpen) return false;
+    return isBotSeat(activeSeat());
+  }
+  function humanControlsLocked() {
+    return isBotTurn() || botBusy;
+  }
   function playersHTML() {
     const order = game.finished && game.standings ? game.standings : game.players.map((_, index) => index);
     return '<ul class="players">' + order.map((index) => {
       const player = game.players[index];
       const on = !game.finished && index === game.player ? " on" : "";
       const rank = game.finished ? '<span class="rank">' + (order.indexOf(index) + 1) + "</span>" : "";
-      return '<li class="' + player.id + on + '">' + rank + '<span class="pname">' + player.name + '</span><span class="meeple-count"><i class="meeple ' + player.id + '" aria-hidden="true"></i>\xD7' + game.meeples[index] + '</span><b class="score">' + game.scores[index] + "</b></li>";
+      const bot = player.bot ? '<span class="bot-badge" title="' + t2("botThinking") + '">' + t2("botBadge") + "</span>" : "";
+      return '<li class="' + player.id + on + (player.bot ? " bot" : "") + '">' + rank + '<span class="pname">' + player.name + bot + '</span><span class="meeple-count"><i class="meeple ' + player.id + '" aria-hidden="true"></i>\xD7' + game.meeples[index] + '</span><b class="score">' + game.scores[index] + "</b></li>";
     }).join("") + "</ul>";
   }
   function endActionsHTML(layout) {
@@ -2078,6 +2559,9 @@
     if (!game.current) return "";
     if (game.pendingDiscard) {
       return '<div class="hand discard-only"><div class="preview" aria-label="' + t2("unplaceableTile") + '"><span class="preview-frame">' + game_default.tileHTML(game.current.id, 0) + "</span></div></div>";
+    }
+    if (humanControlsLocked()) {
+      return '<div class="hand bot-hand"><div class="preview" aria-label="' + t2("botThinking") + '"><span class="preview-frame">' + game_default.tileHTML(game.current.id, game.rotation) + '</span></div><p class="bot-status">' + t2("botThinking") + "</p></div>";
     }
     const counts = game.rotationCounts();
     const thumbs = [0, 1, 2, 3].map((rot) => {
@@ -2102,6 +2586,10 @@
     if (tile.meeple) marks.push(meeplePinHTML(tile.meeple, false));
     if (tile.leaveFx) marks.push(meeplePinHTML(tile.leaveFx, true));
     if (!pending) return marks.join("");
+    if (humanControlsLocked()) {
+      marks.push('<div class="meeple-layer bot-meeple"><p class="meeple-prompt">' + t2("botThinking") + "</p></div>");
+      return marks.join("");
+    }
     const color = game.players[game.pendingMeeple.player].id;
     const slots = game.meepleSlots();
     const spots = slots.map(
@@ -2188,7 +2676,8 @@
   }
   function paintGrid() {
     const bounds = game.bounds(1);
-    const hints = game.pendingMeeple || game.pendingDiscard || exitConfirmOpen ? { now: [], later: [] } : game.hints();
+    const lockHints = game.pendingMeeple || game.pendingDiscard || exitConfirmOpen || humanControlsLocked();
+    const hints = lockHints ? { now: [], later: [] } : game.hints();
     const now = new Set(hints.now.map((cell) => cell.x + "," + cell.y));
     const later = new Map(hints.later.map((cell) => [cell.x + "," + cell.y, cell.rots]));
     const pendingKey = game.pendingMeeple ? game.pendingMeeple.x + "," + game.pendingMeeple.y : null;
@@ -2283,9 +2772,81 @@
     slot.appendChild(ghost);
   }
   function rotateClockwise() {
+    if (humanControlsLocked()) return;
     if (game.finished || game.pendingMeeple || game.pendingDiscard || !game.current) return;
     game.rotate(1);
     render({ keep: true });
+  }
+  function clearBotTimer() {
+    if (botTimer != null) {
+      clearTimeout(botTimer);
+      botTimer = null;
+    }
+  }
+  function scheduleBot(delay) {
+    clearBotTimer();
+    if (!isBotTurn() || game.finished) {
+      botBusy = false;
+      return;
+    }
+    botBusy = true;
+    botTimer = setTimeout(runBotStep, delay == null ? BOT_MOVE_MS : delay);
+  }
+  function finishBotMeeple(slotId) {
+    const before = game.scores.slice();
+    const color = game.players[game.pendingMeeple.player].id;
+    let ok = false;
+    if (slotId) {
+      ok = game.placeMeeple(slotId);
+      if (ok) playMeepleSound2(color);
+    } else {
+      ok = game.skipMeeple();
+    }
+    if (!ok && game.pendingMeeple) ok = game.skipMeeple();
+    if (ok && scoresGained(before)) playSound2("point");
+    botBusy = false;
+    render({ keep: true, center: game.lastPlacedBy[color] || void 0 });
+  }
+  function runBotStep() {
+    botTimer = null;
+    if (!isBotTurn() || game.finished) {
+      botBusy = false;
+      return;
+    }
+    const seat = activeSeat();
+    const strength = game.players[seat].botStrength || "standard";
+    const action = game_default.chooseBotAction(game, strength);
+    if (!action) {
+      botBusy = false;
+      return;
+    }
+    if (action.type === "discard") {
+      if (game.acknowledgeDiscard()) {
+        botBusy = false;
+        render({ keep: true });
+      } else {
+        botBusy = false;
+      }
+      return;
+    }
+    if (action.type === "meeple") {
+      finishBotMeeple(action.slotId);
+      return;
+    }
+    if (action.type === "place") {
+      game.setRotation(action.rot);
+      if (!game.place(action.x, action.y)) {
+        botBusy = false;
+        render({ keep: true });
+        return;
+      }
+      playSound2("tile");
+      const center = action.x + "," + action.y;
+      render({ keep: true, center });
+      clearBotTimer();
+      botBusy = true;
+      botTimer = setTimeout(() => finishBotMeeple(action.slotId), BOT_MEEPLE_MS);
+    }
   }
   function applyHandRotation(button) {
     if (!button) return false;
@@ -2342,6 +2903,14 @@
     maybePlayEndFanfare();
     if (opts.center) requestAnimationFrame(() => centerOn(opts.center));
     else if (anchor) restoreAnchor(anchor);
+    if (opts.skipBot) return;
+    if (isBotTurn()) {
+      const delay = game.pendingDiscard ? BOT_DISCARD_MS : BOT_MOVE_MS;
+      scheduleBot(delay);
+    } else {
+      botBusy = false;
+      clearBotTimer();
+    }
   }
   document.addEventListener("mousedown", (event) => {
     if (event.button !== 0) return;
@@ -2380,6 +2949,7 @@
   document.addEventListener("pointerdown", (event) => {
     if (event.pointerType !== "touch" && event.pointerType !== "pen") return;
     if (event.button !== 0 && event.button !== -1) return;
+    if (humanControlsLocked()) return;
     const button = event.target.closest("button[data-rotate], button[data-set-rot]");
     if (!button) return;
     event.preventDefault();
@@ -2401,6 +2971,7 @@
       return;
     }
     if (button.id === "ok-discard") {
+      if (humanControlsLocked()) return;
       if (game.acknowledgeDiscard()) render({ keep: true });
       return;
     }
@@ -2442,6 +3013,7 @@
       return;
     }
     if (button.id === "skip-meeple") {
+      if (humanControlsLocked()) return;
       const before = game.scores.slice();
       if (game.skipMeeple()) {
         if (scoresGained(before)) playSound2("point");
@@ -2450,10 +3022,12 @@
       return;
     }
     if (button.id === "undo-place") {
+      if (humanControlsLocked()) return;
       if (game.undoPlace()) render({ keep: true });
       return;
     }
     if (button.dataset.meepleSlot) {
+      if (humanControlsLocked()) return;
       const before = game.scores.slice();
       const color = game.players[game.pendingMeeple.player].id;
       if (game.placeMeeple(button.dataset.meepleSlot)) {
@@ -2463,6 +3037,7 @@
       }
       return;
     }
+    if (humanControlsLocked()) return;
     if (applyHandRotation(button)) return;
     if (button.dataset.place) {
       const parts = button.dataset.place.split(",").map(Number);
@@ -2481,6 +3056,7 @@
   });
   document.addEventListener("keydown", (event) => {
     if (event.repeat) return;
+    if (humanControlsLocked()) return;
     if (game.pendingDiscard && (event.key === "Enter" || event.key === " ")) {
       event.preventDefault();
       if (game.acknowledgeDiscard()) render({ keep: true });
@@ -2494,6 +3070,7 @@
   });
   document.addEventListener("contextmenu", (event) => {
     if (!event.target.closest("#scroller")) return;
+    if (humanControlsLocked()) return;
     if (game.finished || game.pendingMeeple || game.pendingDiscard || !game.current) return;
     event.preventDefault();
     rotateClockwise();
