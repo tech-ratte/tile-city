@@ -77,6 +77,8 @@ if (!saved && !roster) {
 let game = saved ? saved.game : Carcassonne.createGame(undefined, roster);
 let pan = null;
 let skipClick = false;
+/** Suppress hand rotate/set-rot clicks until this time (touch pointerdown already rotated). */
+let suppressHandClickUntil = 0;
 let boardZoom = 0.8;
 endFanfareStarted = !!game.finished;
 window.__game = game;
@@ -293,8 +295,14 @@ function meeplePinHTML(pin, leaving) {
   const earned = pin.earned
     ? '<span class="meeple-earned">+' + pin.earned + "</span>"
     : "";
+  let style = "left:" + (pin.x * 100) + "%;top:" + (pin.y * 100) + "%";
+  // Grid rebuilds (rotate etc.) remount pins — negative delay continues the leave anim.
+  if (leaving && pin.at) {
+    const ageSec = Math.max(0, (Date.now() - pin.at) / 1000);
+    style += ";--leave-age:-" + ageSec + "s";
+  }
   return '<span class="meeple-pin' + (leaving ? " leaving" : "") +
-    '" style="left:' + (pin.x * 100) + "%;top:" + (pin.y * 100) + '%">' +
+    '" style="' + style + '">' +
     '<i class="meeple on-tile ' + pin.color + fieldClass + '" aria-hidden="true"></i>' +
     earned + "</span>";
 }
@@ -638,19 +646,41 @@ function firstPlaceColors() {
 }
 
 function armLeaveFxClear() {
-  let has = false;
+  let earliest = null;
   for (const tile of game.board.values()) {
-    if (tile.leaveFx) {
-      has = true;
-      break;
-    }
+    if (!tile.leaveFx) continue;
+    const at = tile.leaveFx.at || Date.now();
+    if (earliest == null || at < earliest) earliest = at;
   }
-  if (!has) return;
   clearTimeout(leaveFxTimer);
+  leaveFxTimer = null;
+  if (earliest == null) return;
+  // Don't restart the full duration on every render (rotate was replaying leave FX).
+  const remaining = Math.max(0, LEAVE_FX_MS - (Date.now() - earliest));
   leaveFxTimer = setTimeout(() => {
-    for (const tile of game.board.values()) tile.leaveFx = null;
-    document.querySelectorAll(".meeple-pin.leaving").forEach((el) => el.remove());
-  }, LEAVE_FX_MS);
+    leaveFxTimer = null;
+    const now = Date.now();
+    let cleared = false;
+    let remainingFx = false;
+    for (const tile of game.board.values()) {
+      if (!tile.leaveFx) continue;
+      if (now - (tile.leaveFx.at || 0) >= LEAVE_FX_MS) {
+        tile.leaveFx = null;
+        cleared = true;
+      } else {
+        remainingFx = true;
+      }
+    }
+    if (cleared) {
+      document.querySelectorAll(".meeple-pin.leaving").forEach((el) => {
+        const tileEl = el.closest("[data-pos]");
+        const pos = tileEl && tileEl.dataset.pos;
+        const tile = pos ? game.board.get(pos) : null;
+        if (!tile || !tile.leaveFx) el.remove();
+      });
+    }
+    if (remainingFx) armLeaveFxClear();
+  }, remaining);
 }
 
 function maybePlayEndFanfare() {
@@ -717,14 +747,18 @@ document.addEventListener("mouseup", () => {
 
 // Touch/pen: rotate on pointerdown so rapid taps are not lost when the hand
 // DOM is replaced mid-gesture (click would fire too late / on a dead node).
+// Suppress rotate clicks for a window (not a one-shot flag) — duplicate
+// compatibility clicks must not rotate again.
 document.addEventListener("pointerdown", (event) => {
   if (event.pointerType !== "touch" && event.pointerType !== "pen") return;
+  if (!event.isPrimary) return;
   if (event.button !== 0 && event.button !== -1) return;
   if (humanControlsLocked()) return;
   const button = event.target.closest("button[data-rotate], button[data-set-rot]");
   if (!button) return;
   event.preventDefault();
-  applyHandRotation(button);
+  if (!applyHandRotation(button)) return;
+  suppressHandClickUntil = Date.now() + 700;
 });
 
 document.addEventListener("click", (event) => {
@@ -734,6 +768,12 @@ document.addEventListener("click", (event) => {
   }
   const button = event.target.closest("button");
   if (!button) return;
+  if (
+    Date.now() < suppressHandClickUntil &&
+    (button.dataset.rotate != null || button.dataset.setRot != null)
+  ) {
+    return;
+  }
   if (button.id === "zoom-in") {
     setBoardZoom(boardZoom + ZOOM_STEP);
     return;

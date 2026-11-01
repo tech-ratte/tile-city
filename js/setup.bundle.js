@@ -125,14 +125,50 @@
     { id: "white", hex: "#f4f7fb", label: "White" },
     { id: "brown", hex: "#a67c52", label: "Brown" }
   ];
-  var PLAYERS = COLOR_PALETTE.slice(0, 4).map((color) => ({
+  var BOT_NAMES = {
+    red: "\u30EC\u30C3\u30AF\u30B9",
+    // hot-blooded warrior, boy ~17
+    blue: "\u30AB\u30A4\u30F3",
+    // cold sage, boy ~18
+    green: "\u30ED\u30C3\u30AF",
+    // young thief, boy ~11
+    yellow: "\u30EB\u30CA",
+    // mischievous princess, girl ~10
+    orange: "\u30A2\u30B9\u30AB",
+    // energetic fighter, girl ~17
+    purple: "\u30E2\u30FC\u30E9",
+    // necromancer, woman ~80
+    white: "\u30BB\u30B7\u30EB",
+    // apprentice cleric, girl ~15
+    brown: "\u30A8\u30EA\u30B6"
+    // haughty mage, woman ~23
+  };
+  function defaultPlayerName(index) {
+    return "Player" + (Number(index) + 1);
+  }
+  function nextPlayerName(list) {
+    let max2 = 0;
+    for (const player of list || []) {
+      const match = String(player && player.name != null ? player.name : "").match(/^Player(\d+)$/i);
+      if (!match) continue;
+      const n = Number(match[1]);
+      if (n > max2) max2 = n;
+    }
+    return "Player" + (max2 + 1);
+  }
+  function botNameForColor(id) {
+    if (BOT_NAMES[id]) return BOT_NAMES[id];
+    const color = COLOR_PALETTE.find((item) => item.id === id);
+    return color ? color.label : "Bot";
+  }
+  var PLAYERS = COLOR_PALETTE.slice(0, 4).map((color, index) => ({
     id: color.id,
-    name: color.label
+    name: defaultPlayerName(index)
   }));
   var MEEPLES_EACH = 7;
   var PLAYERS_MIN = 2;
   var PLAYERS_MAX = 8;
-  var NAME_MAX = 6;
+  var NAME_MAX = 10;
   var BOT_STRENGTHS = [
     { id: "standard", label: "Standard" }
   ];
@@ -146,9 +182,9 @@
     const known = new Set(COLOR_PALETTE.map((color) => color.id));
     const id = item && known.has(item.id) ? item.id : null;
     if (!id) return null;
-    const raw = item.name == null ? "" : String(item.name);
-    const name = raw.trim().slice(0, NAME_MAX) || COLOR_PALETTE.find((c) => c.id === id).label;
     const bot = !!(item && item.bot);
+    const raw = item.name == null ? "" : String(item.name);
+    const name = bot ? botNameForColor(id) : raw.trim().slice(0, NAME_MAX) || COLOR_PALETTE.find((c) => c.id === id).label;
     return {
       id,
       name,
@@ -1787,6 +1823,10 @@
     MEEPLES_EACH,
     BOT_STRENGTHS,
     BOT_STRENGTH_IDS,
+    BOT_NAMES,
+    botNameForColor,
+    defaultPlayerName,
+    nextPlayerName,
     BOT_WEIGHTS,
     TYPES,
     MARKUP,
@@ -1843,7 +1883,8 @@
       langLabel: "Language",
       volumeLabel: "Volume",
       setupTitle: "Players",
-      setupLead: "2\u20138 players. Name max 6 letters. Each color once. Bots play automatically.",
+      setupLead: "2\u20138 players. Name max 10 letters. Each color once.",
+      setupLeadBot: "Bots play automatically.",
       addPlayer: "Add player",
       start: "Start",
       back: "Back",
@@ -1881,7 +1922,7 @@
       goalBody: "Score the most points by completing roads, cities, and monasteries during the game, then score leftover features and fields at the end.",
       setupSecTitle: "Setup",
       setupPlayers: "Players",
-      setupPlayersBody: "2\u20138. Each color has 7 meeples. Pick names (max 6 letters) and unique colors on the setup screen.",
+      setupPlayersBody: "2\u20138. Each color has 7 meeples. Pick names (max 10 letters) and unique colors on the setup screen.",
       setupStartTile: "Start tile",
       setupStartTileBody: "One marked D tile starts face-up in the center. Shuffle the other 71 tiles into the deck.",
       setupFirst: "First player",
@@ -2039,8 +2080,9 @@
       langLabel: "\u8A00\u8A9E",
       volumeLabel: "\u97F3\u91CF",
       setupTitle: "\u30D7\u30EC\u30A4\u30E4\u30FC",
-      setupLead: "2\u301C8\u4EBA\u3002\u540D\u524D\u306F\u6700\u59276\u6587\u5B57\u3002\u8272\u306F\u91CD\u8907\u4E0D\u53EF\u3002Bot\u306F\u81EA\u52D5\u3067\u624B\u756A\u3092\u9032\u3081\u307E\u3059\u3002",
-      addPlayer: "\u8FFD\u52A0",
+      setupLead: "2\u301C8\u4EBA\u3002\u540D\u524D\u306F\u6700\u592710\u6587\u5B57\u3002\u8272\u306F\u91CD\u8907\u4E0D\u53EF\u3002",
+      setupLeadBot: "Bot\u306F\u81EA\u52D5\u3067\u624B\u756A\u3092\u9032\u3081\u307E\u3059\u3002",
+      addPlayer: "\u30D7\u30EC\u30A4\u30E4\u30FC\u8FFD\u52A0",
       start: "\u958B\u59CB",
       back: "\u623B\u308B",
       playerName: "\u30D7\u30EC\u30A4\u30E4\u30FC\u540D",
@@ -2049,8 +2091,8 @@
       errNeedPlayers: "{min}\u301C{max} \u4EBA\u5FC5\u8981\u3067\u3059\u3002",
       errUniqueColor: "\u540C\u3058\u8272\u306F\u4F7F\u3048\u307E\u305B\u3093\u3002",
       playerKind: "\u7A2E\u5225",
-      playerKindHuman: "\u4EBA",
-      playerKindBot: "Bot",
+      playerKindHuman: "\u4EBA\u9593",
+      playerKindBot: "bot",
       botStrength: "\u5F37\u3055",
       botStrengthStandard: "\u6A19\u6E96",
       botBadge: "BOT",
@@ -2077,7 +2119,7 @@
       goalBody: "\u30B2\u30FC\u30E0\u4E2D\u306B\u9053\u30FB\u90FD\u5E02\u30FB\u4FEE\u9053\u9662\u3092\u5B8C\u6210\u3055\u305B\u3066\u5F97\u70B9\u3057\u3001\u7D42\u4E86\u6642\u306B\u6B8B\u308A\u306E\u8981\u7D20\u3068\u7551\u3092\u5F97\u70B9\u3057\u3066\u3001\u6700\u3082\u9AD8\u3044\u70B9\u3092\u76EE\u6307\u3057\u307E\u3059\u3002",
       setupSecTitle: "\u6E96\u5099",
       setupPlayers: "\u30D7\u30EC\u30A4\u30E4\u30FC",
-      setupPlayersBody: "2\u301C8\u4EBA\u3002\u5404\u82727\u4F53\u306E\u30DF\u30FC\u30D7\u30EB\u3002\u8A2D\u5B9A\u753B\u9762\u3067\u540D\u524D\uFF08\u6700\u59276\u6587\u5B57\uFF09\u3068\u8272\u3092\u9078\u3073\u307E\u3059\u3002",
+      setupPlayersBody: "2\u301C8\u4EBA\u3002\u5404\u82727\u4F53\u306E\u30DF\u30FC\u30D7\u30EB\u3002\u8A2D\u5B9A\u753B\u9762\u3067\u540D\u524D\uFF08\u6700\u592710\u6587\u5B57\uFF09\u3068\u8272\u3092\u9078\u3073\u307E\u3059\u3002",
       setupStartTile: "\u958B\u59CB\u30BF\u30A4\u30EB",
       setupStartTileBody: "\u5370\u4ED8\u304D\u306E D \u30BF\u30A4\u30EB1\u679A\u3092\u4E2D\u592E\u306B\u8868\u5411\u304D\u3067\u7F6E\u304D\u307E\u3059\u3002\u6B8B\u308A71\u679A\u3092\u5C71\u672D\u306B\u3057\u307E\u3059\u3002",
       setupFirst: "\u5148\u624B",
@@ -2321,10 +2363,27 @@
       game_default.PLAYERS.map((player) => ({ id: player.id, name: player.name, bot: false }))
     );
   }
+  function isLegacyColorName(player) {
+    const color = palette.find((item) => item.id === player.id);
+    if (!color) return false;
+    const name = String(player.name || "").trim();
+    if (!name) return true;
+    if (name.toLowerCase() === color.label.toLowerCase()) return true;
+    if (name === color.id) return true;
+    const en = i18n_default.colorLabel(player.id, "en");
+    const ja = i18n_default.colorLabel(player.id, "ja");
+    return name === en || name === ja;
+  }
+  function withPlayerDefaults(list) {
+    return list.map((player, index) => {
+      if (player.bot || !isLegacyColorName(player)) return player;
+      return Object.assign({}, player, { name: game_default.defaultPlayerName(index) });
+    });
+  }
   function load() {
     try {
       const raw = sessionStorage.getItem(SETUP_KEY);
-      if (raw) return game_default.normalizePlayers(JSON.parse(raw));
+      if (raw) return withPlayerDefaults(game_default.normalizePlayers(JSON.parse(raw)));
     } catch (err) {
     }
     return defaultRoster();
@@ -2365,15 +2424,16 @@
         const selected = (player.botStrength || "standard") === item.id ? " selected" : "";
         return '<option value="' + item.id + '"' + selected + ">" + strengthLabel(item.id, lang) + "</option>";
       }).join("");
-      return '<li class="player-row' + (player.bot ? " is-bot" : "") + '" data-index="' + index + '"><input type="text" maxlength="' + nameMax + '" value="' + player.name.replace(/"/g, "&quot;") + '" data-name="' + index + '" aria-label="' + i18n_default.t("playerName", lang) + '"><div class="player-kind"><label class="kind-label"><span class="sr-only">' + i18n_default.t("playerKind", lang) + '</span><select data-kind="' + index + '" aria-label="' + i18n_default.t("playerKind", lang) + '"><option value="human"' + (player.bot ? "" : " selected") + ">" + i18n_default.t("playerKindHuman", lang) + '</option><option value="bot"' + (player.bot ? " selected" : "") + ">" + i18n_default.t("playerKindBot", lang) + '</option></select></label><label class="strength-label"' + (player.bot ? "" : " hidden") + '><span class="sr-only">' + i18n_default.t("botStrength", lang) + '</span><select data-strength="' + index + '" aria-label="' + i18n_default.t("botStrength", lang) + '"' + (player.bot ? "" : " disabled") + ">" + strengthOpts + '</select></label></div><div class="color-picks">' + swatches + '</div><button type="button" class="remove-player" data-remove="' + index + '"' + (canRemove ? "" : " disabled") + ' aria-label="' + i18n_default.t("removePlayer", lang) + '">\xD7</button></li>';
+      return '<li class="player-row' + (player.bot ? " is-bot" : "") + '" data-index="' + index + '"><input type="text" maxlength="' + nameMax + '" value="' + player.name.replace(/"/g, "&quot;") + '" data-name="' + index + '" aria-label="' + i18n_default.t("playerName", lang) + '"' + (player.bot ? ' readonly tabindex="-1"' : "") + '><div class="player-kind"><label class="kind-label"><span class="sr-only">' + i18n_default.t("playerKind", lang) + '</span><select data-kind="' + index + '" aria-label="' + i18n_default.t("playerKind", lang) + '"><option value="human"' + (player.bot ? "" : " selected") + ">" + i18n_default.t("playerKindHuman", lang) + '</option><option value="bot"' + (player.bot ? " selected" : "") + ">" + i18n_default.t("playerKindBot", lang) + '</option></select></label><label class="strength-label' + (player.bot ? "" : " is-idle") + '"><span class="sr-only">' + i18n_default.t("botStrength", lang) + '</span><select data-strength="' + index + '" aria-label="' + i18n_default.t("botStrength", lang) + '"' + (player.bot ? "" : " disabled") + ">" + strengthOpts + '</select></label></div><div class="color-picks">' + swatches + '</div><button type="button" class="remove-player" data-remove="' + index + '"' + (canRemove ? "" : " disabled") + ' aria-label="' + i18n_default.t("removePlayer", lang) + '">\xD7</button></li>';
     }).join("");
     document.getElementById("add-player").disabled = players.length >= max || !nextFreeColor();
     document.getElementById("count-hint").textContent = i18n_default.t("playersCount", lang, { n: players.length, max });
   }
   document.getElementById("player-list").addEventListener("input", (event) => {
     const input = event.target.closest("[data-name]");
-    if (!input) return;
+    if (!input || input.readOnly) return;
     const index = Number(input.getAttribute("data-name"));
+    if (players[index].bot) return;
     players[index].name = input.value.slice(0, nameMax);
     setErr("");
   });
@@ -2382,8 +2442,17 @@
     if (kind) {
       const index = Number(kind.getAttribute("data-kind"));
       const bot = kind.value === "bot";
-      players[index].bot = bot;
-      players[index].botStrength = bot ? game_default.normalizeBotStrength(players[index].botStrength, true) : null;
+      const player = players[index];
+      if (bot && !player.bot) {
+        player.humanName = player.name;
+        player.name = game_default.botNameForColor(player.id);
+      } else if (!bot && player.bot) {
+        const restored = (player.humanName || "").trim().slice(0, nameMax);
+        player.name = restored || game_default.nextPlayerName(players);
+        player.humanName = null;
+      }
+      player.bot = bot;
+      player.botStrength = bot ? game_default.normalizeBotStrength(player.botStrength, true) : null;
       setErr("");
       paint();
       return;
@@ -2400,6 +2469,9 @@
     if (colorBtn && !colorBtn.disabled) {
       const index = Number(colorBtn.getAttribute("data-index"));
       players[index].id = colorBtn.getAttribute("data-color");
+      if (players[index].bot) {
+        players[index].name = game_default.botNameForColor(players[index].id);
+      }
       setErr("");
       paint();
       return;
@@ -2417,7 +2489,7 @@
     if (!color) return;
     players.push({
       id: color.id,
-      name: i18n_default.colorLabel(color.id).slice(0, nameMax),
+      name: game_default.nextPlayerName(players),
       bot: false,
       botStrength: null
     });
@@ -2426,12 +2498,16 @@
   });
   document.getElementById("start-game").addEventListener("click", () => {
     const lang = i18n_default.getLang();
-    const cleaned = players.map((player) => ({
-      id: player.id,
-      name: (player.name || "").trim().slice(0, nameMax) || i18n_default.colorLabel(player.id, lang).slice(0, nameMax),
-      bot: !!player.bot,
-      botStrength: player.bot ? game_default.normalizeBotStrength(player.botStrength, true) : null
-    }));
+    const cleaned = [];
+    for (const player of players) {
+      const name = player.bot ? game_default.botNameForColor(player.id) : (player.name || "").trim().slice(0, nameMax) || game_default.nextPlayerName(cleaned);
+      cleaned.push({
+        id: player.id,
+        name,
+        bot: !!player.bot,
+        botStrength: player.bot ? game_default.normalizeBotStrength(player.botStrength, true) : null
+      });
+    }
     const ids = cleaned.map((player) => player.id);
     if (cleaned.length < min || cleaned.length > max) {
       setErr(i18n_default.t("errNeedPlayers", lang, { min, max }));

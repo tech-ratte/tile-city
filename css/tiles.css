@@ -585,12 +585,13 @@
       clip-path: polygon(6% 0, 100% 0, 100% 94%, 78% 66%, 42% 28%, 6% 0);
     }
 
+    /* Mirror of elbow.ne — N/W connect flush; wall only on field-facing diagonal. */
     .city.elbow.nw {
       inset: 0;
-      clip-path: polygon(0 0, 100% 0, 68% 34%, 34% 34%, 34% 68%, 0 100%, 0 0);
+      clip-path: polygon(0 0, 100% 0, 66% 30%, 28% 72%, 0 100%, 0 0);
     }
     .city.elbow.nw::after {
-      clip-path: polygon(0 6%, 94% 0, 64% 28%, 28% 28%, 28% 64%, 0 94%, 0 6%);
+      clip-path: polygon(0 0, 94% 0, 58% 28%, 22% 66%, 0 94%, 0 0);
     }
 
     .city.mouth.s {

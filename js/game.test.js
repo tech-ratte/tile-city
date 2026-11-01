@@ -29,6 +29,8 @@ import {
   COLOR_PALETTE,
   PLAYERS_MIN,
   PLAYERS_MAX,
+  NAME_MAX,
+  nextPlayerName,
   chooseBotAction,
 } from "./game/index.js";
 
@@ -579,8 +581,13 @@ assert.strictEqual(MEEPLES_EACH, 7);
   ]);
   assert.strictEqual(withBot[0].bot, true);
   assert.strictEqual(withBot[0].botStrength, "standard");
+  assert.strictEqual(withBot[0].name, "レックス");
   assert.strictEqual(withBot[1].bot, false);
   assert.strictEqual(withBot[1].botStrength, null);
+  assert.strictEqual(NAME_MAX, 10);
+  assert.strictEqual(PLAYERS[0].name, "Player1");
+  assert.strictEqual(nextPlayerName([{ name: "Player1" }, { name: "Player4" }]), "Player5");
+  assert.strictEqual(nextPlayerName([]), "Player1");
 }
 
 // Start player is chosen at random from the roster.

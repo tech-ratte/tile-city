@@ -9,9 +9,43 @@ export const COLOR_PALETTE = [
   { id: "brown", hex: "#a67c52", label: "Brown" },
 ];
 
-export const PLAYERS = COLOR_PALETTE.slice(0, 4).map((color) => ({
+/** Fixed katakana persona names for bots (by meeple color). */
+export const BOT_NAMES = {
+  red: "レックス", // hot-blooded warrior, boy ~17
+  blue: "カイン", // cold sage, boy ~18
+  green: "ロック", // young thief, boy ~11
+  yellow: "ルナ", // mischievous princess, girl ~10
+  orange: "アスカ", // energetic fighter, girl ~17
+  purple: "モーラ", // necromancer, woman ~80
+  white: "セシル", // apprentice cleric, girl ~15
+  brown: "エリザ", // haughty mage, woman ~23
+};
+
+export function defaultPlayerName(index) {
+  return "Player" + (Number(index) + 1);
+}
+
+/** Next PlayerN based on the highest Player# already in the roster (keeps counting after removals). */
+export function nextPlayerName(list) {
+  let max = 0;
+  for (const player of list || []) {
+    const match = String(player && player.name != null ? player.name : "").match(/^Player(\d+)$/i);
+    if (!match) continue;
+    const n = Number(match[1]);
+    if (n > max) max = n;
+  }
+  return "Player" + (max + 1);
+}
+
+export function botNameForColor(id) {
+  if (BOT_NAMES[id]) return BOT_NAMES[id];
+  const color = COLOR_PALETTE.find((item) => item.id === id);
+  return color ? color.label : "Bot";
+}
+
+export const PLAYERS = COLOR_PALETTE.slice(0, 4).map((color, index) => ({
   id: color.id,
-  name: color.label,
+  name: defaultPlayerName(index),
 }));
 
 export const MEEPLES_EACH = 7;
@@ -20,7 +54,7 @@ export const PLAYERS_MIN = 2;
 
 export const PLAYERS_MAX = 8;
 
-export const NAME_MAX = 6;
+export const NAME_MAX = 10;
 
 /** Bot difficulty ids shown in setup. Only standard is implemented for now. */
 export const BOT_STRENGTHS = [
@@ -39,9 +73,11 @@ export function normalizePlayerRecord(item) {
   const known = new Set(COLOR_PALETTE.map((color) => color.id));
   const id = item && known.has(item.id) ? item.id : null;
   if (!id) return null;
-  const raw = item.name == null ? "" : String(item.name);
-  const name = raw.trim().slice(0, NAME_MAX) || COLOR_PALETTE.find((c) => c.id === id).label;
   const bot = !!(item && item.bot);
+  const raw = item.name == null ? "" : String(item.name);
+  const name = bot
+    ? botNameForColor(id)
+    : raw.trim().slice(0, NAME_MAX) || COLOR_PALETTE.find((c) => c.id === id).label;
   return {
     id: id,
     name: name,

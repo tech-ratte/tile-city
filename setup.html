@@ -8,7 +8,7 @@
   <style>
     .setup {
       margin: 36px auto 0;
-      max-width: 28rem;
+      max-width: 36rem;
       text-align: center;
     }
 
@@ -20,9 +20,15 @@
 
     .setup .lead {
       margin: 0 auto 22px;
-      max-width: 22rem;
+      max-width: 24rem;
       font-size: 15px;
       color: #5a4a38;
+      line-height: 1.55;
+    }
+
+    .setup .lead .lead-bot {
+      display: block;
+      margin-top: 0.2em;
     }
 
     .player-list {
@@ -77,8 +83,19 @@
       color: var(--ink);
     }
 
+    /* Desktop: hide strength when human. Mobile keeps the slot (see media query). */
+    .strength-label.is-idle {
+      display: none;
+    }
+
     .player-row.is-bot {
       background: #fff7ea;
+    }
+
+    .player-row.is-bot input[type="text"] {
+      background: #f0e6d8;
+      color: #5a4a38;
+      cursor: default;
     }
 
     .sr-only {
@@ -95,29 +112,57 @@
 
     @media (max-width: 560px) {
       .player-row {
-        grid-template-columns: minmax(0, 1fr) auto;
+        grid-template-columns: minmax(0, 1fr) auto auto;
         grid-template-areas:
-          "name remove"
-          "kind kind"
-          "colors colors";
+          "name kind remove"
+          "colors colors colors";
+        column-gap: 8px;
+        row-gap: 8px;
       }
 
       .player-row input[type="text"] { grid-area: name; }
-      .player-kind { grid-area: kind; flex-direction: row; min-width: 0; }
-      .player-kind select { min-width: 0; flex: 1; }
-      .color-picks { grid-area: colors; max-width: none; justify-content: flex-start; }
+      .player-kind {
+        grid-area: kind;
+        flex-direction: row;
+        flex-wrap: nowrap;
+        align-items: center;
+        gap: 6px;
+        min-width: 0;
+      }
+      .player-kind .kind-label,
+      .player-kind .strength-label {
+        flex: none;
+        width: 4.75rem;
+      }
+      .player-kind select {
+        width: 100%;
+        min-width: 0;
+        box-sizing: border-box;
+      }
+      /* Reserve strength width so the name field stays the same as bot mode. */
+      .strength-label.is-idle {
+        display: block;
+        visibility: hidden;
+        pointer-events: none;
+      }
+      .color-picks {
+        grid-area: colors;
+        justify-content: flex-start;
+        align-self: center;
+      }
       .remove-player { grid-area: remove; }
     }
 
     .color-picks {
       display: flex;
-      flex-wrap: wrap;
+      flex-wrap: nowrap;
       gap: 4px;
-      max-width: 9.5rem;
       justify-content: flex-end;
+      flex-shrink: 0;
     }
 
     .color-picks button {
+      flex: none;
       width: 22px;
       height: 22px;
       padding: 0;
@@ -140,18 +185,26 @@
     .remove-player {
       width: 2.2em;
       height: 2.2em;
-      border: 1px solid var(--line);
+      border: 1px solid #9e3422;
       border-radius: 8px;
-      background: #fffaf1;
-      color: #8a3a2a;
+      background: var(--city);
+      color: #fffdf8;
       font: inherit;
-      font-weight: 700;
+      font-size: 18px;
+      font-weight: 800;
+      line-height: 1;
       cursor: pointer;
+      box-shadow: 0 2px 8px rgba(196, 71, 50, 0.28);
+    }
+
+    .remove-player:hover:not(:disabled) {
+      filter: brightness(1.06);
     }
 
     .remove-player:disabled {
       opacity: 0.35;
       cursor: not-allowed;
+      box-shadow: none;
     }
 
     .setup-actions {
@@ -243,7 +296,10 @@
     </div>
     <div class="setup">
       <h1 data-i18n="setupTitle">Players</h1>
-      <p class="lead" data-i18n="setupLead">2–8 players. Name max 6 letters. Each color once.</p>
+      <p class="lead">
+        <span data-i18n="setupLead">2–8 players. Name max 10 letters. Each color once.</span>
+        <span class="lead-bot" data-i18n="setupLeadBot">Bots play automatically.</span>
+      </p>
       <div class="setup-actions top-actions">
         <button type="button" class="add" id="add-player" data-i18n="addPlayer">Add player</button>
       </div>

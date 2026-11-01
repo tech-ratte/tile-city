@@ -125,14 +125,50 @@
     { id: "white", hex: "#f4f7fb", label: "White" },
     { id: "brown", hex: "#a67c52", label: "Brown" }
   ];
-  var PLAYERS = COLOR_PALETTE.slice(0, 4).map((color) => ({
+  var BOT_NAMES = {
+    red: "\u30EC\u30C3\u30AF\u30B9",
+    // hot-blooded warrior, boy ~17
+    blue: "\u30AB\u30A4\u30F3",
+    // cold sage, boy ~18
+    green: "\u30ED\u30C3\u30AF",
+    // young thief, boy ~11
+    yellow: "\u30EB\u30CA",
+    // mischievous princess, girl ~10
+    orange: "\u30A2\u30B9\u30AB",
+    // energetic fighter, girl ~17
+    purple: "\u30E2\u30FC\u30E9",
+    // necromancer, woman ~80
+    white: "\u30BB\u30B7\u30EB",
+    // apprentice cleric, girl ~15
+    brown: "\u30A8\u30EA\u30B6"
+    // haughty mage, woman ~23
+  };
+  function defaultPlayerName(index) {
+    return "Player" + (Number(index) + 1);
+  }
+  function nextPlayerName(list) {
+    let max = 0;
+    for (const player of list || []) {
+      const match = String(player && player.name != null ? player.name : "").match(/^Player(\d+)$/i);
+      if (!match) continue;
+      const n = Number(match[1]);
+      if (n > max) max = n;
+    }
+    return "Player" + (max + 1);
+  }
+  function botNameForColor(id) {
+    if (BOT_NAMES[id]) return BOT_NAMES[id];
+    const color = COLOR_PALETTE.find((item) => item.id === id);
+    return color ? color.label : "Bot";
+  }
+  var PLAYERS = COLOR_PALETTE.slice(0, 4).map((color, index) => ({
     id: color.id,
-    name: color.label
+    name: defaultPlayerName(index)
   }));
   var MEEPLES_EACH = 7;
   var PLAYERS_MIN = 2;
   var PLAYERS_MAX = 8;
-  var NAME_MAX = 6;
+  var NAME_MAX = 10;
   var BOT_STRENGTHS = [
     { id: "standard", label: "Standard" }
   ];
@@ -146,9 +182,9 @@
     const known = new Set(COLOR_PALETTE.map((color) => color.id));
     const id = item && known.has(item.id) ? item.id : null;
     if (!id) return null;
-    const raw = item.name == null ? "" : String(item.name);
-    const name = raw.trim().slice(0, NAME_MAX) || COLOR_PALETTE.find((c) => c.id === id).label;
     const bot = !!(item && item.bot);
+    const raw = item.name == null ? "" : String(item.name);
+    const name = bot ? botNameForColor(id) : raw.trim().slice(0, NAME_MAX) || COLOR_PALETTE.find((c) => c.id === id).label;
     return {
       id,
       name,
@@ -1787,6 +1823,10 @@
     MEEPLES_EACH,
     BOT_STRENGTHS,
     BOT_STRENGTH_IDS,
+    BOT_NAMES,
+    botNameForColor,
+    defaultPlayerName,
+    nextPlayerName,
     BOT_WEIGHTS,
     TYPES,
     MARKUP,
@@ -1843,7 +1883,8 @@
       langLabel: "Language",
       volumeLabel: "Volume",
       setupTitle: "Players",
-      setupLead: "2\u20138 players. Name max 6 letters. Each color once. Bots play automatically.",
+      setupLead: "2\u20138 players. Name max 10 letters. Each color once.",
+      setupLeadBot: "Bots play automatically.",
       addPlayer: "Add player",
       start: "Start",
       back: "Back",
@@ -1881,7 +1922,7 @@
       goalBody: "Score the most points by completing roads, cities, and monasteries during the game, then score leftover features and fields at the end.",
       setupSecTitle: "Setup",
       setupPlayers: "Players",
-      setupPlayersBody: "2\u20138. Each color has 7 meeples. Pick names (max 6 letters) and unique colors on the setup screen.",
+      setupPlayersBody: "2\u20138. Each color has 7 meeples. Pick names (max 10 letters) and unique colors on the setup screen.",
       setupStartTile: "Start tile",
       setupStartTileBody: "One marked D tile starts face-up in the center. Shuffle the other 71 tiles into the deck.",
       setupFirst: "First player",
@@ -2039,8 +2080,9 @@
       langLabel: "\u8A00\u8A9E",
       volumeLabel: "\u97F3\u91CF",
       setupTitle: "\u30D7\u30EC\u30A4\u30E4\u30FC",
-      setupLead: "2\u301C8\u4EBA\u3002\u540D\u524D\u306F\u6700\u59276\u6587\u5B57\u3002\u8272\u306F\u91CD\u8907\u4E0D\u53EF\u3002Bot\u306F\u81EA\u52D5\u3067\u624B\u756A\u3092\u9032\u3081\u307E\u3059\u3002",
-      addPlayer: "\u8FFD\u52A0",
+      setupLead: "2\u301C8\u4EBA\u3002\u540D\u524D\u306F\u6700\u592710\u6587\u5B57\u3002\u8272\u306F\u91CD\u8907\u4E0D\u53EF\u3002",
+      setupLeadBot: "Bot\u306F\u81EA\u52D5\u3067\u624B\u756A\u3092\u9032\u3081\u307E\u3059\u3002",
+      addPlayer: "\u30D7\u30EC\u30A4\u30E4\u30FC\u8FFD\u52A0",
       start: "\u958B\u59CB",
       back: "\u623B\u308B",
       playerName: "\u30D7\u30EC\u30A4\u30E4\u30FC\u540D",
@@ -2049,8 +2091,8 @@
       errNeedPlayers: "{min}\u301C{max} \u4EBA\u5FC5\u8981\u3067\u3059\u3002",
       errUniqueColor: "\u540C\u3058\u8272\u306F\u4F7F\u3048\u307E\u305B\u3093\u3002",
       playerKind: "\u7A2E\u5225",
-      playerKindHuman: "\u4EBA",
-      playerKindBot: "Bot",
+      playerKindHuman: "\u4EBA\u9593",
+      playerKindBot: "bot",
       botStrength: "\u5F37\u3055",
       botStrengthStandard: "\u6A19\u6E96",
       botBadge: "BOT",
@@ -2077,7 +2119,7 @@
       goalBody: "\u30B2\u30FC\u30E0\u4E2D\u306B\u9053\u30FB\u90FD\u5E02\u30FB\u4FEE\u9053\u9662\u3092\u5B8C\u6210\u3055\u305B\u3066\u5F97\u70B9\u3057\u3001\u7D42\u4E86\u6642\u306B\u6B8B\u308A\u306E\u8981\u7D20\u3068\u7551\u3092\u5F97\u70B9\u3057\u3066\u3001\u6700\u3082\u9AD8\u3044\u70B9\u3092\u76EE\u6307\u3057\u307E\u3059\u3002",
       setupSecTitle: "\u6E96\u5099",
       setupPlayers: "\u30D7\u30EC\u30A4\u30E4\u30FC",
-      setupPlayersBody: "2\u301C8\u4EBA\u3002\u5404\u82727\u4F53\u306E\u30DF\u30FC\u30D7\u30EB\u3002\u8A2D\u5B9A\u753B\u9762\u3067\u540D\u524D\uFF08\u6700\u59276\u6587\u5B57\uFF09\u3068\u8272\u3092\u9078\u3073\u307E\u3059\u3002",
+      setupPlayersBody: "2\u301C8\u4EBA\u3002\u5404\u82727\u4F53\u306E\u30DF\u30FC\u30D7\u30EB\u3002\u8A2D\u5B9A\u753B\u9762\u3067\u540D\u524D\uFF08\u6700\u592710\u6587\u5B57\uFF09\u3068\u8272\u3092\u9078\u3073\u307E\u3059\u3002",
       setupStartTile: "\u958B\u59CB\u30BF\u30A4\u30EB",
       setupStartTileBody: "\u5370\u4ED8\u304D\u306E D \u30BF\u30A4\u30EB1\u679A\u3092\u4E2D\u592E\u306B\u8868\u5411\u304D\u3067\u7F6E\u304D\u307E\u3059\u3002\u6B8B\u308A71\u679A\u3092\u5C71\u672D\u306B\u3057\u307E\u3059\u3002",
       setupFirst: "\u5148\u624B",
@@ -2424,6 +2466,7 @@
   var game = saved ? saved.game : game_default.createGame(void 0, roster);
   var pan = null;
   var skipClick = false;
+  var suppressHandClickUntil = 0;
   var boardZoom = 0.8;
   endFanfareStarted = !!game.finished;
   window.__game = game;
@@ -2579,7 +2622,12 @@
   function meeplePinHTML(pin, leaving) {
     const fieldClass = pin.kind === "field" ? " field-meeple" : "";
     const earned = pin.earned ? '<span class="meeple-earned">+' + pin.earned + "</span>" : "";
-    return '<span class="meeple-pin' + (leaving ? " leaving" : "") + '" style="left:' + pin.x * 100 + "%;top:" + pin.y * 100 + '%"><i class="meeple on-tile ' + pin.color + fieldClass + '" aria-hidden="true"></i>' + earned + "</span>";
+    let style = "left:" + pin.x * 100 + "%;top:" + pin.y * 100 + "%";
+    if (leaving && pin.at) {
+      const ageSec = Math.max(0, (Date.now() - pin.at) / 1e3);
+      style += ";--leave-age:-" + ageSec + "s";
+    }
+    return '<span class="meeple-pin' + (leaving ? " leaving" : "") + '" style="' + style + '"><i class="meeple on-tile ' + pin.color + fieldClass + '" aria-hidden="true"></i>' + earned + "</span>";
   }
   function meepleMarksHTML(tile, pending) {
     const marks = [];
@@ -2873,19 +2921,40 @@
     return colors;
   }
   function armLeaveFxClear() {
-    let has = false;
+    let earliest = null;
     for (const tile of game.board.values()) {
-      if (tile.leaveFx) {
-        has = true;
-        break;
-      }
+      if (!tile.leaveFx) continue;
+      const at = tile.leaveFx.at || Date.now();
+      if (earliest == null || at < earliest) earliest = at;
     }
-    if (!has) return;
     clearTimeout(leaveFxTimer);
+    leaveFxTimer = null;
+    if (earliest == null) return;
+    const remaining = Math.max(0, LEAVE_FX_MS - (Date.now() - earliest));
     leaveFxTimer = setTimeout(() => {
-      for (const tile of game.board.values()) tile.leaveFx = null;
-      document.querySelectorAll(".meeple-pin.leaving").forEach((el) => el.remove());
-    }, LEAVE_FX_MS);
+      leaveFxTimer = null;
+      const now = Date.now();
+      let cleared = false;
+      let remainingFx = false;
+      for (const tile of game.board.values()) {
+        if (!tile.leaveFx) continue;
+        if (now - (tile.leaveFx.at || 0) >= LEAVE_FX_MS) {
+          tile.leaveFx = null;
+          cleared = true;
+        } else {
+          remainingFx = true;
+        }
+      }
+      if (cleared) {
+        document.querySelectorAll(".meeple-pin.leaving").forEach((el) => {
+          const tileEl = el.closest("[data-pos]");
+          const pos = tileEl && tileEl.dataset.pos;
+          const tile = pos ? game.board.get(pos) : null;
+          if (!tile || !tile.leaveFx) el.remove();
+        });
+      }
+      if (remainingFx) armLeaveFxClear();
+    }, remaining);
   }
   function maybePlayEndFanfare() {
     if (!game.finished || endFanfareStarted) return;
@@ -2948,12 +3017,14 @@
   });
   document.addEventListener("pointerdown", (event) => {
     if (event.pointerType !== "touch" && event.pointerType !== "pen") return;
+    if (!event.isPrimary) return;
     if (event.button !== 0 && event.button !== -1) return;
     if (humanControlsLocked()) return;
     const button = event.target.closest("button[data-rotate], button[data-set-rot]");
     if (!button) return;
     event.preventDefault();
-    applyHandRotation(button);
+    if (!applyHandRotation(button)) return;
+    suppressHandClickUntil = Date.now() + 700;
   });
   document.addEventListener("click", (event) => {
     if (skipClick) {
@@ -2962,6 +3033,9 @@
     }
     const button = event.target.closest("button");
     if (!button) return;
+    if (Date.now() < suppressHandClickUntil && (button.dataset.rotate != null || button.dataset.setRot != null)) {
+      return;
+    }
     if (button.id === "zoom-in") {
       setBoardZoom(boardZoom + ZOOM_STEP);
       return;

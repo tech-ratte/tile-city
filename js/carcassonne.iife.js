@@ -20,6 +20,7 @@ var Carcassonne = (() => {
   // js/game/index.js
   var index_exports = {};
   __export(index_exports, {
+    BOT_NAMES: () => BOT_NAMES,
     BOT_STRENGTHS: () => BOT_STRENGTHS,
     BOT_STRENGTH_IDS: () => BOT_STRENGTH_IDS,
     BOT_WEIGHTS: () => BOT_WEIGHTS,
@@ -38,6 +39,7 @@ var Carcassonne = (() => {
     SAVE_VERSION: () => SAVE_VERSION,
     TYPES: () => TYPES,
     boardErrors: () => boardErrors,
+    botNameForColor: () => botNameForColor,
     buildTiles: () => buildTiles,
     canPlace: () => canPlace,
     chooseBotAction: () => chooseBotAction,
@@ -50,6 +52,7 @@ var Carcassonne = (() => {
     createGame: () => createGame,
     deckPhase: () => deckPhase,
     default: () => index_default,
+    defaultPlayerName: () => defaultPlayerName,
     edgeText: () => edgeText,
     finalizeScores: () => finalizeScores,
     isBotPlayer: () => isBotPlayer,
@@ -57,6 +60,7 @@ var Carcassonne = (() => {
     listMeepleSlots: () => listMeepleSlots,
     makeTile: () => makeTile,
     monasteryComplete: () => monasteryComplete,
+    nextPlayerName: () => nextPlayerName,
     normalizeBotStrength: () => normalizeBotStrength,
     normalizePlayers: () => normalizePlayers,
     openCells: () => openCells,
@@ -81,14 +85,50 @@ var Carcassonne = (() => {
     { id: "white", hex: "#f4f7fb", label: "White" },
     { id: "brown", hex: "#a67c52", label: "Brown" }
   ];
-  var PLAYERS = COLOR_PALETTE.slice(0, 4).map((color) => ({
+  var BOT_NAMES = {
+    red: "\u30EC\u30C3\u30AF\u30B9",
+    // hot-blooded warrior, boy ~17
+    blue: "\u30AB\u30A4\u30F3",
+    // cold sage, boy ~18
+    green: "\u30ED\u30C3\u30AF",
+    // young thief, boy ~11
+    yellow: "\u30EB\u30CA",
+    // mischievous princess, girl ~10
+    orange: "\u30A2\u30B9\u30AB",
+    // energetic fighter, girl ~17
+    purple: "\u30E2\u30FC\u30E9",
+    // necromancer, woman ~80
+    white: "\u30BB\u30B7\u30EB",
+    // apprentice cleric, girl ~15
+    brown: "\u30A8\u30EA\u30B6"
+    // haughty mage, woman ~23
+  };
+  function defaultPlayerName(index) {
+    return "Player" + (Number(index) + 1);
+  }
+  function nextPlayerName(list) {
+    let max = 0;
+    for (const player of list || []) {
+      const match = String(player && player.name != null ? player.name : "").match(/^Player(\d+)$/i);
+      if (!match) continue;
+      const n = Number(match[1]);
+      if (n > max) max = n;
+    }
+    return "Player" + (max + 1);
+  }
+  function botNameForColor(id) {
+    if (BOT_NAMES[id]) return BOT_NAMES[id];
+    const color = COLOR_PALETTE.find((item) => item.id === id);
+    return color ? color.label : "Bot";
+  }
+  var PLAYERS = COLOR_PALETTE.slice(0, 4).map((color, index) => ({
     id: color.id,
-    name: color.label
+    name: defaultPlayerName(index)
   }));
   var MEEPLES_EACH = 7;
   var PLAYERS_MIN = 2;
   var PLAYERS_MAX = 8;
-  var NAME_MAX = 6;
+  var NAME_MAX = 10;
   var BOT_STRENGTHS = [
     { id: "standard", label: "Standard" }
   ];
@@ -102,9 +142,9 @@ var Carcassonne = (() => {
     const known = new Set(COLOR_PALETTE.map((color) => color.id));
     const id = item && known.has(item.id) ? item.id : null;
     if (!id) return null;
-    const raw = item.name == null ? "" : String(item.name);
-    const name = raw.trim().slice(0, NAME_MAX) || COLOR_PALETTE.find((c) => c.id === id).label;
     const bot = !!(item && item.bot);
+    const raw = item.name == null ? "" : String(item.name);
+    const name = bot ? botNameForColor(id) : raw.trim().slice(0, NAME_MAX) || COLOR_PALETTE.find((c) => c.id === id).label;
     return {
       id,
       name,
@@ -1743,6 +1783,10 @@ var Carcassonne = (() => {
     MEEPLES_EACH,
     BOT_STRENGTHS,
     BOT_STRENGTH_IDS,
+    BOT_NAMES,
+    botNameForColor,
+    defaultPlayerName,
+    nextPlayerName,
     BOT_WEIGHTS,
     TYPES,
     MARKUP,

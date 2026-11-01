@@ -1010,12 +1010,15 @@ html, body { height: 100%; overflow: hidden; }
     }
 
     .slot .meeple-pin.leaving {
+      --leave-age: 0s;
       animation: meeple-leave 2s ease forwards;
+      animation-delay: var(--leave-age);
       will-change: opacity, transform;
     }
 
     .slot .meeple-pin.leaving .meeple-earned {
       animation: meeple-earned-leave 2s ease forwards;
+      animation-delay: var(--leave-age);
     }
 
     @keyframes meeple-leave {
@@ -1353,7 +1356,6 @@ html, body { height: 100%; overflow: hidden; }
         background: rgba(10, 16, 28, 0.78);
       }
     }
-
     /* Pad only: larger my-tile; keep thumb scale, just tighten the 4-angle width. */
     @media (min-width: 768px) and (max-width: 1024px) {
       .hand {
@@ -1380,3 +1382,4 @@ html, body { height: 100%; overflow: hidden; }
         flex: 0 0 auto;
       }
     }
+
