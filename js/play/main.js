@@ -305,9 +305,12 @@ function footHTML() {
 
 function meeplePinHTML(pin, leaving) {
   const fieldClass = pin.kind === "field" ? " field-meeple" : "";
-  const earned = pin.earned
-    ? '<span class="meeple-earned">+' + pin.earned + "</span>"
-    : "";
+  let earned = "";
+  if (pin.earned) {
+    const label = pin.earnedDim ? String(pin.earned) : ("+" + pin.earned);
+    earned = '<span class="meeple-earned' + (pin.earnedDim ? " sub" : "") + '">' +
+      label + "</span>";
+  }
   let style = "left:" + (pin.x * 100) + "%;top:" + (pin.y * 100) + "%";
   // Grid rebuilds (rotate etc.) remount pins — negative delay continues the leave anim.
   if (leaving && pin.at) {

@@ -890,6 +890,7 @@
       x: meeple.x,
       y: meeple.y,
       earned: meeple.earned || 0,
+      earnedDim: !!meeple.earnedDim,
       at: Date.now()
     };
     tile.meeple = null;
@@ -906,13 +907,26 @@
   function labelMeepleEarnings(board, kind, parts, winners, points) {
     if (!points || !winners.length) return;
     const win = new Set(winners);
+    const marked = [];
     for (const part of parts) {
       const tile = board.get(keyOf(part.x, part.y));
       if (!tile || !tile.meeple) continue;
       if (tile.meeple.kind !== kind) continue;
       if (kind !== "monastery" && tile.meeple.index !== part.index) continue;
       if (!win.has(tile.meeple.player)) continue;
-      tile.meeple.earned = (tile.meeple.earned || 0) + points;
+      marked.push(tile.meeple);
+    }
+    if (!marked.length) return;
+    const leadByPlayer = /* @__PURE__ */ new Set();
+    for (const meeple of marked) {
+      if (!leadByPlayer.has(meeple.player)) {
+        leadByPlayer.add(meeple.player);
+        meeple.earned = (meeple.earned || 0) + points;
+        meeple.earnedDim = false;
+      } else {
+        meeple.earned = (meeple.earned || 0) + points;
+        meeple.earnedDim = true;
+      }
     }
   }
   function scoreFeature(game, kind, parts, points, options) {

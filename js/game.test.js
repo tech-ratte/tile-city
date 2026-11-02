@@ -493,6 +493,33 @@ assert.strictEqual(MEEPLES_EACH, 7);
   assert.strictEqual(game.board.get("-1,0").meeple, null);
   assert.strictEqual(game.board.get("0,0").leaveFx.earned, 8);
   assert.strictEqual(game.board.get("-1,0").leaveFx.earned, 8);
+  assert.ok(!game.board.get("0,0").leaveFx.earnedDim);
+  assert.ok(!game.board.get("-1,0").leaveFx.earnedDim);
+}
+
+// Same player with 2 meeples: only one shows the score label; the other is dimmed.
+{
+  const game = createGame(mulberry32(22));
+  game.board.clear();
+  game.board.set("0,0", makePlaced("F", 0, {
+    player: 0, color: "red", slot: "city-0", kind: "city", index: 0, x: 0.5, y: 0.5,
+  }));
+  game.board.set("-1,0", makePlaced("E", 1, {
+    player: 0, color: "red", slot: "city-0", kind: "city", index: 0, x: 0.5, y: 0.18,
+  }));
+  game.board.set("1,0", makePlaced("E", 3));
+  game.meeples = [5, 7, 7, 7];
+  game.scores = [0, 0, 0, 0];
+  const summary = resolveCompletions(game, 0, 0);
+  assert.strictEqual(summary.cities, 1);
+  assert.strictEqual(game.scores[0], 8);
+  const a = game.board.get("0,0").leaveFx;
+  const b = game.board.get("-1,0").leaveFx;
+  assert.ok(a && b);
+  const leads = [a, b].filter((fx) => fx.earned === 8 && !fx.earnedDim);
+  const subs = [a, b].filter((fx) => fx.earned === 8 && fx.earnedDim);
+  assert.strictEqual(leads.length, 1);
+  assert.strictEqual(subs.length, 1);
 }
 
 // End-game: incomplete road/city/monastery + field (3 per completed city) + meeple tiebreak.

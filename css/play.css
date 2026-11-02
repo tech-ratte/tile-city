@@ -1016,6 +1016,13 @@ html, body { height: 100%; overflow: hidden; }
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
     }
 
+    .slot .meeple-earned.sub {
+      background: rgba(120, 128, 140, 0.92);
+      border-color: rgba(180, 186, 196, 0.55);
+      color: #eef1f5;
+      font-weight: 700;
+    }
+
     .slot .meeple-pin.leaving {
       --leave-age: 0s;
       animation: meeple-leave 2s ease forwards;
