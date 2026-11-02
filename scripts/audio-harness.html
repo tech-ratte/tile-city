@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <base href="/">
+  <title>Audio harness</title>
+</head>
+<body>
+  <button id="unlock" type="button">unlock</button>
+  <pre id="out">idle</pre>
+  <script type="module">
+    import TileCityAudio from "../js/audio.js";
+
+    const out = document.getElementById("out");
+    const log = (obj) => {
+      out.textContent = JSON.stringify(obj, null, 2);
+      window.__audioHarnessResult = obj;
+    };
+
+    function summarize(list) {
+      const ok = list.filter((x) => x.ok).length;
+      const fail = list.length - ok;
+      const names = {};
+      for (const item of list) {
+        if (item.ok) continue;
+        const key = item.name || item.reason || "unknown";
+        names[key] = (names[key] || 0) + 1;
+      }
+      return { total: list.length, ok, fail, failNames: names };
+    }
+
+    async function playHtmlFromTimer(src, delayMs) {
+      return new Promise((resolve) => {
+        setTimeout(() => {
+          try {
+            const audio = new Audio(src);
+            audio.volume = 0.01;
+            const started = performance.now();
+            audio.play().then(
+              () => resolve({ ok: true, mode: "html", ms: Math.round(performance.now() - started) }),
+              (err) => resolve({
+                ok: false,
+                mode: "html",
+                name: err && err.name,
+                message: String(err && err.message || err),
+              })
+            );
+          } catch (err) {
+            resolve({ ok: false, mode: "html", name: "Throw", message: String(err) });
+          }
+        }, delayMs);
+      });
+    }
+
+    async function playWebFromTimer(delayMs) {
+      return new Promise((resolve) => {
+        setTimeout(() => {
+          TileCityAudio.playSoundAsync("tile")
+            .then((info) => {
+              const debug = TileCityAudio.getAudioDebugState();
+              resolve({
+                ok: !!(
+                  info &&
+                  info.ok &&
+                  info.mode === "web-audio" &&
+                  debug.ctxState === "running" &&
+                  info.buffered
+                ),
+                mode: "web",
+                info,
+                ctxState: debug.ctxState,
+                reason: info && (info.reason || info.mode),
+                name: info && info.ok ? undefined : (info && (info.reason || info.mode)) || "web-fail",
+              });
+            })
+            .catch((err) => resolve({ ok: false, mode: "web", name: "Throw", message: String(err) }));
+        }, delayMs);
+      });
+    }
+
+    async function runSuite() {
+      const src = "assets/sound/tile.mp3";
+      TileCityAudio.setVolume(0.05);
+
+      const results = {
+        coldHtmlTimer: [],
+        coldWebTimer: [],
+        afterUnlockHtmlTimer: [],
+        afterUnlockWebTimer: [],
+        rapidHtml: [],
+        rapidWeb: [],
+      };
+
+      // Bot-like timer plays with NO user gesture yet.
+      for (let i = 0; i < 8; i++) {
+        results.coldHtmlTimer.push(await playHtmlFromTimer(src, 25));
+      }
+      for (let i = 0; i < 8; i++) {
+        results.coldWebTimer.push(await playWebFromTimer(25));
+      }
+
+      // User gesture: Playwright clicks #unlock.
+      await new Promise((resolve) => {
+        const btn = document.getElementById("unlock");
+        const done = () => {
+          btn.removeEventListener("click", done);
+          TileCityAudio.unlockAudio();
+          // Play inside the gesture so Chromium marks the context as running.
+          void TileCityAudio.playSoundAsync("tile").then(() => resolve());
+        };
+        btn.addEventListener("click", done);
+        window.__audioHarnessReadyToUnlock = true;
+      });
+
+      await new Promise((r) => setTimeout(r, 150));
+
+      for (let i = 0; i < 15; i++) {
+        results.afterUnlockHtmlTimer.push(await playHtmlFromTimer(src, 35));
+      }
+      for (let i = 0; i < 15; i++) {
+        results.afterUnlockWebTimer.push(await playWebFromTimer(35));
+      }
+
+      results.rapidHtml = await Promise.all(
+        Array.from({ length: 24 }, () => playHtmlFromTimer(src, 0))
+      );
+      results.rapidWeb = await Promise.all(
+        Array.from({ length: 24 }, () => playWebFromTimer(0))
+      );
+
+      const summary = {
+        coldHtmlTimer: summarize(results.coldHtmlTimer),
+        coldWebTimer: summarize(results.coldWebTimer),
+        afterUnlockHtmlTimer: summarize(results.afterUnlockHtmlTimer),
+        afterUnlockWebTimer: summarize(results.afterUnlockWebTimer),
+        rapidHtml: summarize(results.rapidHtml),
+        rapidWeb: summarize(results.rapidWeb),
+        debugAfter: TileCityAudio.getAudioDebugState(),
+        details: results,
+      };
+
+      // New path must be reliable after unlock (bot timer + rapid overlap).
+      summary.pass =
+        summary.afterUnlockWebTimer.fail === 0 &&
+        summary.rapidWeb.fail === 0 &&
+        summary.debugAfter.ctxState === "running" &&
+        summary.debugAfter.bufferCount >= 1;
+
+      log(summary);
+      return summary;
+    }
+
+    window.__runAudioHarness = runSuite;
+    window.__audioHarnessReadyToUnlock = false;
+  </script>
+</body>
+</html>

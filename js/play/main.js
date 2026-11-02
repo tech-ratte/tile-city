@@ -247,17 +247,25 @@ function endActionsHTML(layout) {
     '<button type="button" class="again-chip js-again">' + t("again") + "</button></div>";
 }
 
+function boardCap() {
+  return Math.max(
+    game.board.size,
+    TILE_TOTAL - game.discards.length - (game.pendingDiscard ? 1 : 0)
+  );
+}
+
 function statsHTML() {
   const exitTop = game.finished
     ? ""
     : '<button type="button" class="exit-chip js-exit">' + t("exit") + "</button>";
+  const cap = boardCap();
   return '<div class="meters"><div><span>' + t("deck") + "</span><b>" + game.deck.length +
     '</b></div><div><span>' + t("board") + "</span><b>" + game.board.size +
     '</b></div><div><span>' + t("discards") + "</span><b>" + game.discards.length +
     '</b></div></div><div class="hud-meta">' + exitTop +
     '<div class="deck-short">' +
     '<span class="deck-chip">' + t("deck") + " " + game.deck.length + "</span>" +
-    '<span class="deck-chip">' + t("board") + " " + game.board.size + "/" + TILE_TOTAL + "</span>" +
+    '<span class="deck-chip">' + t("board") + " " + game.board.size + "/" + cap + "</span>" +
     '<span class="deck-chip">' + t("discards") + " " + game.discards.length + "</span></div></div>";
 }
 
@@ -1081,6 +1089,7 @@ syncLayoutMode();
 applyBoardZoom();
 syncBoardPadding();
 TileCityI18n.apply();
+TileCityAudio.unlockAudio();
 readyToPersist = true;
 if (saved) {
   render({ keep: true });
