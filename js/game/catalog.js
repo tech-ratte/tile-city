@@ -30,36 +30,88 @@ function pillars(...corners) {
   return corners.map((c) => `<i class="city-pillar ${c}"></i>`).join("");
 }
 
-function city(cls, inner = "") {
-  return `<i class="city ${cls}">${inner}</i>`;
+function city(cls, inner = "", feat = "city-0") {
+  return `<i class="city ${cls}" data-feat="${feat}">${inner}</i>`;
+}
+
+/** Gate-flank pillar (same design as seam gate ends). */
+function gatePillarHTML(side) {
+  return (
+    '<span class="gate-pillar ' + side + '">' +
+      '<span class="roof"></span>' +
+      '<span class="win"></span>' +
+    "</span>"
+  );
+}
+
+/** Keep for C / Q–T: 柱 | 塔 | 柱 (spans avoid nested <i> parsing). */
+function cityTowerHTML() {
+  return (
+    '<span class="city-keep" title="塔">' +
+      gatePillarHTML("left") +
+      '<span class="city-tower">' +
+        '<span class="roof"></span>' +
+        '<span class="win"></span>' +
+        '<span class="door"></span>' +
+      "</span>" +
+      gatePillarHTML("right") +
+    "</span>"
+  );
+}
+
+function road(cls, feat) {
+  return `<i class="road ${cls}" data-feat="${feat}"></i>`;
+}
+
+function bend(cls, feat) {
+  return `<i class="bend ${cls}" data-feat="${feat}"></i>`;
+}
+
+/** Shared monastery markup (play / rules / home). Spans avoid nested <i> parsing. */
+export function monasteryHTML(withFeat = true) {
+  const feat = withFeat ? ' data-feat="monastery"' : "";
+  return (
+    '<span class="monastery"' + feat + ">" +
+      '<span class="wing left"><span class="win"></span></span>' +
+      '<span class="wing right"><span class="win"></span></span>' +
+      '<span class="cross"></span>' +
+      '<span class="roof"></span>' +
+      '<span class="body"><span class="win"></span><span class="win"></span></span>' +
+    "</span>"
+  );
 }
 
 export const MARKUP = {
-  A: '<i class="road to-s"></i><span class="monastery"><i class="wing left"></i><i class="wing right"></i><i class="cross"></i><i class="roof"></i><i class="body"></i></span>',
-  B: '<span class="monastery"><i class="wing left"></i><i class="wing right"></i><i class="cross"></i><i class="roof"></i><i class="body"></i></span>',
-  /* Fill has no field wall — pillars only (all edges connect). */
-  C: city("fill", pillars("nw", "ne", "sw", "se")) + '<i class="pennant p-c" title="旗"></i>',
-  D: city("cap n shallow", pillars("nw", "ne")) + '<i class="road h"></i>',
+  A: road("to-s", "road-0") + monasteryHTML(true),
+  B: monasteryHTML(true),
+  /* Fill has no field wall — pillars only (all edges connect); keep in the center. */
+  C: city("fill", pillars("nw", "ne", "sw", "se") + cityTowerHTML()) +
+    '<i class="pennant p-c" title="旗"></i>',
+  D: city("cap n shallow", pillars("nw", "ne")) + road("h", "road-0"),
   E: city("cap n", pillars("nw", "ne")),
   F: city("bar h", pillars("nw", "ne", "sw", "se")) + '<i class="pennant p-bar" title="旗"></i>',
   G: city("bar h", pillars("nw", "ne", "sw", "se")),
-  H: city("cap n", pillars("nw", "ne")) + city("cap s", pillars("sw", "se")),
-  I: city("cap n gap-w", pillars("nw", "ne")) + city("cap w gap-n", pillars("nw", "sw")),
-  J: city("cap n", pillars("nw", "ne")) + '<i class="bend se edge"></i><i class="bend se line"></i>',
-  K: city("cap n", pillars("nw", "ne")) + '<i class="bend sw edge"></i><i class="bend sw line"></i>',
-  L: city("cap n shallow", pillars("nw", "ne")) + '<i class="road h-e"></i><i class="road h-w"></i><i class="road v-s"></i><i class="village"></i>',
+  H: city("cap n", pillars("nw", "ne"), "city-0") + city("cap s", pillars("sw", "se"), "city-1"),
+  I: city("cap n gap-w", pillars("nw", "ne"), "city-0") + city("cap w gap-n", pillars("nw", "sw"), "city-1"),
+  J: city("cap n", pillars("nw", "ne")) + bend("se edge", "road-0") + bend("se line", "road-0"),
+  K: city("cap n", pillars("nw", "ne")) + bend("sw edge", "road-0") + bend("sw line", "road-0"),
+  L: city("cap n shallow", pillars("nw", "ne")) + road("h-e", "road-0") + road("h-w", "road-2") + road("v-s", "road-1") + '<i class="village"></i>',
   M: city("elbow ne", pillars("nw", "ne", "se")) + '<i class="pennant p-ne" title="旗"></i>',
   N: city("elbow ne", pillars("nw", "ne", "se")),
-  O: city("elbow nw", pillars("nw", "ne", "sw")) + '<i class="bend se edge"></i><i class="bend se line"></i><i class="pennant p-nw" title="旗"></i>',
-  P: city("elbow nw", pillars("nw", "ne", "sw")) + '<i class="bend se edge"></i><i class="bend se line"></i>',
-  Q: city("mouth s", pillars("nw", "ne", "sw", "se")) + '<i class="pennant p-u" title="旗"></i>',
-  R: city("mouth s", pillars("nw", "ne", "sw", "se")),
-  S: city("mouth s", pillars("nw", "ne", "sw", "se")) + '<i class="road gate"></i><i class="pennant p-u" title="旗"></i>',
-  T: city("mouth s", pillars("nw", "ne", "sw", "se")) + '<i class="road gate"></i>',
-  U: '<i class="road v"></i>',
-  V: '<i class="bend sw edge"></i><i class="bend sw line"></i>',
-  W: '<i class="road h-e"></i><i class="road h-w"></i><i class="road v-s"></i><i class="village"></i>',
-  X: '<i class="road v-n"></i><i class="road h-e"></i><i class="road v-s"></i><i class="road h-w"></i><i class="village"></i>',
+  O: city("elbow nw", pillars("nw", "ne", "sw")) + bend("se edge", "road-0") + bend("se line", "road-0") + '<i class="pennant p-nw" title="旗"></i>',
+  P: city("elbow nw", pillars("nw", "ne", "sw")) + bend("se edge", "road-0") + bend("se line", "road-0"),
+  /* Mouth city — keep sits in the city mass (above the south notch / gate). */
+  Q: city("mouth s", pillars("nw", "ne", "sw", "se") + cityTowerHTML()) +
+    '<i class="pennant p-u" title="旗"></i>',
+  R: city("mouth s", pillars("nw", "ne", "sw", "se") + cityTowerHTML()),
+  S: city("mouth s", pillars("nw", "ne", "sw", "se") + cityTowerHTML()) +
+    road("gate", "road-0") + '<i class="pennant p-u" title="旗"></i>',
+  T: city("mouth s", pillars("nw", "ne", "sw", "se") + cityTowerHTML()) +
+    road("gate", "road-0"),
+  U: road("v", "road-0"),
+  V: bend("sw edge", "road-0") + bend("sw line", "road-0"),
+  W: road("h-e", "road-0") + road("h-w", "road-2") + road("v-s", "road-1") + '<i class="village"></i>',
+  X: road("v-n", "road-0") + road("h-e", "road-1") + road("v-s", "road-2") + road("h-w", "road-3") + '<i class="village"></i>',
 };
 
 

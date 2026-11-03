@@ -4,6 +4,7 @@ import TileCityI18n from "../i18n.js";
 import {
   clearSave,
   loadRoster as loadRosterFromStorage,
+  loadSetupOptions as loadSetupOptionsFromStorage,
   loadSavedGame as loadSavedGameFromStorage,
   writeSave,
 } from "./storage.js";
@@ -35,6 +36,10 @@ let centerAnimDone = null;
 
 function loadRoster() {
   return loadRosterFromStorage(Carcassonne);
+}
+
+function loadSetupOptions() {
+  return loadSetupOptionsFromStorage(Carcassonne);
 }
 
 function loadSavedGame() {
@@ -77,7 +82,9 @@ if (!saved && !roster) {
   location.replace("setup.html");
   throw new Error("setup required");
 }
-let game = saved ? saved.game : Carcassonne.createGame(undefined, roster);
+let game = saved
+  ? saved.game
+  : Carcassonne.createGame(undefined, roster, loadSetupOptions());
 let pan = null;
 let skipClick = false;
 /** Suppress hand rotate/set-rot clicks until this time (touch pointerdown already rotated). */
@@ -452,6 +459,401 @@ function paintSide() {
   paintLegend();
 }
 
+const CLAIM_HEX = Object.fromEntries(
+  Carcassonne.COLOR_PALETTE.map((color) => [color.id, color.hex])
+);
+
+/** ~180° apart = E–W / N–S; ~90° = diagonal (N–E etc.). */
+function claimAxisKind(claim) {
+  const sectors = claim.sectors;
+  if (!sectors || sectors.length < 2) return "ortho";
+  if (sectors.length > 2) return "fan";
+  let d = Math.abs(sectors[1].angle - sectors[0].angle);
+  d = Math.min(d, 360 - d);
+  return d >= 150 ? "ortho" : "diag";
+}
+
+/**
+ * Conic fan for 3+ edges. Soft width is a fixed fraction of each sector
+ * so every seam (blue–red, yellow–blue, …) looks the same.
+ */
+function claimFanGradient(claim, wall, softMaxDeg) {
+  const sectors = claim.sectors && claim.sectors.length >= 2
+    ? claim.sectors
+    : [
+        { color: claim.colors[0], angle: 270 },
+        { color: claim.colors[1], angle: 90 },
+      ];
+  const softMax = softMaxDeg == null ? 20 : softMaxDeg;
+  const n = sectors.length;
+  const bounds = [];
+  for (let i = 0; i < n; i++) {
+    const a = sectors[i].angle;
+    const b = sectors[(i + 1) % n].angle;
+    const span = ((b - a) % 360 + 360) % 360;
+    bounds.push(((a + span / 2) % 360 + 360) % 360);
+  }
+  const origin = bounds[n - 1];
+  const parts = [];
+  for (let i = 0; i < n; i++) {
+    const hex = CLAIM_HEX[sectors[i].color] || "#ff5d78";
+    const paint = wall ? "color-mix(in srgb, " + hex + " 52%, #1a0c08 48%)" : hex;
+    let left = ((bounds[(i - 1 + n) % n] - origin) % 360 + 360) % 360;
+    let right = ((bounds[i] - origin) % 360 + 360) % 360;
+    if (right <= left) right += 360;
+    const half = (right - left) / 2;
+    const soft = Math.min(softMax, Math.max(5, half * 0.22));
+    const solidL = left + soft;
+    const solidR = right - soft;
+    if (i === 0) parts.push(paint + " 0deg");
+    parts.push(paint + " " + solidL + "deg");
+    parts.push(paint + " " + solidR + "deg");
+  }
+  const firstHex = CLAIM_HEX[sectors[0].color] || "#ff5d78";
+  const firstPaint = wall
+    ? "color-mix(in srgb, " + firstHex + " 52%, #1a0c08 48%)"
+    : firstHex;
+  parts.push(firstPaint + " 360deg");
+  return "conic-gradient(from " + origin + "deg, " + parts.join(", ") + ")";
+}
+
+const EDGE_DIRS = ["N", "E", "S", "W"];
+/** Large keep tiles: shared gate when two of these cities meet. */
+const GATE_CITY_IDS = new Set(["C", "M", "N", "O", "P", "Q", "R", "S", "T"]);
+/** Cap / bar / elbow-lite cities: small house when meeting any city. */
+const HOUSE_CITY_IDS = new Set(["D", "E", "F", "G", "H", "I", "J", "K", "L"]);
+const GATE_OPP = { N: "S", E: "W", S: "N", W: "E" };
+/* Gate: 柱 | 城壁+扉 | 柱 （見た目は従来の門端デザイン） */
+const CITY_GATE_HTML =
+  '<span class="gate-pillar a"><span class="roof"></span><span class="win"></span></span>' +
+  '<span class="gate-wall"><span class="door"></span></span>' +
+  '<span class="gate-pillar b"><span class="roof"></span><span class="win"></span></span>';
+const CITY_HOUSE_HTML =
+  '<span class="roof"></span>' +
+  '<span class="body">' +
+    '<span class="win a"></span>' +
+    '<span class="win b"></span>' +
+    '<span class="door"></span>' +
+  "</span>";
+
+function boardEdgeIsCity(tile, boardDir) {
+  if (!tile || !tile.edges) return false;
+  const edges = Carcassonne.rotateEdges(tile.edges, tile.rot || 0);
+  const index = EDGE_DIRS.indexOf(String(boardDir || "").toUpperCase());
+  return index >= 0 && edges[index] === "C";
+}
+
+function clearCitySeamDecor() {
+  document.querySelectorAll("#grid .city-gate, #grid .city-house").forEach((node) => node.remove());
+}
+
+/** Stable 90/270 pick so vertical seam decor does not flicker on repaint. */
+function seamVertRotDeg(pos, kind) {
+  let h = 2166136261;
+  const salt = String(pos || "") + ":" + String(kind || "");
+  for (let i = 0; i < salt.length; i++) {
+    h ^= salt.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return (h >>> 0) & 1 ? 90 : 270;
+}
+
+/** Face color of a city claim on this tile toward boardDir (bridge/hub/solo). */
+function cityFaceToward(pos, boardDir, claims) {
+  if (!claims || !pos || !boardDir) return null;
+  const prefix = pos + ":city-";
+  let solo = null;
+  for (const [key, claim] of claims.entries()) {
+    if (!key.startsWith(prefix) || !claim || !claim.colors || !claim.colors.length) continue;
+    if (claim.mode === "bridge" && claim.boardDir === boardDir) {
+      return claim.face || claim.colors[0] || null;
+    }
+    if (
+      claim.mode === "hub" &&
+      (claim.bridges || []).some((bridge) => bridge.dir === boardDir)
+    ) {
+      return claim.face || claim.colors[0] || null;
+    }
+    if (!claim.tie && claim.colors.length === 1) solo = claim.colors[0];
+    else if (claim.face) solo = claim.face;
+  }
+  return solo;
+}
+
+function tintGateStone(el, colorId) {
+  if (!el || !colorId) return;
+  const hex = CLAIM_HEX[colorId];
+  if (!hex) return;
+  el.style.setProperty("--tower", "color-mix(in srgb, " + hex + " 58%, #1a0c08 42%)");
+  el.style.setProperty("--tower-lit", "color-mix(in srgb, " + hex + " 70%, #2a1410 30%)");
+  el.style.setProperty("--tower-dark", "color-mix(in srgb, " + hex + " 34%, #0a0402 66%)");
+  el.style.setProperty("--tower-mortar", "color-mix(in srgb, " + hex + " 18%, #050302 82%)");
+  el.style.setProperty("--tower-roof", "color-mix(in srgb, " + hex + " 48%, #3e2010 52%)");
+  el.style.setProperty("--tower-roof-dark", "color-mix(in srgb, " + hex + " 28%, #1a0a04 72%)");
+  el.style.setProperty("--tower-window", "color-mix(in srgb, " + hex + " 22%, #101820 78%)");
+  el.style.setProperty("--tower-door-frame", "color-mix(in srgb, " + hex + " 35%, #c9a45a 65%)");
+  el.style.setProperty("--gate-wall", "color-mix(in srgb, " + hex + " 52%, #1a0c08 48%)");
+  el.style.setProperty("--gate-wall-lit", "color-mix(in srgb, " + hex + " 64%, #2a1410 36%)");
+  el.style.setProperty("--gate-wall-dark", "color-mix(in srgb, " + hex + " 30%, #0a0402 70%)");
+}
+
+function mountCityGate(slot, boardDir, colorA, colorB, vertRot) {
+  if (!slot) return;
+  const dir = String(boardDir || "n").toLowerCase();
+  const gate = document.createElement("span");
+  let cls = "city-gate edge-" + dir;
+  if ((dir === "e" || dir === "w") && vertRot) cls += " rot-" + vertRot;
+  gate.className = cls;
+  gate.setAttribute("aria-hidden", "true");
+  gate.innerHTML = CITY_GATE_HTML;
+  if (colorA && colorB) {
+    if (colorA === colorB) {
+      gate.querySelectorAll(".gate-pillar, .gate-wall").forEach((el) => {
+        tintGateStone(el, colorA);
+      });
+    } else {
+      tintGateStone(gate.querySelector(".gate-pillar.a"), colorA);
+      tintGateStone(gate.querySelector(".gate-pillar.b"), colorB);
+    }
+  }
+  slot.appendChild(gate);
+}
+
+function mountCityHouse(slot, boardDir, vertRot) {
+  if (!slot) return;
+  const dir = String(boardDir || "n").toLowerCase();
+  const house = document.createElement("span");
+  let cls = "city-house edge-" + dir;
+  if ((dir === "e" || dir === "w") && vertRot) cls += " rot-" + vertRot;
+  house.className = cls;
+  house.setAttribute("aria-hidden", "true");
+  house.innerHTML = CITY_HOUSE_HTML;
+  slot.appendChild(house);
+}
+
+/**
+ * Seam decor: gate for C/M/N/O/P/Q/R/S/T↔same; house when a D–L city meets any city.
+ * Mounted on the E/S partner so overflow paints above the W/N neighbor.
+ */
+function applyCityGates(claims) {
+  clearCitySeamDecor();
+  const board = game.board;
+  for (const [pos, tile] of board.entries()) {
+    const comma = pos.indexOf(",");
+    const x = Number(pos.slice(0, comma));
+    const y = Number(pos.slice(comma + 1));
+    for (const step of [
+      { dir: "E", dx: 1, dy: 0 },
+      { dir: "S", dx: 0, dy: 1 },
+    ]) {
+      if (!boardEdgeIsCity(tile, step.dir)) continue;
+      const nPos = (x + step.dx) + "," + (y + step.dy);
+      const neighbor = board.get(nPos);
+      if (!neighbor) continue;
+      const opp = GATE_OPP[step.dir];
+      if (!boardEdgeIsCity(neighbor, opp)) continue;
+
+      const bothGate = GATE_CITY_IDS.has(tile.id) && GATE_CITY_IDS.has(neighbor.id);
+      const anyHouse = HOUSE_CITY_IDS.has(tile.id) || HOUSE_CITY_IDS.has(neighbor.id);
+      if (!bothGate && !anyHouse) continue;
+
+      const slot = document.querySelector('#grid [data-pos="' + nPos + '"]');
+      const colorA = cityFaceToward(pos, step.dir, claims);
+      const colorB = cityFaceToward(nPos, opp, claims);
+      if (bothGate) {
+        const vertRot = step.dir === "E" ? seamVertRotDeg(nPos, "gate") : 0;
+        mountCityGate(slot, opp, colorA, colorB, vertRot);
+      } else {
+        const vertRot = step.dir === "E" ? seamVertRotDeg(nPos, "house") : 0;
+        mountCityHouse(slot, opp, vertRot);
+      }
+    }
+  }
+}
+
+/** Last child of recent slots so the owner ring stacks above keep / gate / house. */
+function applyRecentRings() {
+  document.querySelectorAll("#grid .slot.filled.recent").forEach((slot) => {
+    const ring = document.createElement("span");
+    ring.className = "recent-ring";
+    ring.setAttribute("aria-hidden", "true");
+    slot.appendChild(ring);
+  });
+}
+
+function tileRotTurns(el) {
+  const tile = el.closest(".tile") || el;
+  const names = [...tile.classList];
+  const deg = names.find((name) => /^rot-(90|180|270)$/.test(name));
+  if (deg) return Number(deg.slice(4)) / 90;
+  const turn = names.find((name) => /^rot-[0-3]$/.test(name));
+  return turn ? Number(turn.slice(4)) : 0;
+}
+
+function localDirFromBoard(boardDir, rotTurns) {
+  const index = EDGE_DIRS.indexOf(String(boardDir || "").toUpperCase());
+  if (index < 0) return boardDir;
+  return EDGE_DIRS[(index - ((rotTurns % 4) + 4) % 4 + 4) % 4];
+}
+
+function clearClaimEdgeGrads(el) {
+  const feat = el.getAttribute("data-feat");
+  const tile = el.closest(".tile");
+  if (!tile) return;
+  const sel = feat
+    ? ':scope > .claim-edge-grad[data-feat="' + feat + '"]'
+    : ":scope > .claim-edge-grad";
+  tile.querySelectorAll(sel).forEach((node) => node.remove());
+  if (!tile.querySelector(":scope > .claim-edge-grad")) {
+    tile.classList.remove("has-claim-edge");
+  }
+}
+
+/** CSS angle toward a local edge (0 = up). */
+const TOWARD_LOCAL_EDGE = { N: "0deg", E: "90deg", S: "180deg", W: "270deg" };
+
+/**
+ * Half of a pillar-width seam band, flush inside this tile's connecting edge.
+ * Local edge follows tile rot-*. Ramp is face → 50/50 mid toward the seam so
+ * partners meet cleanly without overflowing into the neighbor tile.
+ */
+function mountEdgeGrad(el, boardDir, faceHex, otherHex) {
+  const tile = el.closest(".tile") || el;
+  const rot = tileRotTurns(el);
+  const localDir = String(localDirFromBoard(boardDir, rot) || "n").toUpperCase();
+  const mid = "color-mix(in srgb, " + faceHex + " 50%, " + otherHex + " 50%)";
+  tile.classList.add("has-claim-edge");
+  const band = document.createElement("span");
+  band.className = "claim-edge-grad claim-edge-" + localDir.toLowerCase();
+  const feat = el.getAttribute("data-feat");
+  if (feat) band.setAttribute("data-feat", feat);
+  band.style.setProperty("--edge-from", faceHex);
+  band.style.setProperty("--edge-to", mid);
+  band.style.setProperty("--edge-grad-angle", TOWARD_LOCAL_EDGE[localDir] || "90deg");
+  tile.appendChild(band);
+}
+
+function applyFeatureClaims(claims) {
+  document.querySelectorAll("#grid .slot.filled").forEach((slot) => {
+    const pos = slot.dataset.pos;
+    if (!pos) return;
+    slot.querySelectorAll("[data-feat]").forEach((el) => {
+      const feat = el.getAttribute("data-feat");
+      if (!feat) return;
+      const claim = claims.get(pos + ":" + feat);
+      el.classList.remove(
+        "claim-solo", "claim-blend", "claim-half-a", "claim-half-b",
+        "claim-fan", "claim-full", "claim-diag", "claim-corner",
+        "claim-hub", "claim-bridge"
+      );
+      clearClaimEdgeGrads(el);
+      el.style.removeProperty("--claim");
+      el.style.removeProperty("--claim-a");
+      el.style.removeProperty("--claim-b");
+      el.style.removeProperty("--claim-c");
+      el.style.removeProperty("--claim-mid");
+      el.style.removeProperty("--claim-angle");
+      el.style.removeProperty("--claim-side-angle");
+      el.style.removeProperty("--claim-edge-a");
+      el.style.removeProperty("--claim-edge-b");
+      el.style.removeProperty("--claim-fan");
+      el.style.removeProperty("--claim-fan-wall");
+      if (!Carcassonne.claimColorEnabled(game.options, feat)) return;
+      if (!claim || !claim.colors.length) return;
+
+      // City odd meeting: one connected color as face + edge grads to neighbors.
+      if (claim.mode === "hub") {
+        const face = claim.face || claim.colors[0];
+        const faceHex = CLAIM_HEX[face] || "#ff5d78";
+        el.classList.add("claim-solo", "claim-hub");
+        el.style.setProperty("--claim", faceHex);
+        for (const bridge of claim.bridges || []) {
+          const boardDir = bridge.dir;
+          if (!boardDir) continue;
+          const otherHex = CLAIM_HEX[bridge.color] || "#ff5d78";
+          mountEdgeGrad(el, boardDir, faceHex, otherHex);
+        }
+        return;
+      }
+
+      // City even / hub partner: pure face + shared-edge color band.
+      if (claim.mode === "bridge") {
+        const face = claim.face || claim.colors[0];
+        // boardDir only — never fall back to local `dir` (wrong edge when rotated).
+        const boardDir = claim.boardDir;
+        const faceHex = CLAIM_HEX[face] || "#ff5d78";
+        const partner = claim.colors[0] === face ? claim.colors[1] : claim.colors[0];
+        const otherHex = CLAIM_HEX[partner] || "#49c4ff";
+        el.classList.add("claim-solo", "claim-bridge");
+        el.style.setProperty("--claim", faceHex);
+        if (boardDir && partner) mountEdgeGrad(el, boardDir, faceHex, otherHex);
+        return;
+      }
+
+      if (claim.tie && claim.colors.length >= 2) {
+        const hexA = CLAIM_HEX[claim.colors[0]] || "#ff5d78";
+        const hexB = CLAIM_HEX[claim.colors[1]] || "#49c4ff";
+        // Completed-feature tie: keep both hues as a flat mix (no geometry).
+        if (claim.mode === "mix") {
+          el.classList.add("claim-solo");
+          el.style.setProperty(
+            "--claim",
+            "color-mix(in srgb, " + hexA + " 50%, " + hexB + " 50%)"
+          );
+          return;
+        }
+        el.classList.add("claim-blend");
+        if (claim.mode === "half-a") {
+          el.classList.add("claim-half-a");
+          el.style.setProperty("--claim-a", hexA);
+          el.style.setProperty("--claim-b", hexB);
+          el.style.setProperty("--claim-mid", "color-mix(in srgb, " + hexA + " 50%, " + hexB + " 50%)");
+          el.style.setProperty("--claim-angle", (claim.angle != null ? claim.angle : 135) + "deg");
+          return;
+        }
+        if (claim.mode === "half-b") {
+          el.classList.add("claim-half-b");
+          el.style.setProperty("--claim-a", hexA);
+          el.style.setProperty("--claim-b", hexB);
+          el.style.setProperty("--claim-mid", "color-mix(in srgb, " + hexA + " 50%, " + hexB + " 50%)");
+          el.style.setProperty("--claim-angle", (claim.angle != null ? claim.angle : 135) + "deg");
+          return;
+        }
+
+        const axis = claimAxisKind(claim);
+        if (claim.colors.length === 2 && (axis === "ortho" || axis === "diag")) {
+          // Road odd meeting: center 0.25+0.25, edge quarters pure.
+          el.classList.add("claim-full");
+          if (axis === "diag") el.classList.add("claim-diag");
+          el.style.setProperty("--claim-a", hexA);
+          el.style.setProperty("--claim-b", hexB);
+          el.style.setProperty("--claim-mid", "color-mix(in srgb, " + hexA + " 50%, " + hexB + " 50%)");
+          el.style.setProperty("--claim-angle", (claim.angle != null ? claim.angle : 90) + "deg");
+          if (axis === "ortho") {
+            el.style.setProperty("--claim-edge-a", "25%");
+            el.style.setProperty("--claim-edge-b", "75%");
+          } else {
+            el.style.setProperty("--claim-edge-a", "42%");
+            el.style.setProperty("--claim-edge-b", "58%");
+          }
+          return;
+        }
+
+        // Road 3+ edges: proportional fan.
+        el.classList.add("claim-fan");
+        el.style.setProperty("--claim-a", hexA);
+        el.style.setProperty("--claim-b", hexB);
+        el.style.setProperty("--claim-mid", "color-mix(in srgb, " + hexA + " 50%, " + hexB + " 50%)");
+        el.style.setProperty("--claim-fan", claimFanGradient(claim, false, 20));
+        el.style.setProperty("--claim-fan-wall", claimFanGradient(claim, true, 20));
+        return;
+      }
+      el.classList.add("claim-solo");
+      el.style.setProperty("--claim", CLAIM_HEX[claim.colors[0]] || "#ff5d78");
+    });
+  });
+}
+
 function paintGrid() {
   const bounds = game.bounds(1);
   const lockHints = game.pendingMeeple || game.pendingDiscard || exitConfirmOpen || humanControlsLocked();
@@ -466,6 +868,7 @@ function paintGrid() {
   grid.style.gridTemplateColumns = "repeat(" + cols + ", var(--cell))";
   grid.style.setProperty("--sand-min-x", String(bounds.minX));
   grid.style.setProperty("--sand-min-y", String(bounds.minY));
+  const claims = Carcassonne.buildFeatureClaims(game);
   const parts = [];
   for (let y = bounds.minY; y <= bounds.maxY; y++) {
     for (let x = bounds.minX; x <= bounds.maxX; x++) {
@@ -501,6 +904,9 @@ function paintGrid() {
     }
   }
   grid.innerHTML = parts.join("");
+  applyFeatureClaims(claims);
+  applyCityGates(claims);
+  applyRecentRings();
 }
 
 function scroller() {

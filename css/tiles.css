@@ -204,43 +204,36 @@
     .swatch-pennant {
       width: 14px;
       height: 18px;
-      background:
-        repeating-linear-gradient(
-          90deg,
-          rgba(255, 220, 140, 0.22) 0 1px,
-          transparent 1px 3px
-        ),
-        linear-gradient(180deg, #3e6fb8 0%, #1f4a8c 55%, #163872 100%);
-      border: 1.5px solid #c9a44a;
-      border-radius: 1px 1px 0 0;
       position: relative;
-      clip-path: none;
-      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.18);
+      background:
+        linear-gradient(160deg, rgba(255, 255, 255, 0.3) 0%, transparent 40%, rgba(0, 0, 0, 0.2) 100%),
+        linear-gradient(180deg, #f7e8b0 0%, #d4a832 45%, #9a7010 100%);
+      clip-path: path("M 2.5 0 H 11.5 C 13 0 14 1.2 14 2.5 V 12 L 7 18 L 0 12 V 2.5 C 0 1.2 1 0 2.5 0 Z");
+      filter:
+        drop-shadow(0 0 0.6px rgba(0, 0, 0, 0.7))
+        drop-shadow(1px 2px 1.5px rgba(0, 0, 0, 0.55));
     }
 
     .swatch-pennant::before {
       content: "";
       position: absolute;
-      left: -2px;
-      right: -2px;
-      top: -2px;
-      height: 3px;
-      background: linear-gradient(90deg, #e8d59a, #b8924a);
-      border-radius: 1px;
+      inset: 0;
+      background:
+        linear-gradient(160deg, rgba(255, 255, 255, 0.35) 0%, transparent 42%, rgba(0, 0, 0, 0.2) 100%),
+        linear-gradient(180deg, #6eb0ff 0%, #3d8cf0 45%, #1e6ad4 100%);
+      clip-path: path("M 4 1.6 H 10 C 11.2 1.6 12.4 2.6 12.4 3.6 V 11 L 7 15 L 1.6 11 V 3.6 C 1.6 2.6 2.8 1.6 4 1.6 Z");
     }
 
     .swatch-pennant::after {
       content: "";
       position: absolute;
-      left: 1px;
-      right: 1px;
-      bottom: -3px;
-      height: 3px;
-      background: repeating-linear-gradient(
-        90deg,
-        #c9a44a 0 1.5px,
-        transparent 1.5px 3px
-      );
+      left: 50%;
+      top: 48%;
+      width: 3.5px;
+      height: 3.5px;
+      transform: translate(-50%, -50%) rotate(45deg);
+      background: #fff;
+      box-shadow: 0 0 0 0.6px rgba(20, 40, 80, 0.3);
     }
 
     .demos {
@@ -482,18 +475,21 @@
       --city-wall: #6a635a;
       --city-wall-dark: #4a453e;
       --city-wall-lit: #8a8278;
+      --city-mortar: rgba(42, 36, 30, 0.22);
+      --city-shade-top: rgba(255, 255, 255, 0.14);
+      --city-shade-bottom: rgba(0, 0, 0, 0.16);
       background-color: var(--city-wall);
       background-image:
         linear-gradient(
           180deg,
-          rgba(255, 255, 255, 0.14) 0%,
+          var(--city-shade-top) 0%,
           transparent 38%,
-          rgba(0, 0, 0, 0.16) 100%
+          var(--city-shade-bottom) 100%
         ),
         repeating-linear-gradient(
           90deg,
           transparent 0 10px,
-          rgba(0, 0, 0, 0.14) 10px 11px
+          var(--city-mortar) 10px 11px
         ),
         repeating-linear-gradient(
           0deg,
@@ -642,6 +638,12 @@
     .city.mouth.s::after {
       clip-path: polygon(0 0, 100% 0, 100% 94%, 76% 68%, 50% 52%, 24% 68%, 0 94%, 0 0);
     }
+    /* Sit in the solid plaza above the south field notch / gate; 0.8× keep. */
+    .city.mouth .city-keep {
+      top: 34%;
+      transform: translate(-50%, -50%) scale(0.8);
+      transform-origin: center center;
+    }
 
     /* All four edges connect — no outer wall. */
     .city.fill {
@@ -659,6 +661,479 @@
       display: none;
     }
 
+    /*
+      Keep group for C (tile center) and Q–T (mouth city mass):
+      門の柱 | 塔 | 門の柱
+    */
+    .city-keep {
+      position: absolute;
+      z-index: 4;
+      left: 50%;
+      top: 50%;
+      width: 48%;
+      height: 32%;
+      transform: translate(-50%, -46%);
+      display: flex;
+      flex-direction: row;
+      align-items: flex-end;
+      justify-content: center;
+      gap: 2.5%;
+      box-sizing: border-box;
+      pointer-events: none;
+      --tower: #7a736a;
+      --tower-lit: #9a9288;
+      --tower-dark: #4a453e;
+      --tower-mortar: #2e2a26;
+      --tower-roof: #6a4a3a;
+      --tower-roof-dark: #3e2a20;
+      --tower-door: #1a100c;
+      --tower-door-frame: #c9a45a;
+      --tower-window: #1e2838;
+    }
+
+    .city-keep .city-tower {
+      position: relative;
+      flex: none;
+      width: 54%;
+      height: 100%;
+      box-sizing: border-box;
+      background:
+        linear-gradient(
+          180deg,
+          rgba(255, 255, 255, 0.1) 0%,
+          transparent 32%,
+          rgba(0, 0, 0, 0.18) 100%
+        ),
+        repeating-linear-gradient(
+          90deg,
+          transparent 0 7px,
+          color-mix(in srgb, var(--tower-mortar) 55%, transparent) 7px 8px
+        ),
+        repeating-linear-gradient(
+          0deg,
+          var(--tower-lit) 0 5px,
+          var(--tower) 5px 6px,
+          var(--tower-dark) 6px 7px
+        );
+      border: 1.5px solid var(--tower-mortar);
+      border-radius: 1px;
+      box-shadow:
+        inset 0 0 0 1px color-mix(in srgb, var(--tower-lit) 40%, transparent),
+        0 2px 3px rgba(0, 0, 0, 0.28);
+    }
+
+    .city-keep .gate-pillar {
+      flex: none;
+      align-self: flex-end;
+      width: 20%;
+      height: 78%;
+    }
+
+    .city-tower .roof {
+      position: absolute;
+      left: 50%;
+      top: 0;
+      width: 128%;
+      height: 42%;
+      transform: translate(-50%, -88%);
+      background: linear-gradient(
+        155deg,
+        color-mix(in srgb, var(--tower-roof) 78%, #fff 22%),
+        var(--tower-roof) 42%,
+        var(--tower-roof-dark)
+      );
+      clip-path: polygon(50% 0, 100% 100%, 0 100%);
+      filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.35));
+    }
+
+    .city-tower .roof::after {
+      content: "";
+      position: absolute;
+      left: 8%;
+      right: 8%;
+      bottom: 0;
+      height: 18%;
+      background: color-mix(in srgb, var(--tower-roof-dark) 70%, #000);
+    }
+
+    /* 2nd-floor window */
+    .city-tower .win {
+      position: absolute;
+      left: 50%;
+      top: 18%;
+      width: 26%;
+      height: 22%;
+      transform: translateX(-50%);
+      box-sizing: border-box;
+      background:
+        linear-gradient(var(--tower-door-frame), var(--tower-door-frame))
+          center 42% / 100% 1.5px no-repeat,
+        linear-gradient(90deg, var(--tower-door-frame), var(--tower-door-frame))
+          center / 1.5px 100% no-repeat,
+        radial-gradient(circle at 35% 28%, rgba(180, 210, 255, 0.35) 0 35%, transparent 55%),
+        var(--tower-window);
+      border: 1.5px solid var(--tower-door-frame);
+      border-radius: 1px 1px 0 0;
+      box-shadow:
+        inset 0 0 0 0.5px rgba(0, 0, 0, 0.45),
+        0 0 0 1px color-mix(in srgb, var(--tower-mortar) 70%, transparent);
+    }
+
+    /* Ground-floor door — darker + gold frame so it reads clearly */
+    .city-tower .door {
+      position: absolute;
+      left: 50%;
+      bottom: 0;
+      width: 38%;
+      height: 42%;
+      transform: translateX(-50%);
+      box-sizing: border-box;
+      background:
+        radial-gradient(circle at 72% 48%, var(--tower-door-frame) 0 10%, transparent 11%),
+        linear-gradient(90deg, #0c0806 0 12%, transparent 12% 88%, #0c0806 88%),
+        linear-gradient(180deg, #2a1c14 0%, var(--tower-door) 55%, #0a0604 100%);
+      border: 2px solid var(--tower-door-frame);
+      border-bottom: none;
+      border-radius: 50% 50% 0 0 / 34% 34% 0 0;
+      box-shadow:
+        inset 0 2px 3px rgba(255, 220, 150, 0.18),
+        inset 0 -4px 6px rgba(0, 0, 0, 0.55),
+        0 0 0 1px color-mix(in srgb, var(--tower-mortar) 80%, #000);
+    }
+
+    /*
+      City–city gate for C/M/N/O/P/Q/R/S/T seams.
+      Layout: 柱 | 城壁+扉 | 柱 (original flank design: roof + window).
+      塔 is only the keep on C/Q–T tiles. Vertical seams rotate 90°/270°.
+    */
+    .city-gate {
+      position: absolute;
+      z-index: 6;
+      display: flex;
+      flex-direction: row;
+      align-items: stretch;
+      justify-content: space-between;
+      gap: 2%;
+      width: 35.2%; /* 44% × 0.8 */
+      height: calc(35.2% / 3);
+      box-sizing: border-box;
+      pointer-events: none;
+      --tower: #7a736a;
+      --tower-lit: #9a9288;
+      --tower-dark: #4a453e;
+      --tower-mortar: #2e2a26;
+      --tower-roof: #6a4a3a;
+      --tower-roof-dark: #3e2a20;
+      --tower-door: #120c08;
+      --tower-door-frame: #d4b45e;
+      --tower-window: #1e2838;
+      --gate-wall: #6a635a;
+      --gate-wall-lit: #8a8278;
+      --gate-wall-dark: #4a453e;
+    }
+
+    .city-gate.edge-n {
+      left: 50%;
+      top: 0;
+      transform: translate(-50%, -50%);
+    }
+    .city-gate.edge-s {
+      left: 50%;
+      bottom: 0;
+      transform: translate(-50%, 50%);
+    }
+    .city-gate.edge-w {
+      left: 0;
+      top: 50%;
+    }
+    .city-gate.edge-e {
+      right: 0;
+      top: 50%;
+    }
+    .city-gate.edge-w.rot-90 {
+      transform: translate(-50%, -50%) rotate(90deg);
+    }
+    .city-gate.edge-w.rot-270 {
+      transform: translate(-50%, -50%) rotate(270deg);
+    }
+    .city-gate.edge-e.rot-90 {
+      transform: translate(50%, -50%) rotate(90deg);
+    }
+    .city-gate.edge-e.rot-270 {
+      transform: translate(50%, -50%) rotate(270deg);
+    }
+
+    /* 門の柱 — shared by seam gates and C/Q–T keep flanks */
+    .gate-pillar {
+      position: relative;
+      box-sizing: border-box;
+      background:
+        linear-gradient(
+          180deg,
+          rgba(255, 255, 255, 0.1) 0%,
+          transparent 32%,
+          rgba(0, 0, 0, 0.18) 100%
+        ),
+        repeating-linear-gradient(
+          0deg,
+          var(--tower-lit) 0 4px,
+          var(--tower) 4px 5px,
+          var(--tower-dark) 5px 6px
+        );
+      border: 1.4px solid var(--tower-mortar);
+      border-radius: 1px;
+      box-shadow:
+        inset 0 0 0 1px color-mix(in srgb, var(--tower-lit) 35%, transparent),
+        0 1px 2px rgba(0, 0, 0, 0.28);
+    }
+
+    .gate-pillar .roof {
+      position: absolute;
+      left: 50%;
+      top: 0;
+      width: 140%;
+      height: 55%;
+      transform: translate(-50%, -92%);
+      background: linear-gradient(
+        155deg,
+        color-mix(in srgb, var(--tower-roof) 78%, #fff 22%),
+        var(--tower-roof) 42%,
+        var(--tower-roof-dark)
+      );
+      clip-path: polygon(50% 0, 100% 100%, 0 100%);
+      filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.3));
+    }
+
+    .gate-pillar .win {
+      position: absolute;
+      left: 50%;
+      top: 28%;
+      width: 42%;
+      height: 28%;
+      transform: translateX(-50%);
+      box-sizing: border-box;
+      background:
+        linear-gradient(var(--tower-door-frame), var(--tower-door-frame))
+          center 42% / 100% 1px no-repeat,
+        linear-gradient(90deg, var(--tower-door-frame), var(--tower-door-frame))
+          center / 1px 100% no-repeat,
+        radial-gradient(circle at 35% 28%, rgba(180, 210, 255, 0.3) 0 35%, transparent 55%),
+        var(--tower-window);
+      border: 1px solid var(--tower-door-frame);
+      border-radius: 1px 1px 0 0;
+    }
+
+    .city-gate .gate-pillar {
+      flex: none;
+      align-self: center;
+      width: 24%; /* 16% × 1.5 */
+      height: 150%;
+    }
+
+    .city-gate .gate-wall {
+      position: relative;
+      flex: 1 1 auto;
+      min-width: 0;
+      min-height: 0;
+      box-sizing: border-box;
+      background:
+        linear-gradient(
+          180deg,
+          rgba(255, 255, 255, 0.08) 0%,
+          transparent 40%,
+          rgba(0, 0, 0, 0.16) 100%
+        ),
+        repeating-linear-gradient(
+          90deg,
+          transparent 0 8px,
+          color-mix(in srgb, var(--tower-mortar) 45%, transparent) 8px 9px
+        ),
+        repeating-linear-gradient(
+          0deg,
+          var(--gate-wall-lit) 0 4px,
+          var(--gate-wall) 4px 5px,
+          var(--gate-wall-dark) 5px 6px
+        );
+      border: 1.4px solid var(--tower-mortar);
+      border-radius: 1px;
+      box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--gate-wall-lit) 30%, transparent);
+    }
+
+    .city-gate .gate-wall .door {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 34%;
+      height: 78%;
+      transform: translate(-50%, -50%);
+      box-sizing: border-box;
+      background:
+        radial-gradient(circle at 72% 48%, var(--tower-door-frame) 0 9%, transparent 10%),
+        linear-gradient(90deg, #0c0806 0 10%, transparent 10% 90%, #0c0806 90%),
+        linear-gradient(180deg, #2a1c14 0%, var(--tower-door) 55%, #080402 100%);
+      border: 2px solid var(--tower-door-frame);
+      border-radius: 45% 45% 0 0 / 28% 28% 0 0;
+      border-bottom-width: 1.5px;
+      box-shadow:
+        inset 0 2px 3px rgba(255, 220, 150, 0.2),
+        inset 0 -3px 5px rgba(0, 0, 0, 0.55),
+        0 0 0 1px color-mix(in srgb, var(--tower-mortar) 75%, #000);
+    }
+
+    /*
+      Small house on seams where a D–L city meets any city (1×1).
+      Large roof; two windows + centered door. Vertical seams rotate 90/270.
+    */
+    .city-house {
+      position: absolute;
+      z-index: 6;
+      width: 21.6%; /* 18% × 1.2 */
+      height: 21.6%;
+      box-sizing: border-box;
+      pointer-events: none;
+      --house: #8a8278;
+      --house-lit: #a89f92;
+      --house-dark: #5a534a;
+      --house-mortar: #2e2a26;
+      /* Match .city-gate / .city-tower roof hues */
+      --house-roof: #6a4a3a;
+      --house-roof-dark: #3e2a20;
+      --house-door: #120c08;
+      --house-door-frame: #d4b45e;
+      --house-win: #1e2838;
+      --house-win-frame: #c9b48a;
+    }
+
+    .city-house.edge-n {
+      left: 50%;
+      top: 0;
+      transform: translate(-50%, -50%);
+    }
+    .city-house.edge-s {
+      left: 50%;
+      bottom: 0;
+      transform: translate(-50%, 50%);
+    }
+    .city-house.edge-w {
+      left: 0;
+      top: 50%;
+    }
+    .city-house.edge-e {
+      right: 0;
+      top: 50%;
+    }
+    .city-house.edge-w.rot-90 {
+      transform: translate(-50%, -50%) rotate(90deg);
+    }
+    .city-house.edge-w.rot-270 {
+      transform: translate(-50%, -50%) rotate(270deg);
+    }
+    .city-house.edge-e.rot-90 {
+      transform: translate(50%, -50%) rotate(90deg);
+    }
+    .city-house.edge-e.rot-270 {
+      transform: translate(50%, -50%) rotate(270deg);
+    }
+
+    /* Roof base sits on the body top (no float / extra silhouette height). */
+    .city-house .roof {
+      position: absolute;
+      left: 50%;
+      top: 0;
+      z-index: 2;
+      width: 118%;
+      height: 40%;
+      transform: translateX(-50%);
+      background: linear-gradient(
+        155deg,
+        color-mix(in srgb, var(--house-roof) 78%, #fff 22%),
+        var(--house-roof) 40%,
+        var(--house-roof-dark)
+      );
+      clip-path: polygon(50% 0, 100% 100%, 0 100%);
+      filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.35));
+    }
+
+    .city-house .roof::after {
+      content: "";
+      position: absolute;
+      left: 6%;
+      right: 6%;
+      bottom: 0;
+      height: 16%;
+      background: color-mix(in srgb, var(--house-roof-dark) 72%, #000);
+    }
+
+    .city-house .body {
+      position: absolute;
+      inset: 32% 8% 0;
+      box-sizing: border-box;
+      background:
+        linear-gradient(
+          180deg,
+          rgba(255, 255, 255, 0.1) 0%,
+          transparent 36%,
+          rgba(0, 0, 0, 0.16) 100%
+        ),
+        repeating-linear-gradient(
+          90deg,
+          transparent 0 5px,
+          color-mix(in srgb, var(--house-mortar) 40%, transparent) 5px 6px
+        ),
+        repeating-linear-gradient(
+          0deg,
+          var(--house-lit) 0 4px,
+          var(--house) 4px 5px,
+          var(--house-dark) 5px 6px
+        );
+      border: 1.4px solid var(--house-mortar);
+      border-radius: 1px;
+      box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--house-lit) 30%, transparent);
+    }
+
+    .city-house .body .win {
+      position: absolute;
+      top: 16%;
+      width: 22%;
+      height: 28%;
+      box-sizing: border-box;
+      border: 1px solid var(--house-win-frame);
+      border-radius: 1px 1px 0 0;
+      box-shadow: inset 0 0 0 0.5px rgba(0, 0, 0, 0.35);
+    }
+    .city-house .body .win.a { left: 12%; }
+    .city-house .body .win.b { right: 12%; }
+    .city-house .body .win.a,
+    .city-house .body .win.b {
+      background:
+        linear-gradient(var(--house-win-frame), var(--house-win-frame))
+          center 45% / 100% 1px no-repeat,
+        linear-gradient(90deg, var(--house-win-frame), var(--house-win-frame))
+          center / 1px 100% no-repeat,
+        radial-gradient(circle at 35% 28%, rgba(180, 210, 255, 0.28) 0 35%, transparent 55%),
+        var(--house-win);
+    }
+
+    .city-house .body .door {
+      position: absolute;
+      left: 50%;
+      bottom: 0;
+      width: 28%;
+      height: 42%;
+      transform: translateX(-50%);
+      box-sizing: border-box;
+      background:
+        radial-gradient(circle at 72% 48%, var(--house-door-frame) 0 9%, transparent 10%),
+        linear-gradient(90deg, #0c0806 0 10%, transparent 10% 90%, #0c0806 90%),
+        linear-gradient(180deg, #2a1c14 0%, var(--house-door) 55%, #080402 100%);
+      border: 1.6px solid var(--house-door-frame);
+      border-bottom: none;
+      border-radius: 40% 40% 0 0 / 26% 26% 0 0;
+      box-shadow:
+        inset 0 1px 2px rgba(255, 220, 150, 0.18),
+        inset 0 -3px 4px rgba(0, 0, 0, 0.5);
+    }
+
     .road {
       position: absolute;
       z-index: 2;
@@ -672,7 +1147,8 @@
     .road.h-e { right: 0; width: 42%; top: calc(50% - 8px); height: var(--road-w); }
     .road.v-n { top: 0; height: 42%; left: calc(50% - 8px); width: var(--road-w); }
     .road.v-s { bottom: 0; height: 42%; left: calc(50% - 8px); width: var(--road-w); }
-    .road.to-s { top: 40%; bottom: 0; left: calc(50% - 8px); width: var(--road-w); }
+    /* Ends at the monastery door (A); do not run up through the building. */
+    .road.to-s { top: 62%; bottom: 0; left: calc(50% - 8px); width: var(--road-w); }
     .road.gate { bottom: 0; height: 38%; left: calc(50% - 8px); width: var(--road-w); }
 
     .bend {
@@ -688,56 +1164,56 @@
     .bend.sw.edge { width: 140px; height: 140px; left: -70px; top: 50px; border: 20px solid var(--road-line); }
     .bend.sw.line { width: 136px; height: 136px; left: -68px; top: 52px; border: 16px solid var(--road); z-index: 2; }
 
-    /* Tapestry banner + white ♦ */
+    /* Vertical pennant: gold frame (outer), bright blue fill (inset), white ♦ */
     .pennant {
       position: absolute;
       z-index: 6;
-      width: 13px;
-      height: 17px;
-      background: linear-gradient(180deg, #4576c2 0%, #234f96 55%, #173a72 100%);
-      border: 1.5px solid #d0a84c;
-      border-radius: 1px 1px 0 0;
-      clip-path: none;
-      box-shadow:
-        inset 0 1px 0 rgba(255, 255, 255, 0.18),
-        0 2.5px 0 #d0a84c;
-      filter: none;
+      width: 22px;
+      height: 28px;
+      background:
+        linear-gradient(160deg, rgba(255, 255, 255, 0.35) 0%, transparent 40%, rgba(0, 0, 0, 0.22) 100%),
+        linear-gradient(180deg, #f7e8b0 0%, #d4a832 40%, #9a7010 100%);
+      clip-path: path("M 4 0 H 18 C 20.2 0 22 1.8 22 4 V 19.2 L 11 28 L 0 19.2 V 4 C 0 1.8 1.8 0 4 0 Z");
+      filter:
+        drop-shadow(0 0 1.2px rgba(0, 0, 0, 0.8))
+        drop-shadow(2px 3px 2px rgba(0, 0, 0, 0.65))
+        drop-shadow(3px 5px 5px rgba(0, 0, 0, 0.4));
     }
 
     .pennant::before {
       content: "";
       position: absolute;
-      left: -2.5px;
-      right: -2.5px;
-      top: -2.5px;
-      height: 3.5px;
-      background: linear-gradient(90deg, #f0dfaa, #c49a45 45%, #f0dfaa);
-      border-radius: 1px;
-      box-shadow: none;
+      inset: 0;
+      background:
+        linear-gradient(160deg, rgba(255, 255, 255, 0.4) 0%, transparent 45%, rgba(0, 0, 0, 0.22) 100%),
+        linear-gradient(180deg, #6eb0ff 0%, #3d8cf0 45%, #1e6ad4 100%);
+      clip-path: path("M 6.2 2.6 H 15.8 C 17.6 2.6 19.4 4.2 19.4 5.8 V 17.6 L 11 24.2 L 2.6 17.6 V 5.8 C 2.6 4.2 4.4 2.6 6.2 2.6 Z");
     }
 
     .pennant::after {
       content: "";
       position: absolute;
       left: 50%;
-      top: 52%;
-      width: 4.5px;
-      height: 4.5px;
+      top: 48%;
+      width: 6px;
+      height: 6px;
       transform: translate(-50%, -50%) rotate(45deg);
       background: #fff;
-      border-radius: 0.4px;
-      bottom: auto;
-      right: auto;
-      box-shadow: 0 0 0 0.5px rgba(20, 30, 50, 0.25);
+      box-shadow:
+        0 0 0 1px rgba(20, 40, 80, 0.28),
+        0 1px 1px rgba(0, 0, 0, 0.25);
     }
 
     /* Away from city meeple slots (C center, F center, M NE, O NW, Q/S mid-north) */
-    .p-c { left: 12%; top: 12%; }
-    .p-bar { left: 14%; top: 36%; }
-    .p-ne { left: auto; right: 7%; top: 6%; }
-    .p-nw { left: 7%; top: 6%; }
-    .p-u { left: 14%; top: 8%; }
+    .p-c { left: 10%; top: 8%; }
+    .p-bar { left: 12%; top: 32%; }
+    .p-ne { left: auto; right: 5%; top: 5%; }
+    .p-nw { left: 5%; top: 5%; }
+    .p-u { left: 12%; top: 6%; }
 
+    /*
+      Default roof/cross: mauve-slate (no green cast) — not near any meeple hue.
+    */
     .monastery {
       position: absolute;
       z-index: 5;
@@ -747,14 +1223,35 @@
       height: 54px;
       transform: translate(-50%, -50%);
       filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.28));
+      --monastery-roof: #6a6474;
+      --monastery-roof-dark: #4a4554;
+      --monastery-cross: #b0a8b8;
+      --monastery-cross-dark: #7a7384;
+      --monastery-window: #7a7588;
+      --monastery-window-border: #4a4558;
+      --monastery-stone: #e8e0d4;
+    }
+
+    /* Opaque gable behind the roof so field green never shows in the eaves. */
+    .monastery::before {
+      content: "";
+      position: absolute;
+      left: 50%;
+      top: 16px;
+      z-index: 0;
+      width: 36px;
+      height: 18px;
+      transform: translateX(-50%);
+      background: var(--monastery-stone);
     }
 
     .monastery .wing {
       position: absolute;
       bottom: 0;
       z-index: 0;
+      display: block;
       width: 16px;
-      height: 24px;
+      height: 28px;
       background:
         linear-gradient(90deg, rgba(0, 0, 0, 0.05) 0 1px, transparent 1px) 0 0 / 5px 100%,
         linear-gradient(#efe8dc, #d8cfc0);
@@ -772,20 +1269,8 @@
       right: -3px;
       top: -9px;
       height: 9px;
-      background: linear-gradient(180deg, #a63a30, #72241e);
+      background: linear-gradient(180deg, var(--monastery-roof), var(--monastery-roof-dark));
       clip-path: polygon(0 100%, 50% 0, 100% 100%);
-    }
-
-    .monastery .wing::after {
-      content: "";
-      position: absolute;
-      left: 50%;
-      top: 6px;
-      width: 4px;
-      height: 5px;
-      transform: translateX(-50%);
-      background: #6b8cae;
-      border: 1px solid #3d4f66;
     }
 
     .monastery .cross {
@@ -793,11 +1278,12 @@
       left: 50%;
       top: 0;
       z-index: 4;
+      display: block;
       width: 3px;
       height: 13px;
-      background: linear-gradient(#f4dc88, #c9a227);
+      background: linear-gradient(var(--monastery-cross), var(--monastery-cross-dark));
       transform: translate(-50%, -12px);
-      box-shadow: 0 0 0 0.6px rgba(80, 50, 10, 0.4);
+      box-shadow: 0 0 0 0.6px rgba(30, 40, 55, 0.45);
     }
 
     .monastery .cross::after {
@@ -807,47 +1293,51 @@
       top: 2px;
       width: 12px;
       height: 3px;
-      background: linear-gradient(#f4dc88, #c9a227);
+      background: linear-gradient(var(--monastery-cross), var(--monastery-cross-dark));
     }
 
+    /*
+      Solid clip-path roof (no transparent borders) so field green never
+      fringes the eaves. Same markup on A and B.
+    */
     .monastery .roof {
       position: absolute;
       left: 50%;
-      top: 6px;
+      top: 4px;
       z-index: 2;
       display: block;
-      width: 0;
-      height: 0;
+      width: 44px;
+      height: 20px;
       margin: 0;
       transform: translateX(-50%);
-      border-left: 22px solid transparent;
-      border-right: 22px solid transparent;
-      border-bottom: 18px solid #9e342a;
+      background: var(--monastery-roof);
+      clip-path: polygon(0 100%, 50% 0, 100% 100%);
       filter: drop-shadow(0 1px 0 rgba(0, 0, 0, 0.25));
     }
 
     .monastery .roof::before {
       content: "";
       position: absolute;
-      left: -14px;
-      top: 11px;
+      left: 8px;
+      top: 13px;
       width: 28px;
-      height: 6px;
-      background: #6f231c;
+      height: 7px;
+      background: var(--monastery-roof-dark);
       clip-path: polygon(0 0, 100% 0, 86% 100%, 14% 100%);
     }
 
     .monastery .roof::after {
       content: "";
       position: absolute;
-      left: -2px;
-      top: 3px;
+      left: 20px;
+      top: 4px;
       width: 4px;
-      height: 8px;
-      background: #c9a227;
+      height: 9px;
+      background: var(--monastery-cross);
       border-radius: 1px 1px 0 0;
     }
 
+    /* Tall enough to tuck under the roof — no green field strip in the gable. */
     .monastery .body {
       position: absolute;
       left: 50%;
@@ -855,7 +1345,7 @@
       z-index: 1;
       display: block;
       width: 34px;
-      height: 26px;
+      height: 34px;
       margin: 0;
       transform: translateX(-50%);
       background:
@@ -865,17 +1355,26 @@
       box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.45);
     }
 
-    .monastery .body::before {
-      content: "";
+    /* All windows share one size (wings + body). */
+    .monastery .win {
       position: absolute;
-      left: 5px;
-      top: 5px;
+      display: block;
       width: 6px;
       height: 7px;
-      background: #6b8cae;
-      box-shadow: 14px 0 0 #6b8cae;
-      border: 1px solid #3d4f66;
+      box-sizing: border-box;
+      background: var(--monastery-window);
+      border: 1px solid var(--monastery-window-border);
     }
+    .monastery .wing .win {
+      left: 50%;
+      top: 6px;
+      transform: translateX(-50%);
+    }
+    .monastery .body .win {
+      top: 8px;
+    }
+    .monastery .body .win:first-child { left: 5px; }
+    .monastery .body .win:last-child { left: 19px; }
 
     .monastery .body::after {
       content: "";

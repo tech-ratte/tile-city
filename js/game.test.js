@@ -21,11 +21,14 @@ import {
   resolveCompletions,
   finalizeScores,
   rankPlayers,
+  buildFeatureClaims,
   simulateToLastTile,
   createGame,
   serializeGame,
   restoreGame,
   normalizePlayers,
+  normalizeGameOptions,
+  claimColorEnabled,
   COLOR_PALETTE,
   PLAYERS_MIN,
   PLAYERS_MAX,
@@ -34,6 +37,7 @@ import {
   botNameForColor,
   chooseBotAction,
 } from "./game/index.js";
+import { CLAIM_SCENES, applyClaimScene } from "./claim-scenes.js";
 
 function makePlaced(id, rot, meeple) {
   const tile = makeTile(id);
@@ -520,6 +524,312 @@ assert.strictEqual(MEEPLES_EACH, 7);
   const subs = [a, b].filter((fx) => fx.earned === 8 && fx.earnedDim);
   assert.strictEqual(leads.length, 1);
   assert.strictEqual(subs.length, 1);
+}
+
+// Feature claims: monopoly spreads; ties encroach from meeple tiles and blend at meetings.
+{
+  const game = createGame(mulberry32(23));
+  game.board.clear();
+  game.board.set("0,0", makePlaced("U", 0, {
+    player: 0, color: "red", slot: "road-0", kind: "road", index: 0, x: 0.5, y: 0.5,
+  }));
+  game.board.set("0,1", makePlaced("U", 0));
+  let claims = buildFeatureClaims(game);
+  assert.deepStrictEqual(claims.get("0,0:road-0"), { colors: ["red"], tie: false });
+  assert.deepStrictEqual(claims.get("0,1:road-0"), { colors: ["red"], tie: false });
+
+  // Odd city meeting: ends solid; center hub picks one connected color as face.
+  game.board.clear();
+  game.board.set("0,0", makePlaced("F", 0));
+  game.board.set("-1,0", makePlaced("E", 1, {
+    player: 1, color: "blue", slot: "city-0", kind: "city", index: 0, x: 0.5, y: 0.18,
+  }));
+  game.board.set("1,0", makePlaced("E", 3, {
+    player: 0, color: "red", slot: "city-0", kind: "city", index: 0, x: 0.5, y: 0.18,
+  }));
+  claims = buildFeatureClaims(game);
+  assert.equal(claims.get("-1,0:city-0").mode, "bridge");
+  assert.equal(claims.get("-1,0:city-0").face, "blue");
+  assert.equal(claims.get("-1,0:city-0").hubOther, true);
+  assert.equal(claims.get("1,0:city-0").mode, "bridge");
+  assert.equal(claims.get("1,0:city-0").face, "red");
+  const mid = claims.get("0,0:city-0");
+  assert.ok(mid.tie);
+  assert.equal(mid.mode, "hub");
+  assert.deepStrictEqual(mid.colors.slice().sort(), ["blue", "red"]);
+  assert.ok(mid.face === "blue" || mid.face === "red", "hub face from connected colors");
+  assert.ok(mid.bridges && mid.bridges.length >= 2, "hub bridges to both caps");
+  assert.ok(
+    claims.get("-1,0:city-0").colors.includes(mid.face),
+    "hub partner seam uses hub face"
+  );
+
+  // Even frontier: both tiles share one tile of gradient (half-a + half-b).
+  game.board.clear();
+  game.board.set("0,0", makePlaced("U", 0, {
+    player: 0, color: "red", slot: "road-0", kind: "road", index: 0, x: 0.5, y: 0.5,
+  }));
+  game.board.set("0,1", makePlaced("U", 0, {
+    player: 1, color: "blue", slot: "road-0", kind: "road", index: 0, x: 0.5, y: 0.5,
+  }));
+  claims = buildFeatureClaims(game);
+  const north = claims.get("0,0:road-0");
+  const south = claims.get("0,1:road-0");
+  assert.equal(north.mode, "half-a");
+  assert.equal(south.mode, "half-b");
+  assert.deepStrictEqual(north.colors, ["red", "blue"]);
+  assert.deepStrictEqual(south.colors, ["red", "blue"]);
+  assert.ok(Math.abs(north.angle - 180) < 1, "expected ~180deg local, got " + north.angle);
+
+  // Five-tile odd road: meeting must be the center (3rd from each meeple), not a neighbor.
+  game.board.clear();
+  game.board.set("0,0", makePlaced("U", 0, {
+    player: 0, color: "red", slot: "road-0", kind: "road", index: 0, x: 0.5, y: 0.5,
+  }));
+  game.board.set("0,1", makePlaced("U", 0));
+  game.board.set("0,2", makePlaced("U", 0));
+  game.board.set("0,3", makePlaced("U", 0));
+  game.board.set("0,4", makePlaced("U", 0, {
+    player: 1, color: "blue", slot: "road-0", kind: "road", index: 0, x: 0.5, y: 0.5,
+  }));
+  claims = buildFeatureClaims(game);
+  assert.deepStrictEqual(claims.get("0,0:road-0"), { colors: ["red"], tie: false });
+  assert.deepStrictEqual(claims.get("0,1:road-0"), { colors: ["red"], tie: false });
+  assert.equal(claims.get("0,2:road-0").mode, "full");
+  assert.deepStrictEqual(claims.get("0,3:road-0"), { colors: ["blue"], tie: false });
+  assert.deepStrictEqual(claims.get("0,4:road-0"), { colors: ["blue"], tie: false });
+
+  // Rotated F (board N–S): hub with bridges toward both caps.
+  game.board.clear();
+  game.board.set("0,0", makePlaced("F", 1));
+  game.board.set("0,-1", makePlaced("E", 2, {
+    player: 1, color: "blue", slot: "city-0", kind: "city", index: 0, x: 0.5, y: 0.18,
+  }));
+  game.board.set("0,1", makePlaced("E", 0, {
+    player: 0, color: "red", slot: "city-0", kind: "city", index: 0, x: 0.5, y: 0.18,
+  }));
+  claims = buildFeatureClaims(game);
+  const rotated = claims.get("0,0:city-0");
+  assert.ok(rotated.tie);
+  assert.equal(rotated.mode, "hub");
+  assert.ok(rotated.bridges && rotated.bridges.length >= 2);
+
+  const pi = Object.fromEntries(COLOR_PALETTE.map((color, i) => [color.id, i]));
+  game.players = COLOR_PALETTE.map((color) => ({
+    id: color.id, name: color.label, bot: false,
+  }));
+
+  // Elbow 3-color: N is hub; caps stay solid; G solid brown.
+  game.board.clear();
+  game.board.set("0,0", makePlaced("N", 0));
+  game.board.set("0,-1", makePlaced("R", 2));
+  game.board.set("-1,-1", makePlaced("E", 1, {
+    player: pi.green, color: "green", slot: "city-0", kind: "city", index: 0, x: 0.5, y: 0.18,
+  }));
+  game.board.set("1,-1", makePlaced("E", 3, {
+    player: pi.orange, color: "orange", slot: "city-0", kind: "city", index: 0, x: 0.5, y: 0.18,
+  }));
+  game.board.set("1,0", makePlaced("G", 0));
+  game.board.set("2,0", makePlaced("E", 3, {
+    player: pi.brown, color: "brown", slot: "city-0", kind: "city", index: 0, x: 0.5, y: 0.18,
+  }));
+  claims = buildFeatureClaims(game);
+  const elbow = claims.get("0,0:city-0");
+  assert.ok(elbow.tie);
+  assert.equal(elbow.mode, "hub", "elbow odd meeting is hub");
+  assert.equal(elbow.colors.length, 3);
+  assert.equal(claims.get("1,0:city-0").mode, "bridge", "G gets hub-partner band");
+  assert.equal(claims.get("1,0:city-0").face, "brown");
+  assert.equal(claims.get("1,0:city-0").boardDir, "W");
+
+  // Even city frontier: pure faces + bridge on the shared edge (no echo to caps).
+  game.board.clear();
+  game.board.set("0,-1", makePlaced("E", 2, {
+    player: pi.red, color: "red", slot: "city-0", kind: "city", index: 0, x: 0.5, y: 0.18,
+  }));
+  game.board.set("1,-1", makePlaced("E", 2, {
+    player: pi.blue, color: "blue", slot: "city-0", kind: "city", index: 0, x: 0.5, y: 0.18,
+  }));
+  game.board.set("0,0", makePlaced("R", 0));
+  game.board.set("1,0", makePlaced("R", 3));
+  claims = buildFeatureClaims(game);
+  const rL = claims.get("0,0:city-0");
+  const rR = claims.get("1,0:city-0");
+  assert.equal(rL.mode, "bridge");
+  assert.equal(rR.mode, "bridge");
+  assert.equal(rL.face, "red");
+  assert.equal(rR.face, "blue");
+  assert.equal(rL.boardDir, "E");
+  assert.equal(rR.boardDir, "W");
+  assert.deepStrictEqual(claims.get("0,-1:city-0"), { colors: ["red"], tie: false });
+  assert.deepStrictEqual(claims.get("1,-1:city-0"), { colors: ["blue"], tie: false });
+
+  // 180S + 180N: city edges meet on E–W (S has E, N has W after rot-180).
+  // boardDir must be board-space toward partner (paint maps via localDir).
+  game.board.clear();
+  game.board.set("0,0", makePlaced("S", 2, {
+    player: pi.red, color: "red", slot: "city-0", kind: "city", index: 0, x: 0.5, y: 0.5,
+  }));
+  game.board.set("1,0", makePlaced("N", 2, {
+    player: pi.blue, color: "blue", slot: "city-0", kind: "city", index: 0, x: 0.5, y: 0.5,
+  }));
+  claims = buildFeatureClaims(game);
+  assert.equal(claims.get("0,0:city-0").mode, "bridge");
+  assert.equal(claims.get("1,0:city-0").mode, "bridge");
+  assert.equal(claims.get("0,0:city-0").boardDir, "E", "180S faces partner east");
+  assert.equal(claims.get("1,0:city-0").boardDir, "W", "180N faces partner west");
+  assert.equal(claims.get("0,0:city-0").face, "red");
+  assert.equal(claims.get("1,0:city-0").face, "blue");
+
+  // 180R + 180S: same E–W seam; boardDir is the shared edge only.
+  game.board.clear();
+  game.board.set("0,0", makePlaced("R", 2, {
+    player: pi.red, color: "red", slot: "city-0", kind: "city", index: 0, x: 0.5, y: 0.5,
+  }));
+  game.board.set("1,0", makePlaced("S", 2, {
+    player: pi.blue, color: "blue", slot: "city-0", kind: "city", index: 0, x: 0.5, y: 0.5,
+  }));
+  claims = buildFeatureClaims(game);
+  assert.equal(claims.get("0,0:city-0").mode, "bridge");
+  assert.equal(claims.get("1,0:city-0").mode, "bridge");
+  assert.equal(claims.get("0,0:city-0").boardDir, "E");
+  assert.equal(claims.get("1,0:city-0").boardDir, "W");
+  assert.equal(claims.get("0,0:city-0").face, "red");
+  assert.equal(claims.get("1,0:city-0").face, "blue");
+
+  // Diagonal elbow odd meeting: hub on N; meeple caps solid.
+  game.board.clear();
+  game.board.set("0,0", makePlaced("N", 0));
+  game.board.set("0,-1", makePlaced("E", 2, {
+    player: pi.red, color: "red", slot: "city-0", kind: "city", index: 0, x: 0.5, y: 0.18,
+  }));
+  game.board.set("1,0", makePlaced("E", 3, {
+    player: pi.blue, color: "blue", slot: "city-0", kind: "city", index: 0, x: 0.5, y: 0.18,
+  }));
+  claims = buildFeatureClaims(game);
+  assert.equal(claims.get("0,0:city-0").mode, "hub");
+  assert.equal(claims.get("0,-1:city-0").mode, "bridge");
+  assert.equal(claims.get("0,-1:city-0").face, "red");
+  assert.equal(claims.get("0,-1:city-0").boardDir, "S");
+  assert.equal(claims.get("1,0:city-0").mode, "bridge");
+  assert.equal(claims.get("1,0:city-0").face, "blue");
+  assert.equal(claims.get("1,0:city-0").boardDir, "W");
+
+  // Upper 90R beyond a T-junction meeting: solid face + hub-partner band.
+  game.board.clear();
+  game.board.set("0,-1", makePlaced("R", 1));
+  game.board.set("0,0", makePlaced("R", 1));
+  game.board.set("0,1", makePlaced("E", 0, {
+    player: pi.red, color: "red", slot: "city-0", kind: "city", index: 0, x: 0.5, y: 0.18,
+  }));
+  game.board.set("1,0", makePlaced("G", 0, {
+    player: pi.green, color: "green", slot: "city-0", kind: "city", index: 0, x: 0.5, y: 0.5,
+  }));
+  claims = buildFeatureClaims(game);
+  assert.equal(claims.get("0,0:city-0").mode, "hub", "meeting on middle 90R");
+  assert.equal(claims.get("0,-1:city-0").mode, "bridge", "upper 90R partner band");
+  assert.equal(claims.get("0,-1:city-0").face, "green");
+  assert.equal(claims.get("0,1:city-0").mode, "bridge");
+  assert.equal(claims.get("0,1:city-0").face, "red");
+  assert.equal(claims.get("1,0:city-0").mode, "bridge", "G partner band");
+  assert.equal(claims.get("1,0:city-0").face, "green");
+}
+
+// Claim scenes catalog (layouts + expectations) — see also claim-scenes.html.
+{
+  for (const scene of CLAIM_SCENES) {
+    const game = createGame(mulberry32(42));
+    applyClaimScene(game, scene);
+    const claims = buildFeatureClaims(game);
+    for (const [key, want] of Object.entries(scene.expect)) {
+      const got = claims.get(key);
+      assert.ok(got, scene.id + " missing " + key);
+      if (want.mode === "solo") {
+        assert.equal(got.tie, false, scene.id + " " + key + " solo");
+        assert.deepStrictEqual(got.colors, want.colors, scene.id + " " + key + " colors");
+        continue;
+      }
+      if (want.mode) assert.equal(got.mode, want.mode, scene.id + " " + key + " mode");
+      if (want.colors) assert.deepStrictEqual(got.colors, want.colors, scene.id + " " + key + " colors");
+      if (want.colorCount != null) {
+        assert.equal(got.colors.length, want.colorCount, scene.id + " " + key + " colorCount");
+      }
+      if (want.face) assert.equal(got.face, want.face, scene.id + " " + key + " face");
+      if (want.tie != null) assert.equal(!!got.tie, want.tie, scene.id + " " + key + " tie");
+    }
+  }
+}
+
+// Completed features keep tint after meeples return; monastery is claimable.
+{
+  const game = createGame(mulberry32(24));
+  game.board.clear();
+  game.meeples = [7, 7, 7, 7];
+  game.board.set("0,0", makePlaced("E", 0, {
+    player: 0, color: "red", slot: "city-0", kind: "city", index: 0, x: 0.5, y: 0.18,
+  }));
+  game.board.set("0,-1", makePlaced("E", 2));
+  let claims = buildFeatureClaims(game);
+  assert.deepStrictEqual(claims.get("0,0:city-0"), { colors: ["red"], tie: false });
+  resolveCompletions(game, 0, 0);
+  assert.equal(game.board.get("0,0").meeple, null, "meeple returned on complete city");
+  assert.ok(game.board.get("0,0").featureClaims);
+  assert.deepStrictEqual(game.board.get("0,0").featureClaims["city-0"].colors, ["red"]);
+  claims = buildFeatureClaims(game);
+  assert.deepStrictEqual(claims.get("0,0:city-0"), { colors: ["red"], tie: false });
+  assert.deepStrictEqual(claims.get("0,-1:city-0"), { colors: ["red"], tie: false });
+
+  // Tie city: stamped bridge geometry survives meeple return.
+  game.board.clear();
+  game.meeples = [7, 7, 7, 7];
+  game.players = COLOR_PALETTE.map((color) => ({
+    id: color.id, name: color.label, bot: false,
+  }));
+  const piDone = Object.fromEntries(COLOR_PALETTE.map((color, i) => [color.id, i]));
+  game.board.set("0,0", makePlaced("E", 0, {
+    player: piDone.red, color: "red", slot: "city-0", kind: "city", index: 0, x: 0.5, y: 0.18,
+  }));
+  game.board.set("0,-1", makePlaced("E", 2, {
+    player: piDone.blue, color: "blue", slot: "city-0", kind: "city", index: 0, x: 0.5, y: 0.18,
+  }));
+  const before = buildFeatureClaims(game);
+  assert.equal(before.get("0,0:city-0").mode, "bridge");
+  assert.equal(before.get("0,-1:city-0").mode, "bridge");
+  resolveCompletions(game, 0, 0);
+  claims = buildFeatureClaims(game);
+  assert.equal(claims.get("0,0:city-0").mode, "bridge");
+  assert.equal(claims.get("0,-1:city-0").mode, "bridge");
+  assert.equal(claims.get("0,0:city-0").dir, before.get("0,0:city-0").dir);
+
+  game.board.set("2,2", makePlaced("B", 0, {
+    player: 2, color: "green", slot: "monastery", kind: "monastery", index: null, x: 0.5, y: 0.4,
+  }));
+  claims = buildFeatureClaims(game);
+  assert.deepStrictEqual(claims.get("2,2:monastery"), { colors: ["green"], tie: false });
+
+  const saved = serializeGame(game);
+  const restored = restoreGame(saved);
+  assert.equal(restored.board.get("0,0").featureClaims["city-0"].mode, "bridge");
+  assert.equal(restored.board.get("0,0").featureClaims["city-0"].face, "red");
+}
+
+// Game options: feature color toggles persist with the save.
+{
+  const opts = normalizeGameOptions({
+    colorRoads: false,
+    colorCities: true,
+    colorMonasteries: false,
+  });
+  assert.equal(opts.colorRoads, false);
+  assert.equal(opts.colorCities, true);
+  assert.equal(opts.colorMonasteries, false);
+  assert.equal(claimColorEnabled(opts, "road-0"), false);
+  assert.equal(claimColorEnabled(opts, "city-0"), true);
+  assert.equal(claimColorEnabled(opts, "monastery"), false);
+  const game = createGame(mulberry32(25), undefined, opts);
+  assert.deepStrictEqual(game.options, opts);
+  const round = restoreGame(serializeGame(game));
+  assert.deepStrictEqual(round.options, opts);
 }
 
 // End-game: incomplete road/city/monastery + field (3 per completed city) + meeple tiebreak.

@@ -1,5 +1,6 @@
 import { MEEPLES_EACH, PLAYERS_MIN, normalizePlayers } from "./constants.js";
 import { Game } from "./engine.js";
+import { normalizeGameOptions } from "./options.js";
 import { clonePlaced, makeTile } from "./tiles.js";
 
 export const SAVE_VERSION = 1;
@@ -13,19 +14,26 @@ export function snapshotLooseTile(tile) {
 
 export function snapshotPlacedTile(tile) {
   if (!tile) return null;
-  return {
+  const out = {
     id: tile.id,
     start: !!tile.start,
     rot: tile.rot || 0,
     owner: tile.owner || null,
     meeple: tile.meeple ? Object.assign({}, tile.meeple) : null,
   };
+  if (tile.featureClaims && Object.keys(tile.featureClaims).length) {
+    out.featureClaims = JSON.parse(JSON.stringify(tile.featureClaims));
+  }
+  return out;
 }
 
 
 export function revivePlacedTile(data) {
   const tile = clonePlaced(makeTile(data.id, data.start), data.rot || 0, data.owner || null);
   tile.meeple = data.meeple ? Object.assign({}, data.meeple) : null;
+  if (data.featureClaims && typeof data.featureClaims === "object") {
+    tile.featureClaims = JSON.parse(JSON.stringify(data.featureClaims));
+  }
   return tile;
 }
 
@@ -39,6 +47,7 @@ export function serializeGame(game) {
       bot: !!player.bot,
       botStrength: player.bot ? (player.botStrength || "standard") : null,
     })),
+    options: normalizeGameOptions(game.options),
     deck: game.deck.map(snapshotLooseTile),
     discards: game.discards.map(snapshotLooseTile),
     board: Array.from(game.board.entries()).map(([key, tile]) => [key, snapshotPlacedTile(tile)]),
@@ -62,7 +71,11 @@ export function restoreGame(data) {
   if (!data || data.v !== SAVE_VERSION || !Array.isArray(data.board)) return null;
   const players = normalizePlayers(data.players);
   if (!players || players.length < PLAYERS_MIN) return null;
-  const game = new Game((data.deck || []).map((tile) => makeTile(tile.id, tile.start)), players);
+  const game = new Game(
+    (data.deck || []).map((tile) => makeTile(tile.id, tile.start)),
+    players,
+    data.options
+  );
   game.board = new Map();
   for (const entry of data.board) {
     if (!entry || entry.length < 2 || !entry[1]) continue;

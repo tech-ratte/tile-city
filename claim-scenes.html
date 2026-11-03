@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Claim scenes — Tile City</title>
+  <link rel="stylesheet" href="css/tiles.css">
+  <link rel="stylesheet" href="css/play.css">
+  <style>
+    /* play.css locks the game board; this page must scroll. */
+    html, body {
+      height: auto !important;
+      min-height: 100%;
+      overflow: auto !important;
+      overflow-x: hidden !important;
+    }
+    body {
+      margin: 0;
+      font-family: "Yu Gothic UI", "Yu Gothic", Meiryo, sans-serif;
+      background: #1a1410;
+      color: #f0e6d8;
+    }
+    .wrap { width: min(1100px, calc(100% - 28px)); margin: 0 auto; padding: 24px 0 64px; }
+    h1 { font-size: 1.35rem; margin: 0 0 8px; }
+    .lead { color: #b9a994; margin: 0 0 22px; line-height: 1.5; }
+    .scene {
+      background: #2a221c;
+      border: 1px solid #4a3c32;
+      border-radius: 12px;
+      padding: 14px 16px 18px;
+      margin-bottom: 18px;
+    }
+    .scene h2 { font-size: 1.05rem; margin: 0 0 6px; }
+    .scene .id { color: #8a7a68; font-size: 0.85rem; }
+    .scene pre {
+      margin: 8px 0 12px;
+      padding: 10px 12px;
+      background: #1a1410;
+      border-radius: 8px;
+      color: #cbbba8;
+      font-size: 0.78rem;
+      overflow: auto;
+      white-space: pre-wrap;
+    }
+    .board {
+      display: grid;
+      gap: 0;
+      width: max-content;
+      background: #67943a;
+      padding: 8px;
+      border-radius: 8px;
+    }
+    .board .slot {
+      width: var(--s, 120px);
+      height: var(--s, 120px);
+      position: relative;
+    }
+    .board .slot .tile { width: 100%; height: 100%; }
+    .expect {
+      margin-top: 10px;
+      font-size: 0.82rem;
+      color: #d2c4b2;
+      display: grid;
+      gap: 4px;
+    }
+    .expect .ok { color: #7dffb0; }
+    .expect .bad { color: #ff8a8a; }
+    .nav { margin-bottom: 16px; }
+    .nav a { color: #7eb6ff; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <p class="nav"><a href="tiles.html">← tiles / rules</a> · <a href="play.html">play</a></p>
+    <h1>ミープル競合 — claim シーン</h1>
+    <p class="lead">
+      <code>js/claim-scenes.js</code> の配置をそのまま描画。<code>npm test</code> と同じ期待値を照合します。
+      斜め都市の2枚目会合・カーブ道グラデなどを目視確認できます。
+    </p>
+    <div id="root"></div>
+  </div>
+  <script type="module">
+    import { createGame, buildFeatureClaims, tileHTML, COLOR_PALETTE } from "./js/game/index.js";
+    import { CLAIM_SCENES, applyClaimScene } from "./js/claim-scenes.js";
+
+    const CLAIM_HEX = Object.fromEntries(COLOR_PALETTE.map((c) => [c.id, c.hex]));
+
+    function claimAxisKind(claim) {
+      const sectors = claim.sectors;
+      if (!sectors || sectors.length < 2) return "ortho";
+      if (sectors.length > 2) return "fan";
+      let d = Math.abs(sectors[1].angle - sectors[0].angle);
+      d = Math.min(d, 360 - d);
+      return d >= 150 ? "ortho" : "diag";
+    }
+
+    function claimFanGradient(claim, wall) {
+      const sectors = claim.sectors && claim.sectors.length >= 2
+        ? claim.sectors
+        : [
+            { color: claim.colors[0], angle: 270 },
+            { color: claim.colors[1], angle: 90 },
+          ];
+      const softMax = 20;
+      const n = sectors.length;
+      const bounds = [];
+      for (let i = 0; i < n; i++) {
+        const a = sectors[i].angle;
+        const b = sectors[(i + 1) % n].angle;
+        const span = ((b - a) % 360 + 360) % 360;
+        bounds.push(((a + span / 2) % 360 + 360) % 360);
+      }
+      const origin = bounds[n - 1];
+      const parts = [];
+      for (let i = 0; i < n; i++) {
+        const hex = CLAIM_HEX[sectors[i].color] || "#ff5d78";
+        const paint = wall ? "color-mix(in srgb, " + hex + " 52%, #1a0c08 48%)" : hex;
+        let left = ((bounds[(i - 1 + n) % n] - origin) % 360 + 360) % 360;
+        let right = ((bounds[i] - origin) % 360 + 360) % 360;
+        if (right <= left) right += 360;
+        const half = (right - left) / 2;
+        const soft = Math.min(softMax, Math.max(5, half * 0.22));
+        if (i === 0) parts.push(paint + " 0deg");
+        parts.push(paint + " " + (left + soft) + "deg");
+        parts.push(paint + " " + (right - soft) + "deg");
+      }
+      const firstHex = CLAIM_HEX[sectors[0].color] || "#ff5d78";
+      const firstPaint = wall
+        ? "color-mix(in srgb, " + firstHex + " 52%, #1a0c08 48%)"
+        : firstHex;
+      parts.push(firstPaint + " 360deg");
+      return "conic-gradient(from " + origin + "deg, " + parts.join(", ") + ")";
+    }
+
+    const EDGE_DIRS = ["N", "E", "S", "W"];
+    const TOWARD_LOCAL_EDGE = { N: "0deg", E: "90deg", S: "180deg", W: "270deg" };
+
+    function tileRotTurns(el) {
+      const tile = el.closest(".tile") || el;
+      const names = [...tile.classList];
+      const deg = names.find((name) => /^rot-(90|180|270)$/.test(name));
+      if (deg) return Number(deg.slice(4)) / 90;
+      const turn = names.find((name) => /^rot-[0-3]$/.test(name));
+      return turn ? Number(turn.slice(4)) : 0;
+    }
+
+    function localDirFromBoard(boardDir, rotTurns) {
+      const index = EDGE_DIRS.indexOf(String(boardDir || "").toUpperCase());
+      if (index < 0) return boardDir;
+      return EDGE_DIRS[(index - ((rotTurns % 4) + 4) % 4 + 4) % 4];
+    }
+
+    function clearClaimEdgeGrads(el) {
+      const feat = el.getAttribute("data-feat");
+      const tile = el.closest(".tile");
+      if (!tile) return;
+      const sel = feat
+        ? ':scope > .claim-edge-grad[data-feat="' + feat + '"]'
+        : ":scope > .claim-edge-grad";
+      tile.querySelectorAll(sel).forEach((node) => node.remove());
+      if (!tile.querySelector(":scope > .claim-edge-grad")) {
+        tile.classList.remove("has-claim-edge");
+      }
+    }
+
+    function mountEdgeGrad(el, boardDir, faceHex, otherHex) {
+      const tile = el.closest(".tile") || el;
+      const rot = tileRotTurns(el);
+      const localDir = String(localDirFromBoard(boardDir, rot) || "n").toUpperCase();
+      const mid = "color-mix(in srgb, " + faceHex + " 50%, " + otherHex + " 50%)";
+      tile.classList.add("has-claim-edge");
+      const band = document.createElement("span");
+      band.className = "claim-edge-grad claim-edge-" + localDir.toLowerCase();
+      const feat = el.getAttribute("data-feat");
+      if (feat) band.setAttribute("data-feat", feat);
+      band.style.setProperty("--edge-from", faceHex);
+      band.style.setProperty("--edge-to", mid);
+      band.style.setProperty("--edge-grad-angle", TOWARD_LOCAL_EDGE[localDir] || "90deg");
+      tile.appendChild(band);
+    }
+
+    function applyClaims(root, claims) {
+      root.querySelectorAll("[data-feat]").forEach((el) => {
+        const slot = el.closest("[data-pos]");
+        if (!slot) return;
+        const claim = claims.get(slot.dataset.pos + ":" + el.getAttribute("data-feat"));
+        el.classList.remove(
+          "claim-solo", "claim-blend", "claim-half-a", "claim-half-b",
+          "claim-fan", "claim-full", "claim-diag", "claim-corner",
+          "claim-hub", "claim-bridge"
+        );
+        clearClaimEdgeGrads(el);
+        ["--claim", "--claim-a", "--claim-b", "--claim-c", "--claim-mid", "--claim-angle",
+          "--claim-side-angle", "--claim-edge-a", "--claim-edge-b", "--claim-fan", "--claim-fan-wall"
+        ].forEach((p) => el.style.removeProperty(p));
+        if (!claim || !claim.colors.length) return;
+
+        if (claim.mode === "hub") {
+          const face = claim.face || claim.colors[0];
+          const faceHex = CLAIM_HEX[face] || "#ff5d78";
+          el.classList.add("claim-solo", "claim-hub");
+          el.style.setProperty("--claim", faceHex);
+          for (const bridge of claim.bridges || []) {
+            const boardDir = bridge.dir;
+            if (!boardDir) continue;
+            const otherHex = CLAIM_HEX[bridge.color] || "#ff5d78";
+            mountEdgeGrad(el, boardDir, faceHex, otherHex);
+          }
+          return;
+        }
+
+        if (claim.mode === "bridge") {
+          const face = claim.face || claim.colors[0];
+          const boardDir = claim.boardDir;
+          const faceHex = CLAIM_HEX[face] || "#ff5d78";
+          const partner = claim.colors[0] === face ? claim.colors[1] : claim.colors[0];
+          const otherHex = CLAIM_HEX[partner] || "#49c4ff";
+          el.classList.add("claim-solo", "claim-bridge");
+          el.style.setProperty("--claim", faceHex);
+          if (boardDir && partner) mountEdgeGrad(el, boardDir, faceHex, otherHex);
+          return;
+        }
+
+        if (claim.tie && claim.colors.length >= 2) {
+          const hexA = CLAIM_HEX[claim.colors[0]] || "#ff5d78";
+          const hexB = CLAIM_HEX[claim.colors[1]] || "#49c4ff";
+          el.classList.add("claim-blend");
+          if (claim.mode === "half-a" || claim.mode === "half-b") {
+            el.classList.add(claim.mode === "half-a" ? "claim-half-a" : "claim-half-b");
+            el.style.setProperty("--claim-a", hexA);
+            el.style.setProperty("--claim-b", hexB);
+            el.style.setProperty("--claim-mid", "color-mix(in srgb, " + hexA + " 50%, " + hexB + " 50%)");
+            el.style.setProperty("--claim-angle", (claim.angle != null ? claim.angle : 135) + "deg");
+            return;
+          }
+          const axis = claimAxisKind(claim);
+          if (claim.colors.length === 2 && (axis === "ortho" || axis === "diag")) {
+            el.classList.add("claim-full");
+            if (axis === "diag") el.classList.add("claim-diag");
+            el.style.setProperty("--claim-a", hexA);
+            el.style.setProperty("--claim-b", hexB);
+            el.style.setProperty("--claim-angle", (claim.angle != null ? claim.angle : 90) + "deg");
+            el.style.setProperty("--claim-edge-a", axis === "ortho" ? "25%" : "42%");
+            el.style.setProperty("--claim-edge-b", axis === "ortho" ? "75%" : "58%");
+            return;
+          }
+          el.classList.add("claim-fan");
+          el.style.setProperty("--claim-a", hexA);
+          el.style.setProperty("--claim-b", hexB);
+          el.style.setProperty("--claim-fan", claimFanGradient(claim, false));
+          el.style.setProperty("--claim-fan-wall", claimFanGradient(claim, true));
+          return;
+        }
+        el.classList.add("claim-solo");
+        el.style.setProperty("--claim", CLAIM_HEX[claim.colors[0]] || "#ff5d78");
+      });
+    }
+
+    function checkExpect(claims, expect) {
+      const rows = [];
+      for (const [key, want] of Object.entries(expect)) {
+        const got = claims.get(key);
+        let ok = !!got;
+        let detail = "";
+        if (!got) {
+          detail = "missing";
+        } else if (want.mode === "solo") {
+          ok = got.tie === false && JSON.stringify(got.colors) === JSON.stringify(want.colors);
+          detail = (got.tie ? "tie" : "solo") + " " + JSON.stringify(got.colors);
+        } else {
+          if (want.mode && got.mode !== want.mode) ok = false;
+          if (want.face && got.face !== want.face) ok = false;
+          if (want.colors && JSON.stringify(got.colors) !== JSON.stringify(want.colors)) ok = false;
+          if (want.colorCount != null && got.colors.length !== want.colorCount) ok = false;
+          detail = (got.mode || "solo") + " " + JSON.stringify(got.colors);
+        }
+        rows.push({ key, ok, detail, want });
+      }
+      return rows;
+    }
+
+    const root = document.getElementById("root");
+    for (const scene of CLAIM_SCENES) {
+      const game = createGame(() => 0.5);
+      applyClaimScene(game, scene);
+      const claims = buildFeatureClaims(game);
+
+      let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+      for (const cell of scene.tiles) {
+        minX = Math.min(minX, cell.x); maxX = Math.max(maxX, cell.x);
+        minY = Math.min(minY, cell.y); maxY = Math.max(maxY, cell.y);
+      }
+      const cols = maxX - minX + 1;
+      const board = document.createElement("div");
+      board.className = "board";
+      board.style.gridTemplateColumns = "repeat(" + cols + ", var(--s))";
+
+      for (let y = minY; y <= maxY; y++) {
+        for (let x = minX; x <= maxX; x++) {
+          const slot = document.createElement("div");
+          slot.className = "slot filled";
+          slot.dataset.pos = x + "," + y;
+          const tile = game.board.get(x + "," + y);
+          if (tile) {
+            slot.innerHTML = tileHTML(tile.id, tile.rot || 0);
+            if (tile.meeple) {
+              const m = document.createElement("i");
+              m.className = "meeple " + tile.meeple.color;
+              m.style.cssText = "position:absolute;z-index:8;left:"
+                + (tile.meeple.x * 100) + "%;top:" + (tile.meeple.y * 100)
+                + "%;transform:translate(-50%,-50%);width:22%;height:30%;";
+              slot.querySelector(".tile").appendChild(m);
+            }
+          }
+          board.appendChild(slot);
+        }
+      }
+      applyClaims(board, claims);
+
+      const article = document.createElement("article");
+      article.className = "scene";
+      article.id = scene.id;
+      const checks = checkExpect(claims, scene.expect);
+      const allOk = checks.every((r) => r.ok);
+      article.innerHTML =
+        "<h2>" + scene.title + (allOk ? " ✓" : " ✗") + "</h2>"
+        + "<div class=\"id\">" + scene.id + "</div>"
+        + "<pre>" + (scene.ascii || "").trim() + "</pre>";
+      article.appendChild(board);
+      const expectEl = document.createElement("div");
+      expectEl.className = "expect";
+      expectEl.innerHTML = checks.map((r) =>
+        "<div class=\"" + (r.ok ? "ok" : "bad") + "\">"
+        + r.key + " → " + r.detail
+        + (r.ok ? "" : " (want " + JSON.stringify(r.want) + ")")
+        + "</div>"
+      ).join("");
+      article.appendChild(expectEl);
+      root.appendChild(article);
+    }
+  </script>
+</body>
+</html>

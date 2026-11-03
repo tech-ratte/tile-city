@@ -1,6 +1,7 @@
 import { byPos, canPlace, openCells } from "./board.js";
 import { MEEPLES_EACH, PLAYERS, normalizePlayers } from "./constants.js";
 import { isMeepleSlotOpen } from "./features.js";
+import { normalizeGameOptions } from "./options.js";
 import { finalizeScores, resolveCompletions } from "./scoring.js";
 import { buildTiles, clonePlaced, keyOf, listMeepleSlots, makeTile, rotateEdges } from "./tiles.js";
 
@@ -16,8 +17,9 @@ export function shuffle(list, random) {
 
 
 export class Game {
-  constructor(deck, players) {
+  constructor(deck, players, options) {
     this.players = normalizePlayers(players);
+    this.options = normalizeGameOptions(options);
     this.deck = deck;
     this.board = new Map();
     this.discards = [];
@@ -266,12 +268,12 @@ export class Game {
 }
 
 
-export function createGame(random, players) {
+export function createGame(random, players, options) {
   const roll = random || Math.random;
   const tiles = buildTiles();
   const start = tiles.find((tile) => tile.start);
   const deck = shuffle(tiles.filter((tile) => !tile.start), roll);
-  const game = new Game(deck, players);
+  const game = new Game(deck, players, options);
   game.board.set("0,0", clonePlaced(start, 0));
   game.player = Math.floor(roll() * game.players.length);
   game.pull();

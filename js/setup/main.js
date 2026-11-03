@@ -34,15 +34,43 @@ function withPlayerDefaults(list) {
   });
 }
 
-function load() {
+function parseStoredSetup(raw) {
+  if (!raw) return null;
+  let data;
   try {
-    const raw = sessionStorage.getItem(SETUP_KEY);
-    if (raw) return withPlayerDefaults(Carcassonne.normalizePlayers(JSON.parse(raw)));
-  } catch (err) {}
-  return defaultRoster();
+    data = JSON.parse(raw);
+  } catch (err) {
+    return null;
+  }
+  if (Array.isArray(data)) {
+    return {
+      players: withPlayerDefaults(Carcassonne.normalizePlayers(data)),
+      options: Carcassonne.normalizeGameOptions(null),
+    };
+  }
+  if (!data || typeof data !== "object") return null;
+  const players = Carcassonne.normalizePlayers(data.players || data.roster);
+  if (!players || !players.length) return null;
+  return {
+    players: withPlayerDefaults(players),
+    options: Carcassonne.normalizeGameOptions(data.options),
+  };
 }
 
-let players = load();
+function load() {
+  try {
+    const parsed = parseStoredSetup(sessionStorage.getItem(SETUP_KEY));
+    if (parsed) return parsed;
+  } catch (err) {}
+  return {
+    players: defaultRoster(),
+    options: Carcassonne.normalizeGameOptions(null),
+  };
+}
+
+const initial = load();
+let players = initial.players;
+let options = initial.options;
 
 function usedColors(exceptIndex) {
   const used = new Set();
@@ -65,6 +93,20 @@ function setErr(msg) {
 function strengthLabel(id, lang) {
   if (id === "standard") return TileCityI18n.t("botStrengthStandard", lang);
   return id;
+}
+
+function syncOptionToggles() {
+  document.getElementById("opt-color-roads").checked = options.colorRoads !== false;
+  document.getElementById("opt-color-cities").checked = options.colorCities !== false;
+  document.getElementById("opt-color-monasteries").checked = options.colorMonasteries !== false;
+}
+
+function readOptionToggles() {
+  options = Carcassonne.normalizeGameOptions({
+    colorRoads: document.getElementById("opt-color-roads").checked,
+    colorCities: document.getElementById("opt-color-cities").checked,
+    colorMonasteries: document.getElementById("opt-color-monasteries").checked,
+  });
 }
 
 function paint() {
@@ -116,6 +158,11 @@ function paint() {
   document.getElementById("count-hint").textContent =
     TileCityI18n.t("playersCount", lang, { n: players.length, max: max });
 }
+
+document.querySelector(".option-list").addEventListener("change", () => {
+  readOptionToggles();
+  setErr("");
+});
 
 document.getElementById("player-list").addEventListener("input", (event) => {
   const input = event.target.closest("[data-name]");
@@ -192,6 +239,7 @@ document.getElementById("add-player").addEventListener("click", () => {
 
 document.getElementById("start-game").addEventListener("click", () => {
   const lang = TileCityI18n.getLang();
+  readOptionToggles();
   const cleaned = [];
   for (const player of players) {
     const name = player.bot
@@ -219,7 +267,10 @@ document.getElementById("start-game").addEventListener("click", () => {
   try {
     localStorage.removeItem("tile-city-save");
   } catch (err) {}
-  sessionStorage.setItem(SETUP_KEY, JSON.stringify(cleaned));
+  sessionStorage.setItem(SETUP_KEY, JSON.stringify({
+    players: cleaned,
+    options: Carcassonne.normalizeGameOptions(options),
+  }));
   location.href = "play.html";
 });
 
@@ -228,4 +279,5 @@ TileCityI18n.bindLangBar(() => {
   paint();
 });
 TileCityAudio.bindVolumeBar();
+syncOptionToggles();
 paint();

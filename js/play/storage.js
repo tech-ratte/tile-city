@@ -3,14 +3,48 @@ const SAVE_KEY = "tile-city-save";
 
 export { SETUP_KEY, SAVE_KEY };
 
-export function loadRoster(Carcassonne) {
+/** Parse setup payload: legacy player array or { players, options }. */
+export function parseSetupPayload(Carcassonne, raw) {
+  if (!raw) return null;
+  let data;
   try {
-    const raw = sessionStorage.getItem(SETUP_KEY);
-    if (!raw) return null;
-    return Carcassonne.normalizePlayers(JSON.parse(raw));
+    data = typeof raw === "string" ? JSON.parse(raw) : raw;
   } catch (err) {
     return null;
   }
+  if (Array.isArray(data)) {
+    return {
+      players: Carcassonne.normalizePlayers(data),
+      options: Carcassonne.normalizeGameOptions(null),
+    };
+  }
+  if (!data || typeof data !== "object") return null;
+  const players = Carcassonne.normalizePlayers(data.players || data.roster);
+  if (!players || !players.length) return null;
+  return {
+    players,
+    options: Carcassonne.normalizeGameOptions(data.options),
+  };
+}
+
+export function loadSetup(Carcassonne) {
+  try {
+    const raw = sessionStorage.getItem(SETUP_KEY);
+    if (!raw) return null;
+    return parseSetupPayload(Carcassonne, raw);
+  } catch (err) {
+    return null;
+  }
+}
+
+export function loadRoster(Carcassonne) {
+  const setup = loadSetup(Carcassonne);
+  return setup ? setup.players : null;
+}
+
+export function loadSetupOptions(Carcassonne) {
+  const setup = loadSetup(Carcassonne);
+  return Carcassonne.normalizeGameOptions(setup && setup.options);
 }
 
 export function clearSave() {

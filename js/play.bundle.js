@@ -394,35 +394,52 @@
   function pillars(...corners) {
     return corners.map((c) => `<i class="city-pillar ${c}"></i>`).join("");
   }
-  function city(cls, inner = "") {
-    return `<i class="city ${cls}">${inner}</i>`;
+  function city(cls, inner = "", feat = "city-0") {
+    return `<i class="city ${cls}" data-feat="${feat}">${inner}</i>`;
+  }
+  function gatePillarHTML(side) {
+    return '<span class="gate-pillar ' + side + '"><span class="roof"></span><span class="win"></span></span>';
+  }
+  function cityTowerHTML() {
+    return '<span class="city-keep" title="\u5854">' + gatePillarHTML("left") + '<span class="city-tower"><span class="roof"></span><span class="win"></span><span class="door"></span></span>' + gatePillarHTML("right") + "</span>";
+  }
+  function road(cls, feat) {
+    return `<i class="road ${cls}" data-feat="${feat}"></i>`;
+  }
+  function bend(cls, feat) {
+    return `<i class="bend ${cls}" data-feat="${feat}"></i>`;
+  }
+  function monasteryHTML(withFeat = true) {
+    const feat = withFeat ? ' data-feat="monastery"' : "";
+    return '<span class="monastery"' + feat + '><span class="wing left"><span class="win"></span></span><span class="wing right"><span class="win"></span></span><span class="cross"></span><span class="roof"></span><span class="body"><span class="win"></span><span class="win"></span></span></span>';
   }
   var MARKUP = {
-    A: '<i class="road to-s"></i><span class="monastery"><i class="wing left"></i><i class="wing right"></i><i class="cross"></i><i class="roof"></i><i class="body"></i></span>',
-    B: '<span class="monastery"><i class="wing left"></i><i class="wing right"></i><i class="cross"></i><i class="roof"></i><i class="body"></i></span>',
-    /* Fill has no field wall — pillars only (all edges connect). */
-    C: city("fill", pillars("nw", "ne", "sw", "se")) + '<i class="pennant p-c" title="\u65D7"></i>',
-    D: city("cap n shallow", pillars("nw", "ne")) + '<i class="road h"></i>',
+    A: road("to-s", "road-0") + monasteryHTML(true),
+    B: monasteryHTML(true),
+    /* Fill has no field wall — pillars only (all edges connect); keep in the center. */
+    C: city("fill", pillars("nw", "ne", "sw", "se") + cityTowerHTML()) + '<i class="pennant p-c" title="\u65D7"></i>',
+    D: city("cap n shallow", pillars("nw", "ne")) + road("h", "road-0"),
     E: city("cap n", pillars("nw", "ne")),
     F: city("bar h", pillars("nw", "ne", "sw", "se")) + '<i class="pennant p-bar" title="\u65D7"></i>',
     G: city("bar h", pillars("nw", "ne", "sw", "se")),
-    H: city("cap n", pillars("nw", "ne")) + city("cap s", pillars("sw", "se")),
-    I: city("cap n gap-w", pillars("nw", "ne")) + city("cap w gap-n", pillars("nw", "sw")),
-    J: city("cap n", pillars("nw", "ne")) + '<i class="bend se edge"></i><i class="bend se line"></i>',
-    K: city("cap n", pillars("nw", "ne")) + '<i class="bend sw edge"></i><i class="bend sw line"></i>',
-    L: city("cap n shallow", pillars("nw", "ne")) + '<i class="road h-e"></i><i class="road h-w"></i><i class="road v-s"></i><i class="village"></i>',
+    H: city("cap n", pillars("nw", "ne"), "city-0") + city("cap s", pillars("sw", "se"), "city-1"),
+    I: city("cap n gap-w", pillars("nw", "ne"), "city-0") + city("cap w gap-n", pillars("nw", "sw"), "city-1"),
+    J: city("cap n", pillars("nw", "ne")) + bend("se edge", "road-0") + bend("se line", "road-0"),
+    K: city("cap n", pillars("nw", "ne")) + bend("sw edge", "road-0") + bend("sw line", "road-0"),
+    L: city("cap n shallow", pillars("nw", "ne")) + road("h-e", "road-0") + road("h-w", "road-2") + road("v-s", "road-1") + '<i class="village"></i>',
     M: city("elbow ne", pillars("nw", "ne", "se")) + '<i class="pennant p-ne" title="\u65D7"></i>',
     N: city("elbow ne", pillars("nw", "ne", "se")),
-    O: city("elbow nw", pillars("nw", "ne", "sw")) + '<i class="bend se edge"></i><i class="bend se line"></i><i class="pennant p-nw" title="\u65D7"></i>',
-    P: city("elbow nw", pillars("nw", "ne", "sw")) + '<i class="bend se edge"></i><i class="bend se line"></i>',
-    Q: city("mouth s", pillars("nw", "ne", "sw", "se")) + '<i class="pennant p-u" title="\u65D7"></i>',
-    R: city("mouth s", pillars("nw", "ne", "sw", "se")),
-    S: city("mouth s", pillars("nw", "ne", "sw", "se")) + '<i class="road gate"></i><i class="pennant p-u" title="\u65D7"></i>',
-    T: city("mouth s", pillars("nw", "ne", "sw", "se")) + '<i class="road gate"></i>',
-    U: '<i class="road v"></i>',
-    V: '<i class="bend sw edge"></i><i class="bend sw line"></i>',
-    W: '<i class="road h-e"></i><i class="road h-w"></i><i class="road v-s"></i><i class="village"></i>',
-    X: '<i class="road v-n"></i><i class="road h-e"></i><i class="road v-s"></i><i class="road h-w"></i><i class="village"></i>'
+    O: city("elbow nw", pillars("nw", "ne", "sw")) + bend("se edge", "road-0") + bend("se line", "road-0") + '<i class="pennant p-nw" title="\u65D7"></i>',
+    P: city("elbow nw", pillars("nw", "ne", "sw")) + bend("se edge", "road-0") + bend("se line", "road-0"),
+    /* Mouth city — keep sits in the city mass (above the south notch / gate). */
+    Q: city("mouth s", pillars("nw", "ne", "sw", "se") + cityTowerHTML()) + '<i class="pennant p-u" title="\u65D7"></i>',
+    R: city("mouth s", pillars("nw", "ne", "sw", "se") + cityTowerHTML()),
+    S: city("mouth s", pillars("nw", "ne", "sw", "se") + cityTowerHTML()) + road("gate", "road-0") + '<i class="pennant p-u" title="\u65D7"></i>',
+    T: city("mouth s", pillars("nw", "ne", "sw", "se") + cityTowerHTML()) + road("gate", "road-0"),
+    U: road("v", "road-0"),
+    V: bend("sw edge", "road-0") + bend("sw line", "road-0"),
+    W: road("h-e", "road-0") + road("h-w", "road-2") + road("v-s", "road-1") + '<i class="village"></i>',
+    X: road("v-n", "road-0") + road("h-e", "road-1") + road("v-s", "road-2") + road("h-w", "road-3") + '<i class="village"></i>'
   };
   var BY_ID = Object.fromEntries(TYPES.map((type) => [type.id, type]));
   var MEEPLE_LAYOUTS = {
@@ -666,7 +683,7 @@
     return cities.map((city2) => ({ edges: city2.edges.slice(), pennant: !!city2.pennant }));
   }
   function copyRoads(roads) {
-    return roads.map((road) => road.slice());
+    return roads.map((road2) => road2.slice());
   }
   function makeTile(id, start) {
     const type = BY_ID[id];
@@ -1066,11 +1083,60 @@
       }
     }
   }
+  function featClaimId(kind, index) {
+    return kind === "monastery" ? "monastery" : kind + "-" + index;
+  }
+  function claimMapKey(part, kind) {
+    return part.x + "," + part.y + ":" + featClaimId(kind, part.index);
+  }
+  function stampFeatureClaim(board, kind, parts, claim) {
+    if (!claim || !claim.colors || !claim.colors.length || !parts.length) return;
+    for (const part of parts) {
+      const tile = board.get(keyOf(part.x, part.y));
+      if (!tile) continue;
+      if (!tile.featureClaims) tile.featureClaims = {};
+      const stored = {
+        colors: claim.colors.slice(),
+        tie: !!claim.tie
+      };
+      if (claim.mode) stored.mode = claim.mode;
+      if (claim.angle != null) stored.angle = claim.angle;
+      if (claim.sideAngle != null) stored.sideAngle = claim.sideAngle;
+      if (claim.dir) stored.dir = claim.dir;
+      if (claim.boardDir) stored.boardDir = claim.boardDir;
+      if (claim.face) stored.face = claim.face;
+      if (claim.hubOther) stored.hubOther = true;
+      if (claim.bridges && claim.bridges.length) {
+        stored.bridges = claim.bridges.map((bridge) => ({
+          dir: bridge.dir,
+          color: bridge.color
+        }));
+      }
+      if (claim.sectors && claim.sectors.length) {
+        stored.sectors = claim.sectors.map((sector) => ({
+          color: sector.color,
+          angle: sector.angle
+        }));
+      }
+      tile.featureClaims[featClaimId(kind, part.index)] = stored;
+    }
+  }
+  function stampFeatureClaimsFromMap(board, kind, parts, claims) {
+    for (const part of parts) {
+      const claim = claims.get(claimMapKey(part, kind));
+      if (!claim) continue;
+      stampFeatureClaim(board, kind, [part], claim);
+    }
+  }
   function scoreFeature(game2, kind, parts, points, options) {
     const opts = options || {};
     const winners = majorityPlayers(
       meepleCountsOnFeature(game2.board, kind, parts, game2.players.length)
     );
+    if (winners.length) {
+      const live = buildFeatureClaims(game2);
+      stampFeatureClaimsFromMap(game2.board, kind, parts, live);
+    }
     if (winners.length && points > 0) {
       awardPoints(game2, winners, points);
       labelMeepleEarnings(game2.board, kind, parts, winners, points);
@@ -1208,6 +1274,802 @@
       return a - b;
     });
   }
+  function partId(part) {
+    return part.x + "," + part.y + "," + part.index;
+  }
+  function featureAdjacency(board, kind, parts) {
+    const set = new Set(parts.map(partId));
+    const adj = /* @__PURE__ */ new Map();
+    for (const part of parts) adj.set(partId(part), []);
+    for (const part of parts) {
+      const tile = board.get(keyOf(part.x, part.y));
+      if (!tile) continue;
+      const rot = tile.rot || 0;
+      const edges = kind === "city" ? tile.cities && tile.cities[part.index] && tile.cities[part.index].edges || [] : tile.roads && tile.roads[part.index] || [];
+      for (const catalogDir of edges) {
+        const dir = absDir(catalogDir, rot);
+        const step = NEI[DIR_INDEX[dir]];
+        const nx = part.x + step.dx;
+        const ny = part.y + step.dy;
+        const neighbor = board.get(keyOf(nx, ny));
+        if (!neighbor) continue;
+        const nextIndex = kind === "city" ? findCityIndexByAbsEdge(neighbor, OPP_DIR[dir]) : findRoadIndexByAbsEdge(neighbor, OPP_DIR[dir]);
+        if (nextIndex < 0) continue;
+        const next = { x: nx, y: ny, index: nextIndex };
+        const nid = partId(next);
+        if (!set.has(nid)) continue;
+        adj.get(partId(part)).push(next);
+      }
+    }
+    return adj;
+  }
+  function blendAngle(from, to) {
+    const dx = to.x - from.x;
+    const dy = to.y - from.y;
+    if (!dx && !dy) return 135;
+    return Math.atan2(dx, -dy) * 180 / Math.PI;
+  }
+  function polesFromEdges(edges, seeds, part) {
+    const byColor = /* @__PURE__ */ new Map();
+    for (const edge of edges) {
+      if (!edge.color) continue;
+      if (!byColor.has(edge.color)) byColor.set(edge.color, []);
+      byColor.get(edge.color).push(edge);
+    }
+    const poles = /* @__PURE__ */ new Map();
+    for (const [color, list] of byColor.entries()) {
+      let best = list[0];
+      if (list.length > 1 && seeds && part) {
+        const seed = seeds.get(color);
+        const sx = seed ? seed.x - part.x : best.dx;
+        const sy = seed ? seed.y - part.y : best.dy;
+        let bestScore = -Infinity;
+        for (const edge of list) {
+          const score = edge.dx * sx + edge.dy * sy;
+          if (score > bestScore) {
+            bestScore = score;
+            best = edge;
+          }
+        }
+      }
+      poles.set(color, { x: best.dx, y: best.dy, n: 1 });
+    }
+    return poles;
+  }
+  function localClaimAngle(boardAngle, tileRot) {
+    const rot = ((tileRot || 0) % 4 + 4) % 4;
+    return Math.round((boardAngle - rot * 90) * 10) / 10;
+  }
+  function normDeg(deg) {
+    return (deg % 360 + 360) % 360;
+  }
+  function poleForColor(color, poles, seeds, part) {
+    let pole = poles.get(color);
+    if (pole && (pole.x || pole.y)) return pole;
+    const seed = seeds.get(color);
+    if (seed) return { x: seed.x - part.x, y: seed.y - part.y, n: 1 };
+    return null;
+  }
+  function partEdgeDirs(board, kind, part) {
+    const tile = board.get(keyOf(part.x, part.y));
+    if (!tile) return [];
+    const rot = tile.rot || 0;
+    const catalog = kind === "city" ? tile.cities && tile.cities[part.index] && tile.cities[part.index].edges || [] : tile.roads && tile.roads[part.index] || [];
+    return catalog.map((dir) => absDir(dir, rot));
+  }
+  function dirVec(dir) {
+    const step = NEI[DIR_INDEX[dir]];
+    return { x: step.dx, y: step.dy };
+  }
+  function scoreColorForDir(color, dir, poles, seeds, part) {
+    const want = dirVec(dir);
+    let vec = null;
+    const pole = poles.get(color);
+    if (pole && (pole.x || pole.y)) vec = pole;
+    else {
+      const seed = seeds.get(color);
+      if (seed) vec = { x: seed.x - part.x, y: seed.y - part.y };
+    }
+    if (!vec) return -Infinity;
+    return vec.x * want.x + vec.y * want.y;
+  }
+  function pickBlendPalette(nearest, edges, seeds, part, edgeDirs) {
+    if (nearest.length <= 1) return nearest.slice();
+    const poles = polesFromEdges(edges, seeds, part);
+    let maxCols = edgeDirs.length <= 1 ? Math.min(2, nearest.length) : Math.min(edgeDirs.length, nearest.length);
+    if (edgeDirs.length === 2 && nearest.length >= 3) {
+      maxCols = Math.min(3, nearest.length);
+    }
+    if (nearest.length <= maxCols) return nearest.slice();
+    const dirs = edgeDirs.length ? edgeDirs : ["N", "E"];
+    const picked = [];
+    const used = /* @__PURE__ */ new Set();
+    for (const dir of dirs) {
+      if (picked.length >= maxCols) break;
+      const want = dirVec(dir);
+      let best = null;
+      let bestScore = -Infinity;
+      for (const color of nearest) {
+        if (used.has(color)) continue;
+        let score = scoreColorForDir(color, dir, poles, seeds, part);
+        for (const edge of edges) {
+          if (edge.color === color && edge.dx === want.x && edge.dy === want.y) {
+            score += 10;
+          }
+        }
+        if (score > bestScore) {
+          bestScore = score;
+          best = color;
+        }
+      }
+      if (best == null) continue;
+      picked.push(best);
+      used.add(best);
+    }
+    for (const color of nearest) {
+      if (picked.length >= maxCols) break;
+      if (used.has(color)) continue;
+      picked.push(color);
+      used.add(color);
+    }
+    return picked.sort();
+  }
+  function blendFromSeeds(colorA, colorB, seeds, part, tileRot) {
+    const seedA = seeds.get(colorA) || { x: part.x, y: part.y };
+    const seedB = seeds.get(colorB) || { x: part.x + 1, y: part.y };
+    const boardAngle = blendAngle(seedA, seedB);
+    const local = localClaimAngle(boardAngle, tileRot);
+    const ortho = seedA.x === seedB.x || seedA.y === seedB.y;
+    const secA = normDeg(local + 180);
+    const secB = ortho ? normDeg(local) : normDeg(local + 90);
+    return {
+      colors: [colorA, colorB],
+      tie: true,
+      mode: "full",
+      angle: local,
+      sectors: [
+        { color: colorA, angle: secA },
+        { color: colorB, angle: secB }
+      ]
+    };
+  }
+  function poleForPaletteColor(color, edges, seeds, part, edgeDirs) {
+    const poles = polesFromEdges(edges, seeds, part);
+    const solid = poles.get(color);
+    if (solid && (solid.x || solid.y)) return solid;
+    let bestDir = null;
+    let bestScore = -Infinity;
+    for (const dir of edgeDirs || []) {
+      const score = scoreColorForDir(color, dir, poles, seeds, part);
+      if (score > bestScore) {
+        bestScore = score;
+        bestDir = dir;
+      }
+    }
+    if (bestDir && bestScore > -Infinity) {
+      const vec = dirVec(bestDir);
+      return { x: vec.x, y: vec.y, n: 1 };
+    }
+    return poleForColor(color, poles, seeds, part);
+  }
+  function isElbowDirs(edgeDirs) {
+    if (!edgeDirs || edgeDirs.length !== 2) return false;
+    const i0 = DIR_INDEX[edgeDirs[0]];
+    const i1 = DIR_INDEX[edgeDirs[1]];
+    if (i0 == null || i1 == null) return false;
+    const diff = Math.abs(i0 - i1) % 4;
+    return diff === 1 || diff === 3;
+  }
+  function blendCornerInherit(palette, edges, seeds, part, tileRot, edgeDirs, kind) {
+    if (kind && kind !== "city") return null;
+    if (!isElbowDirs(edgeDirs)) return null;
+    const blendEdges = edges.filter(
+      (edge) => edge.blend && edge.colors && edge.colors.length === 2
+    );
+    const solidEdges = edges.filter((edge) => edge.color);
+    const inherited = blendEdges.find(
+      (edge) => edge.colors.every((color) => palette.indexOf(color) >= 0)
+    );
+    if (!inherited || !solidEdges.length) return null;
+    const side = solidEdges.find((edge) => inherited.colors.indexOf(edge.color) < 0);
+    if (!side) return null;
+    const seedA = seeds.get(inherited.colors[0]) || {
+      x: part.x + inherited.dx,
+      y: part.y + inherited.dy
+    };
+    const seedB = seeds.get(inherited.colors[1]) || {
+      x: part.x - inherited.dx,
+      y: part.y - inherited.dy
+    };
+    const boardAngle = blendAngle(seedA, seedB);
+    const colorA = inherited.colors[0];
+    const colorB = inherited.colors[1];
+    const sideBoard = blendAngle({ x: 0, y: 0 }, { x: side.dx, y: side.dy });
+    return {
+      colors: [colorA, colorB, side.color],
+      tie: true,
+      mode: "corner",
+      angle: localClaimAngle(boardAngle, tileRot),
+      sideAngle: localClaimAngle(sideBoard, tileRot),
+      sectors: [
+        {
+          color: colorA,
+          angle: normDeg(localClaimAngle(boardAngle, tileRot) + 180)
+        },
+        {
+          color: colorB,
+          angle: normDeg(localClaimAngle(boardAngle, tileRot))
+        },
+        {
+          color: side.color,
+          angle: normDeg(localClaimAngle(sideBoard, tileRot))
+        }
+      ]
+    };
+  }
+  function blendFan(nearest, edges, seeds, part, tileRot, edgeDirs, kind) {
+    const dirs = edgeDirs || [];
+    const edgeColors = [];
+    for (const edge of edges) {
+      if (edge.color && edgeColors.indexOf(edge.color) < 0) edgeColors.push(edge.color);
+      if (edge.colors) {
+        for (const color of edge.colors) {
+          if (edgeColors.indexOf(color) < 0) edgeColors.push(color);
+        }
+      }
+    }
+    const expanded = nearest.slice();
+    for (const color of edgeColors) {
+      if (expanded.indexOf(color) < 0) expanded.push(color);
+    }
+    expanded.sort();
+    const palette = pickBlendPalette(expanded, edges, seeds, part, dirs);
+    const poles = polesFromEdges(edges, seeds, part);
+    const cornerEarly = blendCornerInherit(palette, edges, seeds, part, tileRot, dirs, kind);
+    if (cornerEarly) return cornerEarly;
+    if (palette.length === 2) {
+      const colorA = palette[0];
+      const colorB = palette[1];
+      const edgeA = poles.get(colorA);
+      const edgeB = poles.get(colorB);
+      const solidA = edgeA && (edgeA.x || edgeA.y);
+      const solidB = edgeB && (edgeB.x || edgeB.y);
+      if (!solidA || !solidB) {
+        if (dirs.length >= 2) {
+          const poleA = poleForPaletteColor(colorA, edges, seeds, part, dirs);
+          const poleB = poleForPaletteColor(colorB, edges, seeds, part, dirs);
+          if (poleA && poleB && (poleA.x || poleA.y) && (poleB.x || poleB.y)) {
+            const sectors3 = [
+              {
+                color: colorA,
+                angle: normDeg(localClaimAngle(blendAngle({ x: 0, y: 0 }, poleA), tileRot)),
+                pole: poleA
+              },
+              {
+                color: colorB,
+                angle: normDeg(localClaimAngle(blendAngle({ x: 0, y: 0 }, poleB), tileRot)),
+                pole: poleB
+              }
+            ].sort((a, b) => a.angle - b.angle);
+            const boardAngle2 = blendAngle(sectors3[0].pole, sectors3[1].pole);
+            return {
+              colors: [sectors3[0].color, sectors3[1].color],
+              tie: true,
+              mode: "full",
+              angle: localClaimAngle(boardAngle2, tileRot),
+              sectors: sectors3.map((sector) => ({
+                color: sector.color,
+                angle: sector.angle
+              }))
+            };
+          }
+        }
+        return blendFromSeeds(colorA, colorB, seeds, part, tileRot);
+      }
+      const boardA = blendAngle({ x: 0, y: 0 }, edgeA);
+      const boardB = blendAngle({ x: 0, y: 0 }, edgeB);
+      const sectors2 = [
+        {
+          color: colorA,
+          angle: normDeg(localClaimAngle(boardA, tileRot)),
+          pole: edgeA
+        },
+        {
+          color: colorB,
+          angle: normDeg(localClaimAngle(boardB, tileRot)),
+          pole: edgeB
+        }
+      ].sort((a, b) => a.angle - b.angle);
+      const boardAngle = blendAngle(sectors2[0].pole, sectors2[1].pole);
+      return {
+        colors: [sectors2[0].color, sectors2[1].color],
+        tie: true,
+        mode: "full",
+        angle: localClaimAngle(boardAngle, tileRot),
+        sectors: sectors2.map((sector) => ({ color: sector.color, angle: sector.angle }))
+      };
+    }
+    const sectors = [];
+    for (const color of palette) {
+      const edgePole = poles.get(color);
+      const pole = edgePole && (edgePole.x || edgePole.y) ? edgePole : poleForColor(color, poles, seeds, part);
+      if (!pole || !pole.x && !pole.y) continue;
+      const boardAngle = blendAngle({ x: 0, y: 0 }, pole);
+      sectors.push({
+        color,
+        angle: normDeg(localClaimAngle(boardAngle, tileRot)),
+        pole
+      });
+    }
+    sectors.sort((a, b) => a.angle - b.angle);
+    const uniq = [];
+    for (const sector of sectors) {
+      if (uniq.length && Math.abs(normDeg(uniq[uniq.length - 1].angle - sector.angle)) < 1) continue;
+      uniq.push(sector);
+    }
+    if (uniq.length < 2) {
+      return blendFromSeeds(palette[0], palette[1] || palette[0], seeds, part, tileRot);
+    }
+    if (uniq.length === 2) {
+      const boardAngle = blendAngle(uniq[0].pole, uniq[1].pole);
+      return {
+        colors: [uniq[0].color, uniq[1].color],
+        tie: true,
+        mode: "full",
+        angle: localClaimAngle(boardAngle, tileRot),
+        sectors: uniq.map((sector) => ({ color: sector.color, angle: sector.angle }))
+      };
+    }
+    return {
+      colors: uniq.map((sector) => sector.color),
+      tie: true,
+      mode: "full",
+      angle: 0,
+      sectors: uniq.map((sector) => ({ color: sector.color, angle: sector.angle }))
+    };
+  }
+  function blendHalf(colorA, colorB, boardAngle, tileRot, mode) {
+    return {
+      colors: [colorA, colorB],
+      tie: true,
+      mode,
+      angle: localClaimAngle(boardAngle, tileRot)
+    };
+  }
+  function absDirFromDelta(dx, dy) {
+    if (dy < 0) return "N";
+    if (dx > 0) return "E";
+    if (dy > 0) return "S";
+    return "W";
+  }
+  function localEdgeDir(boardDir, tileRot) {
+    const rot = ((tileRot || 0) % 4 + 4) % 4;
+    const index = DIR_INDEX[boardDir];
+    if (index == null) return boardDir;
+    return DIRS[(index - rot + 4) % 4];
+  }
+  function pickConnectedFace(nearest, part) {
+    const list = nearest && nearest.length ? nearest : [];
+    if (list.length <= 1) return list[0] || null;
+    let h = 2166136261;
+    const salt = String(part.x) + "," + String(part.y) + ":" + String(part.index == null ? 0 : part.index);
+    for (let i = 0; i < salt.length; i++) {
+      h ^= salt.charCodeAt(i);
+      h = Math.imul(h, 16777619);
+    }
+    for (const color of list) {
+      for (let i = 0; i < color.length; i++) {
+        h ^= color.charCodeAt(i);
+        h = Math.imul(h, 16777619);
+      }
+      h ^= 158;
+      h = Math.imul(h, 16777619);
+    }
+    return list[(h >>> 0) % list.length];
+  }
+  function blendCityHub(edges, nearest, part) {
+    const bridges = [];
+    const seen = /* @__PURE__ */ new Set();
+    for (const edge of edges) {
+      if (!edge.color) continue;
+      const dir = absDirFromDelta(edge.dx, edge.dy);
+      const key = dir + ":" + edge.color;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      bridges.push({ dir, color: edge.color });
+    }
+    return {
+      colors: nearest.slice(),
+      tie: true,
+      mode: "hub",
+      face: pickConnectedFace(nearest, part),
+      bridges
+    };
+  }
+  function blendCityBridge(face, other, boardDir, tileRot) {
+    return {
+      colors: [face, other],
+      tie: true,
+      mode: "bridge",
+      face,
+      dir: localEdgeDir(boardDir, tileRot),
+      boardDir
+    };
+  }
+  function buildFeatureClaims(game2) {
+    const claims = /* @__PURE__ */ new Map();
+    const seen = /* @__PURE__ */ new Set();
+    const board = game2.board;
+    const players = game2.players || [];
+    const playerCount = players.length;
+    function paint(kind, parts) {
+      const counts = meepleCountsOnFeature(board, kind, parts, playerCount);
+      const winners = majorityPlayers(counts);
+      if (!winners.length) return;
+      const winnerSet = new Set(winners);
+      const colors = winners.map((index) => players[index].id);
+      if (colors.length === 1) {
+        for (const part of parts) {
+          claims.set(claimMapKey(part, kind), {
+            colors: colors.slice(),
+            tie: false
+          });
+        }
+        return;
+      }
+      const adj = featureAdjacency(board, kind, parts);
+      const distByColor = /* @__PURE__ */ new Map();
+      const seeds = /* @__PURE__ */ new Map();
+      const queue = [];
+      for (const part of parts) {
+        const tile = board.get(keyOf(part.x, part.y));
+        if (!tile || !tile.meeple) continue;
+        const m = tile.meeple;
+        if (m.kind !== kind || m.index !== part.index) continue;
+        if (!winnerSet.has(m.player)) continue;
+        const color = players[m.player].id;
+        if (!seeds.has(color)) seeds.set(color, { x: part.x, y: part.y });
+        const id = partId(part);
+        if (!distByColor.has(id)) distByColor.set(id, /* @__PURE__ */ new Map());
+        const cmap = distByColor.get(id);
+        if (cmap.has(color) && cmap.get(color) <= 0) continue;
+        cmap.set(color, 0);
+        queue.push({ x: part.x, y: part.y, index: part.index, color, d: 0 });
+      }
+      let qi = 0;
+      while (qi < queue.length) {
+        const cur = queue[qi++];
+        for (const next of adj.get(partId(cur)) || []) {
+          const nid = partId(next);
+          const nd = cur.d + 1;
+          if (!distByColor.has(nid)) distByColor.set(nid, /* @__PURE__ */ new Map());
+          const cmap = distByColor.get(nid);
+          if (cmap.has(cur.color) && cmap.get(cur.color) <= nd) continue;
+          cmap.set(cur.color, nd);
+          queue.push({ x: next.x, y: next.y, index: next.index, color: cur.color, d: nd });
+        }
+      }
+      const fallback = colors.slice().sort();
+      const owners = /* @__PURE__ */ new Map();
+      for (const part of parts) {
+        const cmap = distByColor.get(partId(part));
+        let nearest = [];
+        if (cmap && cmap.size) {
+          let minD = Infinity;
+          for (const d of cmap.values()) if (d < minD) minD = d;
+          for (const [color, d] of cmap.entries()) {
+            if (d === minD) nearest.push(color);
+          }
+          nearest.sort();
+        } else {
+          nearest = fallback.slice();
+        }
+        owners.set(partId(part), nearest.length ? nearest : fallback.slice(0, 1));
+      }
+      function primaryOwner(id) {
+        const nearest = owners.get(id) || fallback;
+        return nearest.length === 1 ? nearest[0] : null;
+      }
+      function tileRotAt(part) {
+        const tile = board.get(keyOf(part.x, part.y));
+        return tile && tile.rot ? tile.rot : 0;
+      }
+      const minTieDist = /* @__PURE__ */ new Map();
+      for (const part of parts) {
+        const nearest = owners.get(partId(part));
+        if (!nearest || nearest.length < 2) continue;
+        const cmap = distByColor.get(partId(part));
+        if (!cmap) continue;
+        const d = cmap.get(nearest[0]);
+        if (d == null) continue;
+        const key = nearest.slice().sort().join("|");
+        if (!minTieDist.has(key) || d < minTieDist.get(key)) minTieDist.set(key, d);
+      }
+      const meetingParts = /* @__PURE__ */ new Map();
+      for (const part of parts) {
+        const nearest = owners.get(partId(part));
+        if (!nearest || nearest.length < 2) continue;
+        const cmap = distByColor.get(partId(part));
+        if (!cmap) continue;
+        const d = cmap.get(nearest[0]);
+        const key = nearest.slice().sort().join("|");
+        if (d == null || d !== minTieDist.get(key)) continue;
+        if (!meetingParts.has(key)) meetingParts.set(key, []);
+        meetingParts.get(key).push(part);
+      }
+      for (const [key, meetings] of meetingParts.entries()) {
+        if (meetings.length < 2) continue;
+        const colors2 = key.split("|");
+        if (colors2.length !== 2) continue;
+        const kept = [];
+        for (const part of meetings) {
+          const seedA = seeds.get(colors2[0]);
+          const seedB = seeds.get(colors2[1]);
+          if (!seedA || !seedB) {
+            kept.push(part);
+            continue;
+          }
+          const va = { x: seedA.x - part.x, y: seedA.y - part.y };
+          const vb = { x: seedB.x - part.x, y: seedB.y - part.y };
+          const la = Math.hypot(va.x, va.y) || 1;
+          const lb = Math.hypot(vb.x, vb.y) || 1;
+          const dot = (va.x * vb.x + va.y * vb.y) / (la * lb);
+          if (dot < 0.2) {
+            kept.push(part);
+            continue;
+          }
+          let best = colors2[0];
+          let bestScore = -Infinity;
+          for (const color of colors2) {
+            const seed = seeds.get(color);
+            if (!seed) continue;
+            const score = -Math.hypot(seed.x - part.x, seed.y - part.y);
+            if (score > bestScore) {
+              bestScore = score;
+              best = color;
+            }
+          }
+          owners.set(partId(part), [best]);
+        }
+        meetingParts.set(key, kept.length ? kept : meetings.slice(0, 1));
+      }
+      for (const part of parts) {
+        const id = partId(part);
+        const nearest = owners.get(id);
+        if (!nearest || nearest.length < 2) continue;
+        const cmap = distByColor.get(id);
+        if (!cmap) continue;
+        const d = cmap.get(nearest[0]);
+        const key = nearest.slice().sort().join("|");
+        if (d == null || !minTieDist.has(key) || d <= minTieDist.get(key)) continue;
+        const meetings = meetingParts.get(key) || [];
+        if (!meetings.length) continue;
+        let meet = meetings[0];
+        let meetDist = Infinity;
+        for (const m of meetings) {
+          const md = Math.hypot(m.x - part.x, m.y - part.y);
+          if (md < meetDist) {
+            meetDist = md;
+            meet = m;
+          }
+        }
+        const vx = part.x - meet.x;
+        const vy = part.y - meet.y;
+        const dots = [];
+        for (const color of nearest) {
+          const seed = seeds.get(color);
+          if (!seed) continue;
+          dots.push((seed.x - meet.x) * vx + (seed.y - meet.y) * vy);
+        }
+        if (!dots.length) continue;
+        const maxDot = Math.max.apply(null, dots);
+        const minDot = Math.min.apply(null, dots);
+        if (!(maxDot < 0.25 && minDot < -0.25)) continue;
+        let best = nearest[0];
+        let bestScore = -Infinity;
+        for (const color of nearest) {
+          const seed = seeds.get(color);
+          if (!seed) continue;
+          const score = -Math.hypot(seed.x - part.x, seed.y - part.y);
+          if (score > bestScore) {
+            bestScore = score;
+            best = color;
+          }
+        }
+        owners.set(id, [best]);
+      }
+      function edgeSamples(part) {
+        const id = partId(part);
+        const edges = [];
+        for (const next of adj.get(id) || []) {
+          const nearest = owners.get(partId(next)) || [];
+          const dx = next.x - part.x;
+          const dy = next.y - part.y;
+          if (nearest.length === 1) {
+            edges.push({ color: nearest[0], dx, dy });
+            continue;
+          }
+          if (nearest.length === 2) {
+            edges.push({ colors: nearest.slice(), dx, dy, blend: true });
+          }
+        }
+        return edges;
+      }
+      for (const part of parts) {
+        const id = partId(part);
+        const nearest = owners.get(id);
+        const key = claimMapKey(part, kind);
+        if (nearest.length >= 2) {
+          if (kind === "city") {
+            claims.set(key, blendCityHub(edgeSamples(part), nearest, part));
+          } else {
+            claims.set(
+              key,
+              blendFan(
+                nearest,
+                edgeSamples(part),
+                seeds,
+                part,
+                tileRotAt(part),
+                partEdgeDirs(board, kind, part),
+                kind
+              )
+            );
+          }
+        } else {
+          claims.set(key, { colors: [nearest[0]], tie: false });
+        }
+      }
+      for (const part of parts) {
+        const id = partId(part);
+        const own = primaryOwner(id);
+        if (!own) continue;
+        for (const next of adj.get(id) || []) {
+          const other = primaryOwner(partId(next));
+          if (!other || other === own) continue;
+          if (!(next.x > part.x || next.x === part.x && next.y > part.y)) continue;
+          const dx = next.x - part.x;
+          const dy = next.y - part.y;
+          const keyA = claimMapKey(part, kind);
+          const keyB = claimMapKey(next, kind);
+          if (kind === "city") {
+            const boardDirA = absDirFromDelta(dx, dy);
+            const boardDirB = absDirFromDelta(-dx, -dy);
+            claims.set(keyA, blendCityBridge(own, other, boardDirA, tileRotAt(part)));
+            claims.set(keyB, blendCityBridge(other, own, boardDirB, tileRotAt(next)));
+          } else {
+            const boardAngle = blendAngle({ x: -dx, y: -dy }, { x: dx, y: dy });
+            claims.set(keyA, blendHalf(own, other, boardAngle, tileRotAt(part), "half-a"));
+            claims.set(keyB, blendHalf(own, other, boardAngle, tileRotAt(next), "half-b"));
+          }
+        }
+      }
+      if (kind === "city") {
+        for (const part of parts) {
+          const claim = claims.get(claimMapKey(part, kind));
+          if (!claim || claim.mode !== "hub" || !claim.bridges) continue;
+          for (const bridge of claim.bridges) {
+            const opp = OPP_DIR[bridge.dir];
+            const nei = NEI[DIR_INDEX[bridge.dir]];
+            if (!opp || !nei) continue;
+            const nx = part.x + nei.dx;
+            const ny = part.y + nei.dy;
+            let nPart = null;
+            for (const next of adj.get(partId(part)) || []) {
+              if (next.x === nx && next.y === ny) {
+                nPart = next;
+                break;
+              }
+            }
+            if (!nPart) continue;
+            const nKey = claimMapKey(nPart, kind);
+            const nClaim = claims.get(nKey);
+            if (!nClaim || nClaim.mode === "hub" || nClaim.mode === "bridge") continue;
+            if (nClaim.tie) continue;
+            const face = nClaim.colors[0];
+            const hubFace = claim.face || claim.colors[0];
+            claims.set(nKey, {
+              colors: hubFace && hubFace !== face ? [face, hubFace] : [face],
+              tie: false,
+              mode: "bridge",
+              face,
+              dir: localEdgeDir(opp, tileRotAt(nPart)),
+              boardDir: opp,
+              hubOther: true
+            });
+          }
+        }
+      }
+    }
+    for (const [pos, tile] of board.entries()) {
+      const comma = pos.indexOf(",");
+      const x = Number(pos.slice(0, comma));
+      const y = Number(pos.slice(comma + 1));
+      (tile.cities || []).forEach((_, index) => {
+        const id = "city:" + x + "," + y + "," + index;
+        if (seen.has(id)) return;
+        const result = collectCityComponent(board, x, y, index);
+        for (const part of result.parts) seen.add("city:" + part.x + "," + part.y + "," + part.index);
+        paint("city", result.parts);
+      });
+      (tile.roads || []).forEach((_, index) => {
+        const id = "road:" + x + "," + y + "," + index;
+        if (seen.has(id)) return;
+        const result = collectRoadComponent(board, x, y, index);
+        for (const part of result.parts) seen.add("road:" + part.x + "," + part.y + "," + part.index);
+        paint("road", result.parts);
+      });
+      if (tile.monastery) {
+        const id = "monastery:" + x + "," + y;
+        if (!seen.has(id)) {
+          seen.add(id);
+          paint("monastery", [{ x, y, index: null }]);
+        }
+      }
+    }
+    for (const [pos, tile] of board.entries()) {
+      if (!tile.featureClaims) continue;
+      for (const feat of Object.keys(tile.featureClaims)) {
+        const key = pos + ":" + feat;
+        if (claims.has(key)) continue;
+        const stored = tile.featureClaims[feat];
+        if (!stored || !stored.colors || !stored.colors.length) continue;
+        const next = {
+          colors: stored.colors.slice(),
+          tie: !!stored.tie
+        };
+        if (stored.mode) next.mode = stored.mode;
+        if (stored.angle != null) next.angle = stored.angle;
+        if (stored.sideAngle != null) next.sideAngle = stored.sideAngle;
+        if (stored.dir) next.dir = stored.dir;
+        if (stored.boardDir) next.boardDir = stored.boardDir;
+        if (stored.face) next.face = stored.face;
+        if (stored.hubOther) next.hubOther = true;
+        if (stored.bridges && stored.bridges.length) {
+          next.bridges = stored.bridges.map((bridge) => ({
+            dir: bridge.dir,
+            color: bridge.color
+          }));
+        }
+        if (stored.sectors && stored.sectors.length) {
+          next.sectors = stored.sectors.map((sector) => ({
+            color: sector.color,
+            angle: sector.angle
+          }));
+        }
+        claims.set(key, next);
+      }
+    }
+    return claims;
+  }
+
+  // js/game/options.js
+  var DEFAULT_GAME_OPTIONS = {
+    colorRoads: true,
+    colorCities: true,
+    colorMonasteries: true
+  };
+  function normalizeGameOptions(raw) {
+    const out = Object.assign({}, DEFAULT_GAME_OPTIONS);
+    if (!raw || typeof raw !== "object") return out;
+    if (typeof raw.colorRoads === "boolean") out.colorRoads = raw.colorRoads;
+    if (typeof raw.colorCities === "boolean") out.colorCities = raw.colorCities;
+    if (typeof raw.colorMonasteries === "boolean") out.colorMonasteries = raw.colorMonasteries;
+    return out;
+  }
+  function featColorOptionKey(feat) {
+    const id = String(feat || "");
+    if (id === "monastery" || id.startsWith("monastery")) return "colorMonasteries";
+    if (id.startsWith("city")) return "colorCities";
+    if (id.startsWith("road")) return "colorRoads";
+    return null;
+  }
+  function claimColorEnabled(options, feat) {
+    const key = featColorOptionKey(feat);
+    if (!key) return true;
+    const opts = normalizeGameOptions(options);
+    return opts[key] !== false;
+  }
 
   // js/game/engine.js
   function shuffle(list, random) {
@@ -1220,8 +2082,9 @@
     return list;
   }
   var Game = class {
-    constructor(deck, players) {
+    constructor(deck, players, options) {
       this.players = normalizePlayers(players);
+      this.options = normalizeGameOptions(options);
       this.deck = deck;
       this.board = /* @__PURE__ */ new Map();
       this.discards = [];
@@ -1450,12 +2313,12 @@
       this.pull();
     }
   };
-  function createGame(random, players) {
+  function createGame(random, players, options) {
     const roll = random || Math.random;
     const tiles = buildTiles();
     const start = tiles.find((tile) => tile.start);
     const deck = shuffle(tiles.filter((tile) => !tile.start), roll);
-    const game2 = new Game(deck, players);
+    const game2 = new Game(deck, players, options);
     game2.board.set("0,0", clonePlaced(start, 0));
     game2.player = Math.floor(roll() * game2.players.length);
     game2.pull();
@@ -1489,17 +2352,24 @@
   }
   function snapshotPlacedTile(tile) {
     if (!tile) return null;
-    return {
+    const out = {
       id: tile.id,
       start: !!tile.start,
       rot: tile.rot || 0,
       owner: tile.owner || null,
       meeple: tile.meeple ? Object.assign({}, tile.meeple) : null
     };
+    if (tile.featureClaims && Object.keys(tile.featureClaims).length) {
+      out.featureClaims = JSON.parse(JSON.stringify(tile.featureClaims));
+    }
+    return out;
   }
   function revivePlacedTile(data) {
     const tile = clonePlaced(makeTile(data.id, data.start), data.rot || 0, data.owner || null);
     tile.meeple = data.meeple ? Object.assign({}, data.meeple) : null;
+    if (data.featureClaims && typeof data.featureClaims === "object") {
+      tile.featureClaims = JSON.parse(JSON.stringify(data.featureClaims));
+    }
     return tile;
   }
   function serializeGame(game2) {
@@ -1511,6 +2381,7 @@
         bot: !!player.bot,
         botStrength: player.bot ? player.botStrength || "standard" : null
       })),
+      options: normalizeGameOptions(game2.options),
       deck: game2.deck.map(snapshotLooseTile),
       discards: game2.discards.map(snapshotLooseTile),
       board: Array.from(game2.board.entries()).map(([key, tile]) => [key, snapshotPlacedTile(tile)]),
@@ -1532,7 +2403,11 @@
     if (!data || data.v !== SAVE_VERSION || !Array.isArray(data.board)) return null;
     const players = normalizePlayers(data.players);
     if (!players || players.length < PLAYERS_MIN) return null;
-    const game2 = new Game((data.deck || []).map((tile) => makeTile(tile.id, tile.start)), players);
+    const game2 = new Game(
+      (data.deck || []).map((tile) => makeTile(tile.id, tile.start)),
+      players,
+      data.options
+    );
     game2.board = /* @__PURE__ */ new Map();
     for (const entry of data.board) {
       if (!entry || entry.length < 2 || !entry[1]) continue;
@@ -1565,21 +2440,65 @@
   // js/game/bot.js
   var BOT_WEIGHTS = {
     standard: {
+      // --- 加点（正） ---
+      /** 自分の即時得点 */
       immediateSelf: 1,
-      immediateOpp: 0.85,
-      endSelf: 0.55,
-      endOpp: 0.45,
-      meepleReturn: 0.35,
-      equity: 0.25,
-      gift: 0.4,
-      enemyCompleteGift: 6,
-      openWaste: 1.5,
-      earlyFieldBan: 3,
-      skipMonastery: 2.5
+      /** 終了見積もりに対する自分の潜在増分 */
+      endSelf: 0.7,
+      /** この手で回収できたミープル数 */
+      meepleReturn: 0.45,
+      /** 自分多数の未完成フィーチャー見込み */
+      equity: 0.4,
+      /** 自都市の開口が減った回数ぶん（閉じに近づける） */
+      openClose: 1.25,
+      /**
+       * 自分だけが即時得点した完成への上乗せ（×即時点）。
+       * 独占完成を修道院の小前進などより優先しやすくする。
+       */
+      exclusiveComplete: 0.22,
+      // --- 減点（負）: 値を見れば減点と分かる ---
+      /** 敵の即時得点（自分0のときフル適用） */
+      immediateOpp: -0.85,
+      /** 終了見積もりに対する敵の潜在増分（自分潜在0のときフル適用） */
+      endOpp: -0.45,
+      /**
+       * 自分も得点しているときの「共有分」の敵点に掛ける割合 (0–1)。
+       * 同点完成 40/40 を実質ほぼ無視しないための緩和。
+       * 敵だけ多い超過分には immediateOpp/endOpp をフル適用。
+       */
+      sharedOppScale: 0.3,
+      /** 敵多数フィーチャーを残す／太らせる量（妨害ではなく事故抑制） */
+      gift: -0.4,
+      /** 自分0点なのに敵だけ完成させたときの平坦ペナ */
+      enemyCompleteGift: -6,
+      /** 自都市の開口が増えた回数ぶん */
+      openWaste: -1.5,
+      /** 序盤（やミープル不足）での畑ミープル */
+      earlyFieldBan: -3,
+      /** 修道院タイルなのに修道院以外へミープル */
+      skipMonastery: -2.5,
+      /**
+       * 自分の即時得点が小さいのに敵にまとまった点を渡す手の追加減点
+       * （自分も得点しているが敵の方が多いケース）。
+       */
+      oppLeadGift: -0.35
     }
   };
   var FIELD_PHASE = { early: 0.15, mid: 0.45, late: 1, end: 1.2 };
   var DECK_CUT = { early: 48, late: 24, end: 8 };
+  var EQUITY_TUNING = {
+    cityOpen1: 1.2,
+    cityOpen2: 0.9,
+    cityOpen3Plus: 0.85,
+    cityMul: 1.25,
+    roadMul: 0.75,
+    roadOpen1: 0.8,
+    roadOpen2Plus: 0.4,
+    monasteryFilled: 1,
+    monasteryEmpty: 0.35,
+    earlyCityMul: 1.15,
+    earlyRoadMul: 0.85
+  };
   function cloneGame(game2) {
     return restoreGame(serializeGame(game2));
   }
@@ -1606,6 +2525,14 @@
     }
     return best;
   }
+  function scaledOppTerm(selfGain, oppGain, oppWeight, sharedScale) {
+    if (!(oppGain > 0) || !oppWeight) return 0;
+    if (!(selfGain > 0)) return oppWeight * oppGain;
+    const scale = sharedScale == null ? 1 : sharedScale;
+    const shared = Math.min(selfGain, oppGain);
+    const oppExtra = Math.max(0, oppGain - selfGain);
+    return oppWeight * (oppExtra + shared * scale);
+  }
   function countOpenEdges(board, kind, parts) {
     let open = 0;
     for (const part of parts) {
@@ -1628,12 +2555,12 @@
           if (!neighbor || findCityIndexByAbsEdge(neighbor, OPP_DIR[dir]) < 0) open += 1;
         }
       } else if (kind === "road") {
-        const road = tile.roads && tile.roads[part.index];
-        if (!road) {
+        const road2 = tile.roads && tile.roads[part.index];
+        if (!road2) {
           open += 1;
           continue;
         }
-        for (const catalogDir of road) {
+        for (const catalogDir of road2) {
           const dir = absDir(catalogDir, rot);
           const step = NEI[DIR_INDEX[dir]];
           const neighbor = board.get(keyOf(part.x + step.dx, part.y + step.dy));
@@ -1651,7 +2578,7 @@
     if (stock >= 4) return 0;
     if (stock === 3) return 0.4;
     if (stock === 2) return 1;
-    if (stock === 1) return 2;
+    if (stock === 1) return 2.5;
     return 0;
   }
   function fieldAllowed(phase, completedCities, stock) {
@@ -1686,8 +2613,9 @@
     const seenCities = /* @__PURE__ */ new Set();
     const seenRoads = /* @__PURE__ */ new Set();
     const seenFields = /* @__PURE__ */ new Set();
-    const cityBonus = phase === "early" ? 1.15 : 1;
-    const roadBonus = phase === "early" ? 0.85 : 1;
+    const t3 = EQUITY_TUNING;
+    const cityBonus = (phase === "early" ? t3.earlyCityMul : 1) * t3.cityMul;
+    const roadBonus = (phase === "early" ? t3.earlyRoadMul : 1) * t3.roadMul;
     const fieldPhase = FIELD_PHASE[phase] || FIELD_PHASE.mid;
     for (const [pos, tile] of board) {
       const [x, y] = pos.split(",").map(Number);
@@ -1702,7 +2630,7 @@
         const tiles = uniqueTileCount(result.parts);
         const pennants = cityPennantCount(board, result.parts);
         const openings = countOpenEdges(board, "city", result.parts);
-        const completeBonus = openings <= 1 ? 1.2 : openings === 2 ? 0.9 : 0.5;
+        const completeBonus = openings <= 1 ? t3.cityOpen1 : openings === 2 ? t3.cityOpen2 : t3.cityOpen3Plus;
         const value = (tiles + pennants) * completeBonus * cityBonus;
         if (winners.includes(me)) equity += value;
         else gift += value;
@@ -1717,13 +2645,13 @@
         if (!winners.length) return;
         const tiles = uniqueTileCount(result.parts);
         const openings = countOpenEdges(board, "road", result.parts);
-        const value = tiles * (openings <= 1 ? 0.8 : 0.4) * roadBonus;
+        const value = tiles * (openings <= 1 ? t3.roadOpen1 : t3.roadOpen2Plus) * roadBonus;
         if (winners.includes(me)) equity += value;
         else gift += value;
       });
       if (tile.monastery && tile.meeple && tile.meeple.kind === "monastery" && !monasteryComplete(board, x, y)) {
         const filled = monasteryTileCount(board, x, y);
-        const value = filled * 0.7 + (9 - filled) * 0.35;
+        const value = filled * t3.monasteryFilled + (9 - filled) * t3.monasteryEmpty;
         if (tile.meeple.player === me) equity += value;
         else gift += value;
       }
@@ -1745,10 +2673,11 @@
       gift: gift * weights.gift
     };
   }
-  function openWastePenalty(beforeBoard, afterBoard, x, y, me, weights) {
+  function cityOpeningDeltaScore(beforeBoard, afterBoard, x, y, me, weights) {
     const tile = afterBoard.get(keyOf(x, y));
     if (!tile || !tile.cities) return 0;
-    let penalty = 0;
+    let openingsIncreased = 0;
+    let openingsReduced = 0;
     tile.cities.forEach((_, index) => {
       const after = collectCityComponent(afterBoard, x, y, index);
       if (after.complete) return;
@@ -1759,9 +2688,11 @@
       if (!beforeParts.length) return;
       const afterOpen = countOpenEdges(afterBoard, "city", after.parts);
       const beforeOpen = countOpenEdges(beforeBoard, "city", beforeParts);
-      if (afterOpen > beforeOpen) penalty += weights.openWaste;
+      if (afterOpen > beforeOpen) openingsIncreased += afterOpen - beforeOpen;
+      else if (afterOpen < beforeOpen) openingsReduced += beforeOpen - afterOpen;
     });
-    return penalty;
+    const close = weights.openClose || 0;
+    return weights.openWaste * openingsIncreased + close * openingsReduced;
   }
   function betterScore(scored, place, best) {
     if (!best) return true;
@@ -1778,23 +2709,32 @@
     const immOpp = bestOppDelta(before.scores, after.scores, me, n);
     const returned = Math.max(0, after.meeples[me] - (stockBefore - (meepleUsed ? 1 : 0)));
     const eg = equityAndGift(after, me, weights, phase);
-    let value = weights.immediateSelf * immSelf - weights.immediateOpp * immOpp + weights.meepleReturn * returned + eg.equity - eg.gift;
+    const sharedScale = weights.sharedOppScale == null ? 1 : weights.sharedOppScale;
+    let value = weights.immediateSelf * immSelf + scaledOppTerm(immSelf, immOpp, weights.immediateOpp, sharedScale) + weights.meepleReturn * returned + eg.equity + eg.gift;
     if (deep && endBefore) {
       const endAfter = projectedScores(after);
       const endSelf = scoreDelta(endBefore, endAfter, me);
       const endOpp = bestOppDelta(endBefore, endAfter, me, n);
-      value += weights.endSelf * (endSelf - immSelf) - weights.endOpp * (endOpp - immOpp);
+      const latSelf = endSelf - immSelf;
+      const latOpp = endOpp - immOpp;
+      value += weights.endSelf * latSelf + scaledOppTerm(latSelf, latOpp, weights.endOpp, sharedScale);
     }
-    if (immOpp > 0 && immSelf <= 0) value -= weights.enemyCompleteGift;
+    if (immSelf >= 4 && immOpp <= 0 && weights.exclusiveComplete) {
+      value += weights.exclusiveComplete * immSelf;
+    }
+    if (immSelf > 0 && immOpp > immSelf && weights.oppLeadGift) {
+      value += weights.oppLeadGift * (immOpp - immSelf);
+    }
+    if (immOpp > 0 && immSelf <= 0) value += weights.enemyCompleteGift;
     if (meepleUsed) value -= stockPenalty(stockBefore, immSelf);
     if (placed) {
-      value -= openWastePenalty(before.board, after.board, placed.x, placed.y, me, weights);
+      value += cityOpeningDeltaScore(before.board, after.board, placed.x, placed.y, me, weights);
       const tile = after.board.get(keyOf(placed.x, placed.y));
       if (tile && tile.monastery && meepleUsed && optionKind && optionKind !== "monastery") {
-        value -= weights.skipMonastery;
+        value += weights.skipMonastery;
       }
       if (optionKind === "field" && (phase === "early" || phase === "mid" && stockBefore <= 2)) {
-        value -= weights.earlyFieldBan;
+        value += weights.earlyFieldBan;
       }
     }
     return {
@@ -1985,6 +2925,7 @@
     BOT_WEIGHTS,
     TYPES,
     MARKUP,
+    monasteryHTML,
     EDGE_NAME,
     DIR_NAME,
     buildTiles,
@@ -2010,12 +2951,20 @@
     cityPoints,
     roadPoints,
     completedCitiesTouchingField,
+    buildFeatureClaims,
+    scoreFeature,
+    stampFeatureClaim,
+    stampFeatureClaimsFromMap,
     FIELD_CITY_TOUCH,
     createGame,
     serializeGame,
     restoreGame,
     SAVE_VERSION,
     simulateToLastTile,
+    DEFAULT_GAME_OPTIONS,
+    normalizeGameOptions,
+    claimColorEnabled,
+    featColorOptionKey,
     normalizeBotStrength,
     chooseBotAction,
     cloneGame,
@@ -2037,7 +2986,13 @@
       langJa: "JA",
       langLabel: "Language",
       volumeLabel: "Volume",
-      setupTitle: "Players",
+      setupTitle: "Setup",
+      gameSettingsTitle: "Game settings",
+      gameSettingsLead: "Choose which claimed features use player colors.",
+      optColorRoads: "Color roads",
+      optColorCities: "Color cities",
+      optColorMonasteries: "Color monasteries",
+      playersTitle: "Players",
       setupLead: "2\u20138 players. Name max 10 letters. Each color once.",
       setupLeadBot: "Bots play automatically.",
       addPlayer: "Add player",
@@ -2234,7 +3189,13 @@
       langJa: "JA",
       langLabel: "\u8A00\u8A9E",
       volumeLabel: "\u97F3\u91CF",
-      setupTitle: "\u30D7\u30EC\u30A4\u30E4\u30FC",
+      setupTitle: "\u30BB\u30C3\u30C8\u30A2\u30C3\u30D7",
+      gameSettingsTitle: "\u30B2\u30FC\u30E0\u8A2D\u5B9A",
+      gameSettingsLead: "\u5360\u9818\u3057\u305F\u9053\u30FB\u90FD\u5E02\u30FB\u4FEE\u9053\u9662\u3092\u30D7\u30EC\u30A4\u30E4\u30FC\u8272\u3067\u5857\u308B\u304B\u3092\u9078\u3073\u307E\u3059\u3002",
+      optColorRoads: "\u9053\u3092\u30D7\u30EC\u30A4\u30E4\u30FC\u8272\u306B\u3059\u308B",
+      optColorCities: "\u90FD\u5E02\u3092\u30D7\u30EC\u30A4\u30E4\u30FC\u8272\u306B\u3059\u308B",
+      optColorMonasteries: "\u4FEE\u9053\u9662\u3092\u30D7\u30EC\u30A4\u30E4\u30FC\u8272\u306B\u3059\u308B",
+      playersTitle: "\u30D7\u30EC\u30A4\u30E4\u30FC",
       setupLead: "2\u301C8\u4EBA\u3002\u540D\u524D\u306F\u6700\u592710\u6587\u5B57\u3002\u8272\u306F\u91CD\u8907\u4E0D\u53EF\u3002",
       setupLeadBot: "Bot\u306F\u81EA\u52D5\u3067\u624B\u756A\u3092\u9032\u3081\u307E\u3059\u3002",
       addPlayer: "\u30D7\u30EC\u30A4\u30E4\u30FC\u8FFD\u52A0",
@@ -2509,14 +3470,44 @@
   // js/play/storage.js
   var SETUP_KEY = "tile-city-setup";
   var SAVE_KEY = "tile-city-save";
-  function loadRoster(Carcassonne2) {
+  function parseSetupPayload(Carcassonne2, raw) {
+    if (!raw) return null;
+    let data;
     try {
-      const raw = sessionStorage.getItem(SETUP_KEY);
-      if (!raw) return null;
-      return Carcassonne2.normalizePlayers(JSON.parse(raw));
+      data = typeof raw === "string" ? JSON.parse(raw) : raw;
     } catch (err) {
       return null;
     }
+    if (Array.isArray(data)) {
+      return {
+        players: Carcassonne2.normalizePlayers(data),
+        options: Carcassonne2.normalizeGameOptions(null)
+      };
+    }
+    if (!data || typeof data !== "object") return null;
+    const players = Carcassonne2.normalizePlayers(data.players || data.roster);
+    if (!players || !players.length) return null;
+    return {
+      players,
+      options: Carcassonne2.normalizeGameOptions(data.options)
+    };
+  }
+  function loadSetup(Carcassonne2) {
+    try {
+      const raw = sessionStorage.getItem(SETUP_KEY);
+      if (!raw) return null;
+      return parseSetupPayload(Carcassonne2, raw);
+    } catch (err) {
+      return null;
+    }
+  }
+  function loadRoster(Carcassonne2) {
+    const setup = loadSetup(Carcassonne2);
+    return setup ? setup.players : null;
+  }
+  function loadSetupOptions(Carcassonne2) {
+    const setup = loadSetup(Carcassonne2);
+    return Carcassonne2.normalizeGameOptions(setup && setup.options);
   }
   function clearSave() {
     try {
@@ -2585,6 +3576,9 @@
   function loadRoster2() {
     return loadRoster(game_default);
   }
+  function loadSetupOptions2() {
+    return loadSetupOptions(game_default);
+  }
   function loadSavedGame2() {
     return loadSavedGame(game_default);
   }
@@ -2621,7 +3615,7 @@
     location.replace("setup.html");
     throw new Error("setup required");
   }
-  var game = saved ? saved.game : game_default.createGame(void 0, roster);
+  var game = saved ? saved.game : game_default.createGame(void 0, roster, loadSetupOptions2());
   var pan = null;
   var skipClick = false;
   var suppressHandClickUntil = 0;
@@ -2900,6 +3894,337 @@
     paintDiscardOverlay();
     paintLegend();
   }
+  var CLAIM_HEX = Object.fromEntries(
+    game_default.COLOR_PALETTE.map((color) => [color.id, color.hex])
+  );
+  function claimAxisKind(claim) {
+    const sectors = claim.sectors;
+    if (!sectors || sectors.length < 2) return "ortho";
+    if (sectors.length > 2) return "fan";
+    let d = Math.abs(sectors[1].angle - sectors[0].angle);
+    d = Math.min(d, 360 - d);
+    return d >= 150 ? "ortho" : "diag";
+  }
+  function claimFanGradient(claim, wall, softMaxDeg) {
+    const sectors = claim.sectors && claim.sectors.length >= 2 ? claim.sectors : [
+      { color: claim.colors[0], angle: 270 },
+      { color: claim.colors[1], angle: 90 }
+    ];
+    const softMax = softMaxDeg == null ? 20 : softMaxDeg;
+    const n = sectors.length;
+    const bounds = [];
+    for (let i = 0; i < n; i++) {
+      const a = sectors[i].angle;
+      const b = sectors[(i + 1) % n].angle;
+      const span = ((b - a) % 360 + 360) % 360;
+      bounds.push(((a + span / 2) % 360 + 360) % 360);
+    }
+    const origin = bounds[n - 1];
+    const parts = [];
+    for (let i = 0; i < n; i++) {
+      const hex = CLAIM_HEX[sectors[i].color] || "#ff5d78";
+      const paint = wall ? "color-mix(in srgb, " + hex + " 52%, #1a0c08 48%)" : hex;
+      let left = ((bounds[(i - 1 + n) % n] - origin) % 360 + 360) % 360;
+      let right = ((bounds[i] - origin) % 360 + 360) % 360;
+      if (right <= left) right += 360;
+      const half = (right - left) / 2;
+      const soft = Math.min(softMax, Math.max(5, half * 0.22));
+      const solidL = left + soft;
+      const solidR = right - soft;
+      if (i === 0) parts.push(paint + " 0deg");
+      parts.push(paint + " " + solidL + "deg");
+      parts.push(paint + " " + solidR + "deg");
+    }
+    const firstHex = CLAIM_HEX[sectors[0].color] || "#ff5d78";
+    const firstPaint = wall ? "color-mix(in srgb, " + firstHex + " 52%, #1a0c08 48%)" : firstHex;
+    parts.push(firstPaint + " 360deg");
+    return "conic-gradient(from " + origin + "deg, " + parts.join(", ") + ")";
+  }
+  var EDGE_DIRS = ["N", "E", "S", "W"];
+  var GATE_CITY_IDS = /* @__PURE__ */ new Set(["C", "M", "N", "O", "P", "Q", "R", "S", "T"]);
+  var HOUSE_CITY_IDS = /* @__PURE__ */ new Set(["D", "E", "F", "G", "H", "I", "J", "K", "L"]);
+  var GATE_OPP = { N: "S", E: "W", S: "N", W: "E" };
+  var CITY_GATE_HTML = '<span class="gate-pillar a"><span class="roof"></span><span class="win"></span></span><span class="gate-wall"><span class="door"></span></span><span class="gate-pillar b"><span class="roof"></span><span class="win"></span></span>';
+  var CITY_HOUSE_HTML = '<span class="roof"></span><span class="body"><span class="win a"></span><span class="win b"></span><span class="door"></span></span>';
+  function boardEdgeIsCity(tile, boardDir) {
+    if (!tile || !tile.edges) return false;
+    const edges = game_default.rotateEdges(tile.edges, tile.rot || 0);
+    const index = EDGE_DIRS.indexOf(String(boardDir || "").toUpperCase());
+    return index >= 0 && edges[index] === "C";
+  }
+  function clearCitySeamDecor() {
+    document.querySelectorAll("#grid .city-gate, #grid .city-house").forEach((node) => node.remove());
+  }
+  function seamVertRotDeg(pos, kind) {
+    let h = 2166136261;
+    const salt = String(pos || "") + ":" + String(kind || "");
+    for (let i = 0; i < salt.length; i++) {
+      h ^= salt.charCodeAt(i);
+      h = Math.imul(h, 16777619);
+    }
+    return h >>> 0 & 1 ? 90 : 270;
+  }
+  function cityFaceToward(pos, boardDir, claims) {
+    if (!claims || !pos || !boardDir) return null;
+    const prefix = pos + ":city-";
+    let solo = null;
+    for (const [key, claim] of claims.entries()) {
+      if (!key.startsWith(prefix) || !claim || !claim.colors || !claim.colors.length) continue;
+      if (claim.mode === "bridge" && claim.boardDir === boardDir) {
+        return claim.face || claim.colors[0] || null;
+      }
+      if (claim.mode === "hub" && (claim.bridges || []).some((bridge) => bridge.dir === boardDir)) {
+        return claim.face || claim.colors[0] || null;
+      }
+      if (!claim.tie && claim.colors.length === 1) solo = claim.colors[0];
+      else if (claim.face) solo = claim.face;
+    }
+    return solo;
+  }
+  function tintGateStone(el, colorId) {
+    if (!el || !colorId) return;
+    const hex = CLAIM_HEX[colorId];
+    if (!hex) return;
+    el.style.setProperty("--tower", "color-mix(in srgb, " + hex + " 58%, #1a0c08 42%)");
+    el.style.setProperty("--tower-lit", "color-mix(in srgb, " + hex + " 70%, #2a1410 30%)");
+    el.style.setProperty("--tower-dark", "color-mix(in srgb, " + hex + " 34%, #0a0402 66%)");
+    el.style.setProperty("--tower-mortar", "color-mix(in srgb, " + hex + " 18%, #050302 82%)");
+    el.style.setProperty("--tower-roof", "color-mix(in srgb, " + hex + " 48%, #3e2010 52%)");
+    el.style.setProperty("--tower-roof-dark", "color-mix(in srgb, " + hex + " 28%, #1a0a04 72%)");
+    el.style.setProperty("--tower-window", "color-mix(in srgb, " + hex + " 22%, #101820 78%)");
+    el.style.setProperty("--tower-door-frame", "color-mix(in srgb, " + hex + " 35%, #c9a45a 65%)");
+    el.style.setProperty("--gate-wall", "color-mix(in srgb, " + hex + " 52%, #1a0c08 48%)");
+    el.style.setProperty("--gate-wall-lit", "color-mix(in srgb, " + hex + " 64%, #2a1410 36%)");
+    el.style.setProperty("--gate-wall-dark", "color-mix(in srgb, " + hex + " 30%, #0a0402 70%)");
+  }
+  function mountCityGate(slot, boardDir, colorA, colorB, vertRot) {
+    if (!slot) return;
+    const dir = String(boardDir || "n").toLowerCase();
+    const gate = document.createElement("span");
+    let cls = "city-gate edge-" + dir;
+    if ((dir === "e" || dir === "w") && vertRot) cls += " rot-" + vertRot;
+    gate.className = cls;
+    gate.setAttribute("aria-hidden", "true");
+    gate.innerHTML = CITY_GATE_HTML;
+    if (colorA && colorB) {
+      if (colorA === colorB) {
+        gate.querySelectorAll(".gate-pillar, .gate-wall").forEach((el) => {
+          tintGateStone(el, colorA);
+        });
+      } else {
+        tintGateStone(gate.querySelector(".gate-pillar.a"), colorA);
+        tintGateStone(gate.querySelector(".gate-pillar.b"), colorB);
+      }
+    }
+    slot.appendChild(gate);
+  }
+  function mountCityHouse(slot, boardDir, vertRot) {
+    if (!slot) return;
+    const dir = String(boardDir || "n").toLowerCase();
+    const house = document.createElement("span");
+    let cls = "city-house edge-" + dir;
+    if ((dir === "e" || dir === "w") && vertRot) cls += " rot-" + vertRot;
+    house.className = cls;
+    house.setAttribute("aria-hidden", "true");
+    house.innerHTML = CITY_HOUSE_HTML;
+    slot.appendChild(house);
+  }
+  function applyCityGates(claims) {
+    clearCitySeamDecor();
+    const board = game.board;
+    for (const [pos, tile] of board.entries()) {
+      const comma = pos.indexOf(",");
+      const x = Number(pos.slice(0, comma));
+      const y = Number(pos.slice(comma + 1));
+      for (const step of [
+        { dir: "E", dx: 1, dy: 0 },
+        { dir: "S", dx: 0, dy: 1 }
+      ]) {
+        if (!boardEdgeIsCity(tile, step.dir)) continue;
+        const nPos = x + step.dx + "," + (y + step.dy);
+        const neighbor = board.get(nPos);
+        if (!neighbor) continue;
+        const opp = GATE_OPP[step.dir];
+        if (!boardEdgeIsCity(neighbor, opp)) continue;
+        const bothGate = GATE_CITY_IDS.has(tile.id) && GATE_CITY_IDS.has(neighbor.id);
+        const anyHouse = HOUSE_CITY_IDS.has(tile.id) || HOUSE_CITY_IDS.has(neighbor.id);
+        if (!bothGate && !anyHouse) continue;
+        const slot = document.querySelector('#grid [data-pos="' + nPos + '"]');
+        const colorA = cityFaceToward(pos, step.dir, claims);
+        const colorB = cityFaceToward(nPos, opp, claims);
+        if (bothGate) {
+          const vertRot = step.dir === "E" ? seamVertRotDeg(nPos, "gate") : 0;
+          mountCityGate(slot, opp, colorA, colorB, vertRot);
+        } else {
+          const vertRot = step.dir === "E" ? seamVertRotDeg(nPos, "house") : 0;
+          mountCityHouse(slot, opp, vertRot);
+        }
+      }
+    }
+  }
+  function applyRecentRings() {
+    document.querySelectorAll("#grid .slot.filled.recent").forEach((slot) => {
+      const ring = document.createElement("span");
+      ring.className = "recent-ring";
+      ring.setAttribute("aria-hidden", "true");
+      slot.appendChild(ring);
+    });
+  }
+  function tileRotTurns(el) {
+    const tile = el.closest(".tile") || el;
+    const names = [...tile.classList];
+    const deg = names.find((name) => /^rot-(90|180|270)$/.test(name));
+    if (deg) return Number(deg.slice(4)) / 90;
+    const turn = names.find((name) => /^rot-[0-3]$/.test(name));
+    return turn ? Number(turn.slice(4)) : 0;
+  }
+  function localDirFromBoard(boardDir, rotTurns) {
+    const index = EDGE_DIRS.indexOf(String(boardDir || "").toUpperCase());
+    if (index < 0) return boardDir;
+    return EDGE_DIRS[(index - (rotTurns % 4 + 4) % 4 + 4) % 4];
+  }
+  function clearClaimEdgeGrads(el) {
+    const feat = el.getAttribute("data-feat");
+    const tile = el.closest(".tile");
+    if (!tile) return;
+    const sel = feat ? ':scope > .claim-edge-grad[data-feat="' + feat + '"]' : ":scope > .claim-edge-grad";
+    tile.querySelectorAll(sel).forEach((node) => node.remove());
+    if (!tile.querySelector(":scope > .claim-edge-grad")) {
+      tile.classList.remove("has-claim-edge");
+    }
+  }
+  var TOWARD_LOCAL_EDGE = { N: "0deg", E: "90deg", S: "180deg", W: "270deg" };
+  function mountEdgeGrad(el, boardDir, faceHex, otherHex) {
+    const tile = el.closest(".tile") || el;
+    const rot = tileRotTurns(el);
+    const localDir = String(localDirFromBoard(boardDir, rot) || "n").toUpperCase();
+    const mid = "color-mix(in srgb, " + faceHex + " 50%, " + otherHex + " 50%)";
+    tile.classList.add("has-claim-edge");
+    const band = document.createElement("span");
+    band.className = "claim-edge-grad claim-edge-" + localDir.toLowerCase();
+    const feat = el.getAttribute("data-feat");
+    if (feat) band.setAttribute("data-feat", feat);
+    band.style.setProperty("--edge-from", faceHex);
+    band.style.setProperty("--edge-to", mid);
+    band.style.setProperty("--edge-grad-angle", TOWARD_LOCAL_EDGE[localDir] || "90deg");
+    tile.appendChild(band);
+  }
+  function applyFeatureClaims(claims) {
+    document.querySelectorAll("#grid .slot.filled").forEach((slot) => {
+      const pos = slot.dataset.pos;
+      if (!pos) return;
+      slot.querySelectorAll("[data-feat]").forEach((el) => {
+        const feat = el.getAttribute("data-feat");
+        if (!feat) return;
+        const claim = claims.get(pos + ":" + feat);
+        el.classList.remove(
+          "claim-solo",
+          "claim-blend",
+          "claim-half-a",
+          "claim-half-b",
+          "claim-fan",
+          "claim-full",
+          "claim-diag",
+          "claim-corner",
+          "claim-hub",
+          "claim-bridge"
+        );
+        clearClaimEdgeGrads(el);
+        el.style.removeProperty("--claim");
+        el.style.removeProperty("--claim-a");
+        el.style.removeProperty("--claim-b");
+        el.style.removeProperty("--claim-c");
+        el.style.removeProperty("--claim-mid");
+        el.style.removeProperty("--claim-angle");
+        el.style.removeProperty("--claim-side-angle");
+        el.style.removeProperty("--claim-edge-a");
+        el.style.removeProperty("--claim-edge-b");
+        el.style.removeProperty("--claim-fan");
+        el.style.removeProperty("--claim-fan-wall");
+        if (!game_default.claimColorEnabled(game.options, feat)) return;
+        if (!claim || !claim.colors.length) return;
+        if (claim.mode === "hub") {
+          const face = claim.face || claim.colors[0];
+          const faceHex = CLAIM_HEX[face] || "#ff5d78";
+          el.classList.add("claim-solo", "claim-hub");
+          el.style.setProperty("--claim", faceHex);
+          for (const bridge of claim.bridges || []) {
+            const boardDir = bridge.dir;
+            if (!boardDir) continue;
+            const otherHex = CLAIM_HEX[bridge.color] || "#ff5d78";
+            mountEdgeGrad(el, boardDir, faceHex, otherHex);
+          }
+          return;
+        }
+        if (claim.mode === "bridge") {
+          const face = claim.face || claim.colors[0];
+          const boardDir = claim.boardDir;
+          const faceHex = CLAIM_HEX[face] || "#ff5d78";
+          const partner = claim.colors[0] === face ? claim.colors[1] : claim.colors[0];
+          const otherHex = CLAIM_HEX[partner] || "#49c4ff";
+          el.classList.add("claim-solo", "claim-bridge");
+          el.style.setProperty("--claim", faceHex);
+          if (boardDir && partner) mountEdgeGrad(el, boardDir, faceHex, otherHex);
+          return;
+        }
+        if (claim.tie && claim.colors.length >= 2) {
+          const hexA = CLAIM_HEX[claim.colors[0]] || "#ff5d78";
+          const hexB = CLAIM_HEX[claim.colors[1]] || "#49c4ff";
+          if (claim.mode === "mix") {
+            el.classList.add("claim-solo");
+            el.style.setProperty(
+              "--claim",
+              "color-mix(in srgb, " + hexA + " 50%, " + hexB + " 50%)"
+            );
+            return;
+          }
+          el.classList.add("claim-blend");
+          if (claim.mode === "half-a") {
+            el.classList.add("claim-half-a");
+            el.style.setProperty("--claim-a", hexA);
+            el.style.setProperty("--claim-b", hexB);
+            el.style.setProperty("--claim-mid", "color-mix(in srgb, " + hexA + " 50%, " + hexB + " 50%)");
+            el.style.setProperty("--claim-angle", (claim.angle != null ? claim.angle : 135) + "deg");
+            return;
+          }
+          if (claim.mode === "half-b") {
+            el.classList.add("claim-half-b");
+            el.style.setProperty("--claim-a", hexA);
+            el.style.setProperty("--claim-b", hexB);
+            el.style.setProperty("--claim-mid", "color-mix(in srgb, " + hexA + " 50%, " + hexB + " 50%)");
+            el.style.setProperty("--claim-angle", (claim.angle != null ? claim.angle : 135) + "deg");
+            return;
+          }
+          const axis = claimAxisKind(claim);
+          if (claim.colors.length === 2 && (axis === "ortho" || axis === "diag")) {
+            el.classList.add("claim-full");
+            if (axis === "diag") el.classList.add("claim-diag");
+            el.style.setProperty("--claim-a", hexA);
+            el.style.setProperty("--claim-b", hexB);
+            el.style.setProperty("--claim-mid", "color-mix(in srgb, " + hexA + " 50%, " + hexB + " 50%)");
+            el.style.setProperty("--claim-angle", (claim.angle != null ? claim.angle : 90) + "deg");
+            if (axis === "ortho") {
+              el.style.setProperty("--claim-edge-a", "25%");
+              el.style.setProperty("--claim-edge-b", "75%");
+            } else {
+              el.style.setProperty("--claim-edge-a", "42%");
+              el.style.setProperty("--claim-edge-b", "58%");
+            }
+            return;
+          }
+          el.classList.add("claim-fan");
+          el.style.setProperty("--claim-a", hexA);
+          el.style.setProperty("--claim-b", hexB);
+          el.style.setProperty("--claim-mid", "color-mix(in srgb, " + hexA + " 50%, " + hexB + " 50%)");
+          el.style.setProperty("--claim-fan", claimFanGradient(claim, false, 20));
+          el.style.setProperty("--claim-fan-wall", claimFanGradient(claim, true, 20));
+          return;
+        }
+        el.classList.add("claim-solo");
+        el.style.setProperty("--claim", CLAIM_HEX[claim.colors[0]] || "#ff5d78");
+      });
+    });
+  }
   function paintGrid() {
     const bounds = game.bounds(1);
     const lockHints = game.pendingMeeple || game.pendingDiscard || exitConfirmOpen || humanControlsLocked();
@@ -2912,6 +4237,7 @@
     grid.style.gridTemplateColumns = "repeat(" + cols + ", var(--cell))";
     grid.style.setProperty("--sand-min-x", String(bounds.minX));
     grid.style.setProperty("--sand-min-y", String(bounds.minY));
+    const claims = game_default.buildFeatureClaims(game);
     const parts = [];
     for (let y = bounds.minY; y <= bounds.maxY; y++) {
       for (let x = bounds.minX; x <= bounds.maxX; x++) {
@@ -2942,6 +4268,9 @@
       }
     }
     grid.innerHTML = parts.join("");
+    applyFeatureClaims(claims);
+    applyCityGates(claims);
+    applyRecentRings();
   }
   function scroller() {
     return document.getElementById("scroller");

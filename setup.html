@@ -216,7 +216,22 @@
     }
 
     .setup-actions.top-actions {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      align-items: center;
+      gap: 10px;
       margin: 0 0 12px;
+    }
+
+    .setup-actions.top-actions .add {
+      grid-column: 2;
+    }
+
+    .setup-actions.top-actions .hint {
+      grid-column: 3;
+      justify-self: start;
+      margin: 0;
+      white-space: nowrap;
     }
 
     .color-picks button[data-color="white"] {
@@ -275,6 +290,107 @@
       font-weight: 700;
       min-height: 1.2em;
     }
+
+    .setup-section {
+      margin: 0 0 22px;
+      text-align: left;
+    }
+
+    .setup-section h2 {
+      margin: 0 0 6px;
+      font-size: 1.05rem;
+      letter-spacing: 0.04em;
+    }
+
+    .setup-section .section-lead {
+      margin: 0 0 12px;
+      font-size: 13px;
+      color: #5a4a38;
+      line-height: 1.45;
+    }
+
+    .game-settings-block h2,
+    .game-settings-block .section-lead {
+      text-align: center;
+    }
+
+    .option-list {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .option-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 10px 12px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: #fff;
+    }
+
+    .option-row .option-label {
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      color: var(--ink);
+    }
+
+    .toggle {
+      position: relative;
+      flex: none;
+      width: 2.75rem;
+      height: 1.55rem;
+      border-radius: 999px;
+      background: #cbbba8;
+      border: 1px solid #9a8a78;
+      cursor: pointer;
+      transition: background 0.15s ease, border-color 0.15s ease;
+    }
+
+    .toggle input {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      margin: 0;
+      cursor: pointer;
+    }
+
+    .toggle .knob {
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: calc(1.55rem - 6px);
+      height: calc(1.55rem - 6px);
+      border-radius: 50%;
+      background: #fffdf8;
+      box-shadow: 0 1px 3px rgba(40, 24, 12, 0.28);
+      transition: transform 0.15s ease;
+      pointer-events: none;
+    }
+
+    .toggle:has(input:checked) {
+      background: var(--clay);
+      border-color: #9e3422;
+    }
+
+    .toggle:has(input:checked) .knob {
+      transform: translateX(1.15rem);
+    }
+
+    .players-block .lead {
+      margin-bottom: 14px;
+      text-align: center;
+    }
+
+    .players-block h2 {
+      text-align: center;
+    }
   </style>
 </head>
 <body>
@@ -295,21 +411,56 @@
       </div>
     </div>
     <div class="setup">
-      <h1 data-i18n="setupTitle">Players</h1>
-      <p class="lead">
-        <span data-i18n="setupLead">2–8 players. Name max 10 letters. Each color once.</span>
-        <span class="lead-bot" data-i18n="setupLeadBot">Bots play automatically.</span>
-      </p>
-      <div class="setup-actions top-actions">
-        <button type="button" class="add" id="add-player" data-i18n="addPlayer">Add player</button>
-      </div>
-      <ul class="player-list" id="player-list"></ul>
-      <p class="err" id="err" aria-live="polite"></p>
-      <div class="setup-actions">
-        <button type="button" class="start" id="start-game" data-i18n="start">Start</button>
-        <a class="back" href="index.html" data-i18n="back">Back</a>
-      </div>
-      <p class="hint" id="count-hint"></p>
+      <h1 data-i18n="setupTitle">Setup</h1>
+
+      <section class="setup-section game-settings-block" aria-labelledby="game-settings-title">
+        <h2 id="game-settings-title" data-i18n="gameSettingsTitle">Game settings</h2>
+        <p class="section-lead" data-i18n="gameSettingsLead">Choose which claimed features use player colors.</p>
+        <ul class="option-list">
+          <li class="option-row">
+            <span class="option-label" data-i18n="optColorRoads">Color roads</span>
+            <label class="toggle">
+              <input type="checkbox" id="opt-color-roads" checked>
+              <span class="knob" aria-hidden="true"></span>
+              <span class="sr-only" data-i18n="optColorRoads">Color roads</span>
+            </label>
+          </li>
+          <li class="option-row">
+            <span class="option-label" data-i18n="optColorCities">Color cities</span>
+            <label class="toggle">
+              <input type="checkbox" id="opt-color-cities" checked>
+              <span class="knob" aria-hidden="true"></span>
+              <span class="sr-only" data-i18n="optColorCities">Color cities</span>
+            </label>
+          </li>
+          <li class="option-row">
+            <span class="option-label" data-i18n="optColorMonasteries">Color monasteries</span>
+            <label class="toggle">
+              <input type="checkbox" id="opt-color-monasteries" checked>
+              <span class="knob" aria-hidden="true"></span>
+              <span class="sr-only" data-i18n="optColorMonasteries">Color monasteries</span>
+            </label>
+          </li>
+        </ul>
+      </section>
+
+      <section class="setup-section players-block" aria-labelledby="players-title">
+        <h2 id="players-title" data-i18n="playersTitle">Players</h2>
+        <p class="lead">
+          <span data-i18n="setupLead">2–8 players. Name max 10 letters. Each color once.</span>
+          <span class="lead-bot" data-i18n="setupLeadBot">Bots play automatically.</span>
+        </p>
+        <div class="setup-actions top-actions">
+          <button type="button" class="add" id="add-player" data-i18n="addPlayer">Add player</button>
+          <p class="hint" id="count-hint"></p>
+        </div>
+        <ul class="player-list" id="player-list"></ul>
+        <p class="err" id="err" aria-live="polite"></p>
+        <div class="setup-actions">
+          <button type="button" class="start" id="start-game" data-i18n="start">Start</button>
+          <a class="back" href="index.html" data-i18n="back">Back</a>
+        </div>
+      </section>
     </div>
   </div>
   <script src="js/setup.bundle.js"></script>

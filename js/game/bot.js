@@ -21,24 +21,80 @@ import { DIR_INDEX, NEI, OPP_DIR } from "./constants.js";
 import { keyOf, rotateEdges } from "./tiles.js";
 import { serializeGame, restoreGame } from "./persist.js";
 
+/**
+ * Bot evaluation weights (standard).
+ * Convention: every term is added as `weight * amount`.
+ * Positive = reward, negative = penalty. Do not abs() these in scoring.
+ *
+ * Standard scope (intentionally NOT modeled):
+ * - opponent denial / starvation plays
+ * - meeple majority fights (contesting shared features)
+ */
 export const BOT_WEIGHTS = {
   standard: {
+    // --- 加点（正） ---
+    /** 自分の即時得点 */
     immediateSelf: 1.0,
-    immediateOpp: 0.85,
-    endSelf: 0.55,
-    endOpp: 0.45,
-    meepleReturn: 0.35,
-    equity: 0.25,
-    gift: 0.4,
-    enemyCompleteGift: 6.0,
-    openWaste: 1.5,
-    earlyFieldBan: 3.0,
-    skipMonastery: 2.5,
+    /** 終了見積もりに対する自分の潜在増分 */
+    endSelf: 0.70,
+    /** この手で回収できたミープル数 */
+    meepleReturn: 0.45,
+    /** 自分多数の未完成フィーチャー見込み */
+    equity: 0.40,
+    /** 自都市の開口が減った回数ぶん（閉じに近づける） */
+    openClose: 1.25,
+    /**
+     * 自分だけが即時得点した完成への上乗せ（×即時点）。
+     * 独占完成を修道院の小前進などより優先しやすくする。
+     */
+    exclusiveComplete: 0.22,
+
+    // --- 減点（負）: 値を見れば減点と分かる ---
+    /** 敵の即時得点（自分0のときフル適用） */
+    immediateOpp: -0.85,
+    /** 終了見積もりに対する敵の潜在増分（自分潜在0のときフル適用） */
+    endOpp: -0.45,
+    /**
+     * 自分も得点しているときの「共有分」の敵点に掛ける割合 (0–1)。
+     * 同点完成 40/40 を実質ほぼ無視しないための緩和。
+     * 敵だけ多い超過分には immediateOpp/endOpp をフル適用。
+     */
+    sharedOppScale: 0.3,
+    /** 敵多数フィーチャーを残す／太らせる量（妨害ではなく事故抑制） */
+    gift: -0.4,
+    /** 自分0点なのに敵だけ完成させたときの平坦ペナ */
+    enemyCompleteGift: -6.0,
+    /** 自都市の開口が増えた回数ぶん */
+    openWaste: -1.5,
+    /** 序盤（やミープル不足）での畑ミープル */
+    earlyFieldBan: -3.0,
+    /** 修道院タイルなのに修道院以外へミープル */
+    skipMonastery: -2.5,
+    /**
+     * 自分の即時得点が小さいのに敵にまとまった点を渡す手の追加減点
+     * （自分も得点しているが敵の方が多いケース）。
+     */
+    oppLeadGift: -0.35,
   },
 };
 
 const FIELD_PHASE = { early: 0.15, mid: 0.45, late: 1.0, end: 1.2 };
 const DECK_CUT = { early: 48, late: 24, end: 8 };
+
+/** Equity formula knobs (not in BOT_WEIGHTS; tune role of city / road / monastery). */
+const EQUITY_TUNING = {
+  cityOpen1: 1.2,
+  cityOpen2: 0.9,
+  cityOpen3Plus: 0.85,
+  cityMul: 1.25,
+  roadMul: 0.75,
+  roadOpen1: 0.8,
+  roadOpen2Plus: 0.4,
+  monasteryFilled: 1.0,
+  monasteryEmpty: 0.35,
+  earlyCityMul: 1.15,
+  earlyRoadMul: 0.85,
+};
 
 export function cloneGame(game) {
   return restoreGame(serializeGame(game));
@@ -69,6 +125,20 @@ function bestOppDelta(before, after, me, playerCount) {
     if (delta > best) best = delta;
   }
   return best;
+}
+
+/**
+ * Apply oppWeight to opponent gain.
+ * If self also gained, only sharedOppScale of the overlapping (shared) portion
+ * is counted; opponent-only excess still gets the full weight.
+ */
+function scaledOppTerm(selfGain, oppGain, oppWeight, sharedScale) {
+  if (!(oppGain > 0) || !oppWeight) return 0;
+  if (!(selfGain > 0)) return oppWeight * oppGain;
+  const scale = sharedScale == null ? 1 : sharedScale;
+  const shared = Math.min(selfGain, oppGain);
+  const oppExtra = Math.max(0, oppGain - selfGain);
+  return oppWeight * (oppExtra + shared * scale);
 }
 
 function countOpenEdges(board, kind, parts) {
@@ -118,7 +188,7 @@ function stockPenalty(stock, immediateSelf) {
   if (stock >= 4) return 0;
   if (stock === 3) return 0.4;
   if (stock === 2) return 1.0;
-  if (stock === 1) return 2.0;
+  if (stock === 1) return 2.5;
   return 0;
 }
 
@@ -156,8 +226,9 @@ function equityAndGift(game, me, weights, phase) {
   const seenCities = new Set();
   const seenRoads = new Set();
   const seenFields = new Set();
-  const cityBonus = phase === "early" ? 1.15 : 1;
-  const roadBonus = phase === "early" ? 0.85 : 1;
+  const t = EQUITY_TUNING;
+  const cityBonus = (phase === "early" ? t.earlyCityMul : 1) * t.cityMul;
+  const roadBonus = (phase === "early" ? t.earlyRoadMul : 1) * t.roadMul;
   const fieldPhase = FIELD_PHASE[phase] || FIELD_PHASE.mid;
 
   for (const [pos, tile] of board) {
@@ -173,7 +244,7 @@ function equityAndGift(game, me, weights, phase) {
       const tiles = uniqueTileCount(result.parts);
       const pennants = cityPennantCount(board, result.parts);
       const openings = countOpenEdges(board, "city", result.parts);
-      const completeBonus = openings <= 1 ? 1.2 : openings === 2 ? 0.9 : 0.5;
+      const completeBonus = openings <= 1 ? t.cityOpen1 : openings === 2 ? t.cityOpen2 : t.cityOpen3Plus;
       const value = (tiles + pennants) * completeBonus * cityBonus;
       if (winners.includes(me)) equity += value;
       else gift += value;
@@ -188,13 +259,13 @@ function equityAndGift(game, me, weights, phase) {
       if (!winners.length) return;
       const tiles = uniqueTileCount(result.parts);
       const openings = countOpenEdges(board, "road", result.parts);
-      const value = tiles * (openings <= 1 ? 0.8 : 0.4) * roadBonus;
+      const value = tiles * (openings <= 1 ? t.roadOpen1 : t.roadOpen2Plus) * roadBonus;
       if (winners.includes(me)) equity += value;
       else gift += value;
     });
     if (tile.monastery && tile.meeple && tile.meeple.kind === "monastery" && !monasteryComplete(board, x, y)) {
       const filled = monasteryTileCount(board, x, y);
-      const value = filled * 0.7 + (9 - filled) * 0.35;
+      const value = filled * t.monasteryFilled + (9 - filled) * t.monasteryEmpty;
       if (tile.meeple.player === me) equity += value;
       else gift += value;
     }
@@ -212,16 +283,22 @@ function equityAndGift(game, me, weights, phase) {
     }
   }
 
+  // weights.equity > 0, weights.gift < 0 — both are added as-is later.
   return {
     equity: equity * weights.equity,
     gift: gift * weights.gift,
   };
 }
 
-function openWastePenalty(beforeBoard, afterBoard, x, y, me, weights) {
+/**
+ * Own-city opening deltas on the placed tile:
+ * openWaste (neg) when openings increase, openClose (pos) when they shrink.
+ */
+function cityOpeningDeltaScore(beforeBoard, afterBoard, x, y, me, weights) {
   const tile = afterBoard.get(keyOf(x, y));
   if (!tile || !tile.cities) return 0;
-  let penalty = 0;
+  let openingsIncreased = 0;
+  let openingsReduced = 0;
   tile.cities.forEach((_, index) => {
     const after = collectCityComponent(afterBoard, x, y, index);
     if (after.complete) return;
@@ -232,9 +309,11 @@ function openWastePenalty(beforeBoard, afterBoard, x, y, me, weights) {
     if (!beforeParts.length) return;
     const afterOpen = countOpenEdges(afterBoard, "city", after.parts);
     const beforeOpen = countOpenEdges(beforeBoard, "city", beforeParts);
-    if (afterOpen > beforeOpen) penalty += weights.openWaste;
+    if (afterOpen > beforeOpen) openingsIncreased += afterOpen - beforeOpen;
+    else if (afterOpen < beforeOpen) openingsReduced += beforeOpen - afterOpen;
   });
-  return penalty;
+  const close = weights.openClose || 0;
+  return weights.openWaste * openingsIncreased + close * openingsReduced;
 }
 
 function betterScore(scored, place, best) {
@@ -253,32 +332,47 @@ function evaluateApplied(before, after, me, weights, phase, placed, meepleUsed, 
   const immOpp = bestOppDelta(before.scores, after.scores, me, n);
   const returned = Math.max(0, after.meeples[me] - (stockBefore - (meepleUsed ? 1 : 0)));
   const eg = equityAndGift(after, me, weights, phase);
+  const sharedScale = weights.sharedOppScale == null ? 1 : weights.sharedOppScale;
+
+  // All BOT_WEIGHTS terms are added (penalties are already negative).
   let value =
-    weights.immediateSelf * immSelf -
-    weights.immediateOpp * immOpp +
+    weights.immediateSelf * immSelf +
+    scaledOppTerm(immSelf, immOpp, weights.immediateOpp, sharedScale) +
     weights.meepleReturn * returned +
-    eg.equity -
+    eg.equity +
     eg.gift;
 
   if (deep && endBefore) {
     const endAfter = projectedScores(after);
     const endSelf = scoreDelta(endBefore, endAfter, me);
     const endOpp = bestOppDelta(endBefore, endAfter, me, n);
+    const latSelf = endSelf - immSelf;
+    const latOpp = endOpp - immOpp;
     value +=
-      weights.endSelf * (endSelf - immSelf) -
-      weights.endOpp * (endOpp - immOpp);
+      weights.endSelf * latSelf +
+      scaledOppTerm(latSelf, latOpp, weights.endOpp, sharedScale);
   }
 
-  if (immOpp > 0 && immSelf <= 0) value -= weights.enemyCompleteGift;
+  // Free points: take exclusive completions over weak progress elsewhere.
+  if (immSelf >= 4 && immOpp <= 0 && weights.exclusiveComplete) {
+    value += weights.exclusiveComplete * immSelf;
+  }
+
+  // Shared but lopsided: you score a little, opponent scores a lot.
+  if (immSelf > 0 && immOpp > immSelf && weights.oppLeadGift) {
+    value += weights.oppLeadGift * (immOpp - immSelf);
+  }
+
+  if (immOpp > 0 && immSelf <= 0) value += weights.enemyCompleteGift;
   if (meepleUsed) value -= stockPenalty(stockBefore, immSelf);
   if (placed) {
-    value -= openWastePenalty(before.board, after.board, placed.x, placed.y, me, weights);
+    value += cityOpeningDeltaScore(before.board, after.board, placed.x, placed.y, me, weights);
     const tile = after.board.get(keyOf(placed.x, placed.y));
     if (tile && tile.monastery && meepleUsed && optionKind && optionKind !== "monastery") {
-      value -= weights.skipMonastery;
+      value += weights.skipMonastery;
     }
     if (optionKind === "field" && (phase === "early" || (phase === "mid" && stockBefore <= 2))) {
-      value -= weights.earlyFieldBan;
+      value += weights.earlyFieldBan;
     }
   }
 

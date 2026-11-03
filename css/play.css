@@ -769,9 +769,8 @@ html, body { height: 100%; overflow: hidden; }
 
     .slot.filled {
       overflow: visible;
-      /* Local stack: recent ring < meeple < HUD outside board-panel */
-      z-index: 0;
-      isolation: isolate;
+      /* No z-index here — per-slot stacking contexts bury the recent ring
+         under neighbor gate/house overflow. Decor z-index competes on the board. */
     }
 
     .slot.filled[class*="owner-"]::before {
@@ -779,7 +778,7 @@ html, body { height: 100%; overflow: hidden; }
       position: absolute;
       top: 0;
       left: 0;
-      z-index: 1;
+      z-index: 16;
       width: 12%;
       height: 12%;
       pointer-events: none;
@@ -816,25 +815,25 @@ html, body { height: 100%; overflow: hidden; }
       content: none;
     }
 
-    .slot.filled.recent::after {
-      content: "";
+    /* Real node (appended after gate/house) so the ring always stacks on top. */
+    .slot.filled.recent .recent-ring {
       position: absolute;
       inset: 0;
-      z-index: 1;
+      z-index: 15;
       pointer-events: none;
       box-sizing: border-box;
       border: 3px solid;
       box-shadow: inset 0 0 0 1px #fff, 0 0 0 1px #fff;
     }
 
-    .slot.filled.recent.owner-red::after { border-color: #ff5d78; }
-    .slot.filled.recent.owner-blue::after { border-color: #49c4ff; }
-    .slot.filled.recent.owner-green::after { border-color: #3dff9a; }
-    .slot.filled.recent.owner-yellow::after { border-color: #ffe14a; }
-    .slot.filled.recent.owner-orange::after { border-color: #ff9a3d; }
-    .slot.filled.recent.owner-purple::after { border-color: #7c3aed; }
-    .slot.filled.recent.owner-white::after { border-color: #f4f7fb; }
-    .slot.filled.recent.owner-brown::after { border-color: #a67c52; }
+    .slot.filled.recent.owner-red .recent-ring { border-color: #ff5d78; }
+    .slot.filled.recent.owner-blue .recent-ring { border-color: #49c4ff; }
+    .slot.filled.recent.owner-green .recent-ring { border-color: #3dff9a; }
+    .slot.filled.recent.owner-yellow .recent-ring { border-color: #ffe14a; }
+    .slot.filled.recent.owner-orange .recent-ring { border-color: #ff9a3d; }
+    .slot.filled.recent.owner-purple .recent-ring { border-color: #7c3aed; }
+    .slot.filled.recent.owner-white .recent-ring { border-color: #f4f7fb; }
+    .slot.filled.recent.owner-brown .recent-ring { border-color: #a67c52; }
 
     :root {
       --tile: 120px;
@@ -846,6 +845,333 @@ html, body { height: 100%; overflow: hidden; }
       position: relative;
       z-index: 0;
       zoom: var(--board-zoom);
+    }
+
+    /*
+      Claimed city: face (::after / fill plaza) = claim color.
+      Rim / pillars stay default stone (not player-tinted).
+    */
+    .slot .city.claim-solo {
+      --city: var(--claim);
+    }
+    .slot .city.claim-solo::after {
+      background-color: var(--claim);
+    }
+    .slot .city.fill.claim-solo {
+      --city: var(--claim);
+      background-color: var(--claim);
+      background-image: radial-gradient(
+        circle at 36% 38%,
+        rgba(255, 255, 255, 0.12) 0 0.5px,
+        transparent 0.95px
+      );
+      background-size: 14px 14px;
+    }
+    .slot .city.claim-solo .city-keep {
+      --tower: color-mix(in srgb, var(--claim) 58%, #1a0c08 42%);
+      --tower-lit: color-mix(in srgb, var(--claim) 70%, #2a1410 30%);
+      --tower-dark: color-mix(in srgb, var(--claim) 34%, #0a0402 66%);
+      --tower-mortar: color-mix(in srgb, var(--claim) 18%, #050302 82%);
+      --tower-roof: color-mix(in srgb, var(--claim) 48%, #3e2010 52%);
+      --tower-roof-dark: color-mix(in srgb, var(--claim) 28%, #1a0a04 72%);
+      --tower-door: color-mix(in srgb, var(--claim) 18%, #0a0604 82%);
+      --tower-door-frame: color-mix(in srgb, var(--claim) 35%, #c9a45a 65%);
+      --tower-window: color-mix(in srgb, var(--claim) 22%, #101820 78%);
+    }
+
+    /* Monastery: roof + windows = claim; cross = bright tint of claim. */
+    .slot .monastery.claim-solo {
+      --monastery-roof: var(--claim);
+      --monastery-roof-dark: color-mix(in srgb, var(--claim) 62%, #1a0806 38%);
+      --monastery-window: var(--claim);
+      --monastery-window-border: color-mix(in srgb, var(--claim) 55%, #1a0806 45%);
+      --monastery-cross: color-mix(in srgb, var(--claim) 42%, #ffffff 58%);
+      --monastery-cross-dark: color-mix(in srgb, var(--claim) 55%, #ffffff 45%);
+    }
+
+    /*
+      City meetings: each tile paints half a pillar-width seam band flush
+      inside its connecting edge (tile-local, follows rot-*). Face → mid toward
+      the seam; partners meet at mid. No overflow into neighbor frames.
+    */
+    .slot .tile.has-claim-edge {
+      --edge-grad-w: 11%; /* matches .city-pillar */
+    }
+    .slot .tile > .claim-edge-grad {
+      position: absolute;
+      z-index: 5;
+      pointer-events: none;
+      box-sizing: border-box;
+      background: linear-gradient(
+        var(--edge-grad-angle, 90deg),
+        var(--edge-from) 0%,
+        var(--edge-to) 100%
+      );
+    }
+    .slot .tile > .claim-edge-n,
+    .slot .tile > .claim-edge-s {
+      left: 11%;
+      right: 11%;
+      height: calc(var(--edge-grad-w) / 2);
+    }
+    .slot .tile > .claim-edge-n { top: 0; }
+    .slot .tile > .claim-edge-s { bottom: 0; }
+    .slot .tile > .claim-edge-e,
+    .slot .tile > .claim-edge-w {
+      top: 11%;
+      bottom: 11%;
+      width: calc(var(--edge-grad-w) / 2);
+    }
+    .slot .tile > .claim-edge-e { right: 0; }
+    .slot .tile > .claim-edge-w { left: 0; }
+
+    /*
+      Meeting tiles: claim paint on the face (::after / fill) only.
+      Rim / pillars stay default stone from tiles.css.
+    */
+    .slot .city.claim-blend::after,
+    .slot .city.fill.claim-blend {
+      background-color: transparent;
+      background-size: auto;
+      background-repeat: no-repeat;
+    }
+    .slot .city.claim-blend.claim-full::after,
+    .slot .city.fill.claim-blend.claim-full {
+      background-image: linear-gradient(
+        var(--claim-angle, 90deg),
+        var(--claim-a) 0%,
+        var(--claim-a) var(--claim-edge-a, 25%),
+        var(--claim-b) var(--claim-edge-b, 75%),
+        var(--claim-b) 100%
+      );
+    }
+    /*
+      Corner inherit: neighbor 2-color linear underneath, solid side color
+      painted from its edge so connecting edges stay intact and the 3-way
+      soft zone sits only where they meet inside the tile.
+    */
+    .slot .city.claim-blend.claim-corner::after,
+    .slot .city.fill.claim-blend.claim-corner {
+      background-image:
+        linear-gradient(
+          var(--claim-side-angle, 90deg),
+          transparent 0%,
+          transparent 32%,
+          var(--claim-c) 68%,
+          var(--claim-c) 100%
+        ),
+        linear-gradient(
+          var(--claim-angle, 90deg),
+          var(--claim-a) 0%,
+          var(--claim-a) var(--claim-edge-a, 25%),
+          var(--claim-b) var(--claim-edge-b, 75%),
+          var(--claim-b) 100%
+        );
+    }
+    .slot .city.claim-blend.claim-fan::after,
+    .slot .city.fill.claim-blend.claim-fan {
+      background-image: var(--claim-fan);
+    }
+
+    /* Even city: same 0.5+0.5 as roads. Must reset background-size (tiles.css uses 14px dots). */
+    .slot .city.claim-blend.claim-half-a::after,
+    .slot .city.fill.claim-blend.claim-half-a {
+      background-size: auto;
+      background-image: linear-gradient(
+        var(--claim-angle, 135deg),
+        var(--claim-a) 0%,
+        var(--claim-a) 50%,
+        var(--claim-mid) 100%
+      );
+    }
+    .slot .city.claim-blend.claim-half-b::after,
+    .slot .city.fill.claim-blend.claim-half-b {
+      background-size: auto;
+      background-image: linear-gradient(
+        var(--claim-angle, 135deg),
+        var(--claim-mid) 0%,
+        var(--claim-b) 50%,
+        var(--claim-b) 100%
+      );
+    }
+
+    .slot .road.claim-solo {
+      background: var(--claim);
+      box-shadow: 0 0 0 2px color-mix(in srgb, var(--claim) 68%, #1a1208 32%);
+    }
+    /*
+      Road outline follows the same gradient as the face (darker mix).
+      content-box + 2px border keeps the face at --road-w (same as solo +
+      box-shadow outline) instead of eating into border-box width.
+    */
+    .slot .road.claim-blend {
+      box-sizing: content-box;
+      box-shadow: none;
+      border: 2px solid transparent;
+      /* Pull back so content-box+border footprint matches solo box-shadow rim. */
+      margin: -2px;
+      background-repeat: no-repeat;
+      background-origin: border-box;
+      background-clip: padding-box, border-box;
+      background-size: auto, auto;
+    }
+    .slot .road.claim-blend.claim-full {
+      background-image:
+        linear-gradient(
+          var(--claim-angle, 90deg),
+          var(--claim-a) 0%,
+          var(--claim-a) var(--claim-edge-a, 25%),
+          var(--claim-b) var(--claim-edge-b, 75%),
+          var(--claim-b) 100%
+        ),
+        linear-gradient(
+          var(--claim-angle, 90deg),
+          color-mix(in srgb, var(--claim-a) 68%, #1a1208 32%) 0%,
+          color-mix(in srgb, var(--claim-a) 68%, #1a1208 32%) var(--claim-edge-a, 25%),
+          color-mix(in srgb, var(--claim-b) 68%, #1a1208 32%) var(--claim-edge-b, 75%),
+          color-mix(in srgb, var(--claim-b) 68%, #1a1208 32%) 100%
+        );
+    }
+    .slot .road.claim-blend.claim-fan {
+      background-image:
+        var(--claim-fan),
+        var(--claim-fan-wall);
+    }
+    /* Even road: 0.25+0.25 at the seam; remaining 0.75 of each tile stays pure. */
+    .slot .road.claim-blend.claim-half-a {
+      background-image:
+        linear-gradient(
+          var(--claim-angle, 135deg),
+          var(--claim-a) 0%,
+          var(--claim-a) 75%,
+          var(--claim-mid) 100%
+        ),
+        linear-gradient(
+          var(--claim-angle, 135deg),
+          color-mix(in srgb, var(--claim-a) 68%, #1a1208 32%) 0%,
+          color-mix(in srgb, var(--claim-a) 68%, #1a1208 32%) 75%,
+          color-mix(in srgb, var(--claim-mid) 68%, #1a1208 32%) 100%
+        );
+    }
+    .slot .road.claim-blend.claim-half-b {
+      background-image:
+        linear-gradient(
+          var(--claim-angle, 135deg),
+          var(--claim-mid) 0%,
+          var(--claim-b) 25%,
+          var(--claim-b) 100%
+        ),
+        linear-gradient(
+          var(--claim-angle, 135deg),
+          color-mix(in srgb, var(--claim-mid) 68%, #1a1208 32%) 0%,
+          color-mix(in srgb, var(--claim-b) 68%, #1a1208 32%) 25%,
+          color-mix(in srgb, var(--claim-b) 68%, #1a1208 32%) 100%
+        );
+    }
+
+    /*
+      Bend roads are circular borders. Gradient is painted on the whole box,
+      then masked to the border ring (xor padding-box) so the arc width matches
+      the unclaimed road — no filled quarter-disk.
+    */
+    .slot .bend.line.claim-solo {
+      border-color: var(--claim);
+    }
+    .slot .bend.edge.claim-solo {
+      border-color: color-mix(in srgb, var(--claim) 68%, #1a1208 32%);
+    }
+    .slot .bend.line.claim-blend,
+    .slot .bend.edge.claim-blend {
+      border-color: transparent;
+      background-color: transparent;
+      background-repeat: no-repeat;
+      background-origin: border-box;
+      background-clip: border-box;
+      /* Same tile-space gradient on edge+line so mid seams align (no purple under brown). */
+      background-size: var(--s) var(--s);
+      -webkit-mask-image:
+        linear-gradient(#fff 0 0),
+        linear-gradient(#fff 0 0);
+      -webkit-mask-clip: padding-box, border-box;
+      -webkit-mask-composite: xor;
+      mask-image:
+        linear-gradient(#fff 0 0),
+        linear-gradient(#fff 0 0);
+      mask-clip: padding-box, border-box;
+      mask-composite: exclude;
+    }
+    .slot .bend.se.edge.claim-blend { background-position: -50px -50px; }
+    .slot .bend.se.line.claim-blend { background-position: -52px -52px; }
+    .slot .bend.sw.edge.claim-blend { background-position: 70px -50px; }
+    .slot .bend.sw.line.claim-blend { background-position: 68px -52px; }
+    .slot .bend.line.claim-blend.claim-full {
+      background-image: linear-gradient(
+        var(--claim-angle, 90deg),
+        var(--claim-a) 0%,
+        var(--claim-a) var(--claim-edge-a, 25%),
+        var(--claim-b) var(--claim-edge-b, 75%),
+        var(--claim-b) 100%
+      );
+    }
+    .slot .bend.edge.claim-blend.claim-full {
+      background-image: linear-gradient(
+        var(--claim-angle, 90deg),
+        color-mix(in srgb, var(--claim-a) 68%, #1a1208 32%) 0%,
+        color-mix(in srgb, var(--claim-a) 68%, #1a1208 32%) var(--claim-edge-a, 25%),
+        color-mix(in srgb, var(--claim-b) 68%, #1a1208 32%) var(--claim-edge-b, 75%),
+        color-mix(in srgb, var(--claim-b) 68%, #1a1208 32%) 100%
+      );
+    }
+    .slot .bend.line.claim-blend.claim-half-a {
+      background-image: linear-gradient(
+        var(--claim-angle, 135deg),
+        var(--claim-a) 0%,
+        var(--claim-a) 75%,
+        var(--claim-mid) 100%
+      );
+    }
+    .slot .bend.edge.claim-blend.claim-half-a {
+      background-image: linear-gradient(
+        var(--claim-angle, 135deg),
+        color-mix(in srgb, var(--claim-a) 68%, #1a1208 32%) 0%,
+        color-mix(in srgb, var(--claim-a) 68%, #1a1208 32%) 75%,
+        color-mix(in srgb, var(--claim-mid) 68%, #1a1208 32%) 100%
+      );
+    }
+    .slot .bend.line.claim-blend.claim-half-b {
+      background-image: linear-gradient(
+        var(--claim-angle, 135deg),
+        var(--claim-mid) 0%,
+        var(--claim-b) 25%,
+        var(--claim-b) 100%
+      );
+    }
+    .slot .bend.edge.claim-blend.claim-half-b {
+      background-image: linear-gradient(
+        var(--claim-angle, 135deg),
+        color-mix(in srgb, var(--claim-mid) 68%, #1a1208 32%) 0%,
+        color-mix(in srgb, var(--claim-b) 68%, #1a1208 32%) 25%,
+        color-mix(in srgb, var(--claim-b) 68%, #1a1208 32%) 100%
+      );
+    }
+    .slot .bend.line.claim-blend.claim-fan {
+      background-image: var(--claim-fan);
+    }
+    .slot .bend.edge.claim-blend.claim-fan {
+      background-image: var(--claim-fan-wall);
+    }
+    /* Flat mix fallback when geometry is omitted (completed-feature ties). */
+    .slot .bend.line.claim-blend:not(.claim-half-a):not(.claim-half-b):not(.claim-full):not(.claim-fan) {
+      border-color: color-mix(in srgb, var(--claim-a) 50%, var(--claim-b) 50%);
+      background-image: none;
+      -webkit-mask-image: none;
+      mask-image: none;
+    }
+    .slot .bend.edge.claim-blend:not(.claim-half-a):not(.claim-half-b):not(.claim-full):not(.claim-fan) {
+      border-color: color-mix(in srgb, var(--claim-a) 34%, var(--claim-b) 34%, #1a1208 32%);
+      background-image: none;
+      -webkit-mask-image: none;
+      mask-image: none;
     }
 
     button.slot {
@@ -977,7 +1303,7 @@ html, body { height: 100%; overflow: hidden; }
 
     .slot .meeple-pin {
       position: absolute;
-      z-index: 7;
+      z-index: 17;
       width: 30%;
       height: 40%;
       transform: translate(-50%, -50%);
@@ -1001,7 +1327,7 @@ html, body { height: 100%; overflow: hidden; }
       left: 50%;
       bottom: calc(100% + 2px);
       transform: translateX(-50%);
-      z-index: 8;
+      z-index: 18;
       min-width: 1.4em;
       padding: 0.08em 0.32em;
       border-radius: 999px;
