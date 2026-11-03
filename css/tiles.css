@@ -3,7 +3,9 @@
       --field: #7eae46;
       --road: #f4e5c2;
       --road-line: #c6ad76;
-      --city: #c44732;
+      /* City plaza fill (tiles only). UI red is --clay so setup/play chrome stay red. */
+      --city: #9a948c;
+      --clay: #c44732;
       --ink: #2c261f;
       --muted: #6d6458;
       --paper: #f7f1e6;
@@ -60,7 +62,7 @@
       height: 4px;
       margin: 0;
       padding: 0;
-      accent-color: var(--city);
+      accent-color: var(--clay);
       cursor: pointer;
     }
 
@@ -192,11 +194,11 @@
       background-color: var(--city);
       background-image: radial-gradient(
         circle at 30% 40%,
-        rgba(255, 230, 180, 0.12) 0 0.5px,
+        rgba(255, 255, 255, 0.14) 0 0.5px,
         transparent 0.95px
       );
       background-size: 10px 10px;
-      box-shadow: inset 0 0 0 2px rgba(90, 28, 18, 0.55);
+      box-shadow: inset 0 0 0 2px rgba(74, 69, 62, 0.65);
     }
 
     .swatch-pennant {
@@ -476,15 +478,35 @@
     .city {
       position: absolute;
       z-index: 3;
-      /* Outer wall tone; inner fill is ::after */
-      background-color: #8a2f22;
-      background-image: none;
+      /* Stone-bridge rim; inner plaza is ::after */
+      --city-wall: #6a635a;
+      --city-wall-dark: #4a453e;
+      --city-wall-lit: #8a8278;
+      background-color: var(--city-wall);
+      background-image:
+        linear-gradient(
+          180deg,
+          rgba(255, 255, 255, 0.14) 0%,
+          transparent 38%,
+          rgba(0, 0, 0, 0.16) 100%
+        ),
+        repeating-linear-gradient(
+          90deg,
+          transparent 0 10px,
+          rgba(0, 0, 0, 0.14) 10px 11px
+        ),
+        repeating-linear-gradient(
+          0deg,
+          var(--city-wall-lit) 0 5px,
+          var(--city-wall) 5px 6px,
+          var(--city-wall-dark) 6px 7px
+        );
+      background-size: auto, auto, auto;
     }
 
     /*
-      Inner fill. Field-facing edges are inset ~6% for a wall of even thickness,
-      including near corners (inner does not share outer corner tips on those edges).
-      Connection edges stay flush except tiny corner stubs so the wall does not taper to 0.
+      Inner fill. Field-facing edges are inset a fixed ~6% for even wall thickness
+      (stone parapet). Connection edges stay flush except tiny corner stubs.
     */
     .city::after {
       content: "";
@@ -495,11 +517,30 @@
       background-color: var(--city);
       background-image: radial-gradient(
         circle at 36% 38%,
-        rgba(255, 230, 180, 0.13) 0 0.5px,
+        rgba(255, 255, 255, 0.12) 0 0.5px,
         transparent 0.95px
       );
       background-size: 14px 14px;
     }
+
+    /* Quarter column at each city corner — four neighbors assemble one pillar. */
+    .city-pillar {
+      position: absolute;
+      z-index: 3;
+      width: 11%;
+      height: 11%;
+      pointer-events: none;
+      background:
+        radial-gradient(circle at 32% 30%, #c4bbb0 0 30%, transparent 58%),
+        radial-gradient(circle at 55% 55%, #7a7268 0 55%, #3e3933 100%);
+      box-shadow:
+        inset 0 0 0 1.4px #2e2a26,
+        inset 0 0 0 3px rgba(210, 200, 185, 0.28);
+    }
+    .city-pillar.nw { left: 0; top: 0; border-radius: 0 0 100% 0; }
+    .city-pillar.ne { right: 0; top: 0; border-radius: 0 0 0 100%; }
+    .city-pillar.sw { left: 0; bottom: 0; border-radius: 0 100% 0 0; }
+    .city-pillar.se { right: 0; bottom: 0; border-radius: 100% 0 0 0; }
 
     /* A city edge is city from corner to corner.
        The shape turns inward at the corner, so the next edge stays field or road. */
@@ -609,7 +650,7 @@
       background-color: var(--city);
       background-image: radial-gradient(
         circle at 36% 38%,
-        rgba(255, 230, 180, 0.13) 0 0.5px,
+        rgba(255, 255, 255, 0.12) 0 0.5px,
         transparent 0.95px
       );
       background-size: 14px 14px;
