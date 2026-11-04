@@ -1,0 +1,300 @@
+/* Play-board rendering for the rules tutorial (scoped). */
+.rules-board {
+  --tile: 120px;
+  --s: 120px;
+  /* Compact footprint (no top I-demo) — fit the board from step 1. */
+  --board-zoom: 0.48;
+  --cell: calc(var(--tile) * var(--board-zoom));
+  --sand-tile: calc(260px * var(--board-zoom));
+}
+
+.rules-board .scroller {
+  overflow: auto;
+  border-radius: 14px;
+  border: 1px solid rgba(186, 148, 92, 0.45);
+  background: #b69256;
+  box-shadow: inset 0 0 40px rgba(100, 70, 30, 0.25);
+  min-height: 320px;
+  max-height: min(58vh, 420px);
+  touch-action: pan-x pan-y;
+}
+
+.rules-board .slot.empty {
+  background: transparent;
+}
+
+.rules-board .board-grid {
+  display: grid;
+  width: max-content;
+  height: max-content;
+  margin: 0 auto;
+  padding: 18px;
+  background-color: #b69256;
+  background-image: url("../assets/sand.jpg?v=21");
+  image-rendering: pixelated;
+  background-repeat: repeat;
+  background-origin: content-box;
+  background-clip: padding-box;
+  --sand-min-x: 0;
+  --sand-min-y: 0;
+  background-position:
+    calc(var(--cell) * var(--sand-min-x) * -1)
+    calc(var(--cell) * var(--sand-min-y) * -1);
+  background-size: var(--sand-tile) var(--sand-tile);
+}
+
+.rules-board .slot {
+  width: var(--cell);
+  height: var(--cell);
+  position: relative;
+  overflow: hidden;
+  box-shadow: none;
+}
+
+.rules-board .slot.filled {
+  overflow: visible;
+}
+
+.rules-board .slot.filled[class*="owner-"]::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 16;
+  width: 12%;
+  height: 12%;
+  pointer-events: none;
+  background-repeat: no-repeat;
+  background-size: 100% 100%;
+}
+
+.rules-board .slot.filled.owner-red::before {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpolygon points='0,0 100,0 0,100' fill='%23ffffff'/%3E%3Cpolygon points='3,3 90,3 3,90' fill='%23ff5d78'/%3E%3C/svg%3E");
+}
+.rules-board .slot.filled.owner-blue::before {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpolygon points='0,0 100,0 0,100' fill='%23ffffff'/%3E%3Cpolygon points='3,3 90,3 3,90' fill='%2349c4ff'/%3E%3C/svg%3E");
+}
+
+.rules-board .slot.filled.recent::before {
+  filter: drop-shadow(0 0 4px rgba(255, 255, 255, 0.55));
+}
+
+.rules-board .slot.filled.recent .recent-ring {
+  position: absolute;
+  inset: 0;
+  z-index: 15;
+  border: 3px solid #fff;
+  border-radius: 4px;
+  pointer-events: none;
+  box-sizing: border-box;
+  animation: rules-recent-pulse 0.9s ease;
+}
+
+.rules-board .slot.filled.recent.owner-red .recent-ring { border-color: #ff5d78; }
+.rules-board .slot.filled.recent.owner-blue .recent-ring { border-color: #49c4ff; }
+
+.rules-board .slot .scaler {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 0;
+  width: var(--s);
+  height: var(--s);
+  transform: scale(var(--board-zoom));
+  transform-origin: 0 0;
+}
+
+.rules-board .slot .meeple-pin {
+  position: absolute;
+  z-index: 17;
+  width: 30%;
+  height: 40%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+.rules-board .slot .meeple-pin .meeple.on-tile {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.rules-board .slot .meeple-pin .meeple.on-tile.field-meeple {
+  transform: rotate(90deg);
+}
+
+.rules-board .slot .meeple-earned {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 2px);
+  transform: translateX(-50%);
+  z-index: 18;
+  min-width: 1.4em;
+  padding: 0.08em 0.32em;
+  border-radius: 999px;
+  background: rgba(10, 16, 28, 0.94);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+}
+
+.rules-board .slot .meeple-earned.red {
+  background: #ff5d78;
+  color: #1a0808;
+  border-color: rgba(255, 255, 255, 0.75);
+  text-shadow: 0 0 6px rgba(255, 93, 120, 0.45);
+}
+
+.rules-board .slot .meeple-earned.blue {
+  background: #49c4ff;
+  color: #082028;
+  border-color: rgba(255, 255, 255, 0.75);
+  text-shadow: 0 0 6px rgba(73, 196, 255, 0.45);
+}
+
+.rules-board .slot .meeple-earned.sub {
+  opacity: 0.55;
+  filter: grayscale(0.25);
+}
+
+.rules-board .slot.mono-ring {
+  box-shadow: inset 0 0 0 2px rgba(196, 71, 50, 0.85);
+}
+
+.rules-board .slot.empty.mono-ring {
+  background: rgba(196, 71, 50, 0.1);
+  box-shadow: inset 0 0 0 2px rgba(196, 71, 50, 0.75);
+}
+
+/* Claim colors (mirrors play.css claim-solo / half blend, scoped). */
+.rules-board .slot .city.claim-solo {
+  --city: var(--claim);
+}
+.rules-board .slot .city.claim-solo::after {
+  background-color: var(--claim);
+}
+.rules-board .slot .city.fill.claim-solo {
+  --city: var(--claim);
+  background-color: var(--claim);
+}
+.rules-board .slot .city.claim-blend::after,
+.rules-board .slot .city.fill.claim-blend {
+  background-color: transparent;
+  background-size: auto;
+  background-repeat: no-repeat;
+}
+.rules-board .slot .city.claim-blend.claim-half-a::after,
+.rules-board .slot .city.fill.claim-blend.claim-half-a {
+  background-size: auto;
+  background-image: linear-gradient(
+    var(--claim-angle, 90deg),
+    var(--claim-a) 0%,
+    var(--claim-a) 50%,
+    var(--claim-mid) 100%
+  );
+}
+.rules-board .slot .city.claim-blend.claim-half-b::after,
+.rules-board .slot .city.fill.claim-blend.claim-half-b {
+  background-size: auto;
+  background-image: linear-gradient(
+    var(--claim-angle, 90deg),
+    var(--claim-mid) 0%,
+    var(--claim-b) 50%,
+    var(--claim-b) 100%
+  );
+}
+.rules-board .slot .road.claim-solo,
+.rules-board .slot .bend.claim-solo {
+  background: var(--claim);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--claim) 68%, #1a1208 32%);
+}
+.rules-board .slot .monastery.claim-solo {
+  --monastery-roof: var(--claim);
+  --monastery-roof-dark: color-mix(in srgb, var(--claim) 62%, #1a0806 38%);
+  --monastery-window: var(--claim);
+  --monastery-window-border: color-mix(in srgb, var(--claim) 55%, #1a0806 45%);
+  --monastery-cross: color-mix(in srgb, var(--claim) 42%, #ffffff 58%);
+  --monastery-cross-dark: color-mix(in srgb, var(--claim) 55%, #ffffff 45%);
+}
+
+.rules-board .slot .meeple-pin.leaving {
+  --leave-age: 0s;
+  animation: meeple-leave 2s ease forwards;
+  animation-delay: var(--leave-age);
+  will-change: opacity, transform;
+}
+
+.rules-board .slot .meeple-pin.leaving .meeple-earned {
+  animation: meeple-earned-leave 2s ease forwards;
+  animation-delay: var(--leave-age);
+}
+
+.rules-board .slot.empty.hint-now {
+  background: rgba(80, 220, 120, 0.22);
+  box-shadow: inset 0 0 0 2px rgba(90, 230, 140, 0.7);
+}
+
+.rules-board .slot.is-placing .scaler {
+  animation: rules-tile-drop 0.45s cubic-bezier(0.2, 0.9, 0.2, 1) both;
+}
+
+@keyframes rules-tile-drop {
+  from { opacity: 0; transform: scale(var(--board-zoom)) translateY(-18px); }
+  to { opacity: 1; transform: scale(var(--board-zoom)) translateY(0); }
+}
+
+@keyframes rules-recent-pulse {
+  0% { opacity: 0; transform: scale(1.08); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+@keyframes meeple-leave {
+  0% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  25% {
+    opacity: 1;
+    transform: translate(-50%, -52%) scale(1.05);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -62%) scale(0.85);
+  }
+}
+
+@keyframes meeple-earned-leave {
+  0% {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-10px);
+  }
+}
+
+@media (max-width: 640px) {
+  .rules-board {
+    --board-zoom: 0.4;
+  }
+  .rules-board .scroller {
+    min-height: 240px;
+    max-height: 48vh;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rules-board .slot.is-placing .scaler,
+  .rules-board .slot.filled.recent .recent-ring,
+  .rules-board .slot .meeple-pin.leaving,
+  .rules-board .slot .meeple-pin.leaving .meeple-earned {
+    animation: none;
+  }
+}

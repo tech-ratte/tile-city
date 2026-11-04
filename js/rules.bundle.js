@@ -322,6 +322,144 @@
     X: road("v-n", "road-0") + road("h-e", "road-1") + road("v-s", "road-2") + road("h-w", "road-3") + '<i class="village"></i>'
   };
   var BY_ID = Object.fromEntries(TYPES.map((type) => [type.id, type]));
+  var MEEPLE_LAYOUTS = {
+    A: [
+      { id: "monastery", kind: "monastery", x: 0.5, y: 0.4 },
+      { id: "road-0", kind: "road", index: 0, x: 0.5, y: 0.78 },
+      { id: "field-0", kind: "field", index: 0, x: 0.78, y: 0.28 }
+    ],
+    B: [
+      { id: "monastery", kind: "monastery", x: 0.5, y: 0.4 },
+      { id: "field-0", kind: "field", index: 0, x: 0.78, y: 0.72 }
+    ],
+    C: [
+      { id: "city-0", kind: "city", index: 0, x: 0.5, y: 0.5 }
+    ],
+    D: [
+      { id: "city-0", kind: "city", index: 0, x: 0.5, y: 0.14 },
+      { id: "road-0", kind: "road", index: 0, x: 0.5, y: 0.5 },
+      // Gap under the city tip joins left/right above the road into one field.
+      { id: "field-0", kind: "field", index: 0, x: 0.2, y: 0.36 },
+      { id: "field-1", kind: "field", index: 1, x: 0.5, y: 0.8 }
+    ],
+    E: [
+      { id: "city-0", kind: "city", index: 0, x: 0.5, y: 0.18 },
+      { id: "field-0", kind: "field", index: 0, x: 0.5, y: 0.68 }
+    ],
+    F: [
+      { id: "city-0", kind: "city", index: 0, x: 0.5, y: 0.5 },
+      { id: "field-0", kind: "field", index: 0, x: 0.5, y: 0.16 },
+      { id: "field-1", kind: "field", index: 1, x: 0.5, y: 0.84 }
+    ],
+    G: [
+      { id: "city-0", kind: "city", index: 0, x: 0.5, y: 0.5 },
+      { id: "field-0", kind: "field", index: 0, x: 0.5, y: 0.16 },
+      { id: "field-1", kind: "field", index: 1, x: 0.5, y: 0.84 }
+    ],
+    H: [
+      { id: "city-0", kind: "city", index: 0, x: 0.5, y: 0.16 },
+      { id: "city-1", kind: "city", index: 1, x: 0.5, y: 0.84 },
+      // East/west grass joins through the middle gap between the two cities.
+      { id: "field-0", kind: "field", index: 0, x: 0.5, y: 0.5 }
+    ],
+    I: [
+      { id: "city-0", kind: "city", index: 0, x: 0.5, y: 0.16 },
+      { id: "city-1", kind: "city", index: 1, x: 0.16, y: 0.5 },
+      { id: "field-0", kind: "field", index: 0, x: 0.72, y: 0.72 }
+    ],
+    J: [
+      { id: "city-0", kind: "city", index: 0, x: 0.5, y: 0.16 },
+      // SE bend: road on the arc, inner field in the SE pocket, large field west.
+      { id: "road-0", kind: "road", index: 0, x: 0.62, y: 0.62 },
+      { id: "field-0", kind: "field", index: 0, x: 0.24, y: 0.42 },
+      { id: "field-1", kind: "field", index: 1, x: 0.84, y: 0.84 }
+    ],
+    K: [
+      { id: "city-0", kind: "city", index: 0, x: 0.5, y: 0.16 },
+      { id: "road-0", kind: "road", index: 0, x: 0.38, y: 0.62 },
+      { id: "field-0", kind: "field", index: 0, x: 0.76, y: 0.42 },
+      { id: "field-1", kind: "field", index: 1, x: 0.16, y: 0.84 }
+    ],
+    L: [
+      { id: "city-0", kind: "city", index: 0, x: 0.5, y: 0.14 },
+      { id: "road-0", kind: "road", index: 0, x: 0.78, y: 0.5 },
+      { id: "road-1", kind: "road", index: 1, x: 0.5, y: 0.78 },
+      { id: "road-2", kind: "road", index: 2, x: 0.22, y: 0.5 },
+      { id: "field-0", kind: "field", index: 0, x: 0.86, y: 0.86 },
+      { id: "field-1", kind: "field", index: 1, x: 0.14, y: 0.86 },
+      // Northern strip field: outer NE pocket (top corners are city).
+      { id: "field-2", kind: "field", index: 2, x: 0.86, y: 0.14 }
+    ],
+    M: [
+      { id: "city-0", kind: "city", index: 0, x: 0.68, y: 0.24 },
+      { id: "field-0", kind: "field", index: 0, x: 0.28, y: 0.72 }
+    ],
+    N: [
+      { id: "city-0", kind: "city", index: 0, x: 0.68, y: 0.24 },
+      { id: "field-0", kind: "field", index: 0, x: 0.28, y: 0.72 }
+    ],
+    O: [
+      { id: "city-0", kind: "city", index: 0, x: 0.28, y: 0.22 },
+      { id: "road-0", kind: "road", index: 0, x: 0.62, y: 0.62 },
+      { id: "field-0", kind: "field", index: 0, x: 0.78, y: 0.28 },
+      { id: "field-1", kind: "field", index: 1, x: 0.84, y: 0.84 }
+    ],
+    P: [
+      { id: "city-0", kind: "city", index: 0, x: 0.28, y: 0.22 },
+      { id: "road-0", kind: "road", index: 0, x: 0.62, y: 0.62 },
+      { id: "field-0", kind: "field", index: 0, x: 0.78, y: 0.28 },
+      { id: "field-1", kind: "field", index: 1, x: 0.84, y: 0.84 }
+    ],
+    Q: [
+      { id: "city-0", kind: "city", index: 0, x: 0.5, y: 0.32 },
+      { id: "field-0", kind: "field", index: 0, x: 0.5, y: 0.82 }
+    ],
+    R: [
+      { id: "city-0", kind: "city", index: 0, x: 0.5, y: 0.32 },
+      { id: "field-0", kind: "field", index: 0, x: 0.5, y: 0.82 }
+    ],
+    S: [
+      { id: "city-0", kind: "city", index: 0, x: 0.5, y: 0.28 },
+      { id: "road-0", kind: "road", index: 0, x: 0.5, y: 0.78 },
+      { id: "field-0", kind: "field", index: 0, x: 0.14, y: 0.86 },
+      { id: "field-1", kind: "field", index: 1, x: 0.86, y: 0.86 }
+    ],
+    T: [
+      { id: "city-0", kind: "city", index: 0, x: 0.5, y: 0.28 },
+      { id: "road-0", kind: "road", index: 0, x: 0.5, y: 0.78 },
+      { id: "field-0", kind: "field", index: 0, x: 0.14, y: 0.86 },
+      { id: "field-1", kind: "field", index: 1, x: 0.86, y: 0.86 }
+    ],
+    U: [
+      { id: "road-0", kind: "road", index: 0, x: 0.5, y: 0.5 },
+      { id: "field-0", kind: "field", index: 0, x: 0.22, y: 0.5 },
+      { id: "field-1", kind: "field", index: 1, x: 0.78, y: 0.5 }
+    ],
+    // Large outer field (N/E) and small field inside the SW curve.
+    V: [
+      { id: "road-0", kind: "road", index: 0, x: 0.38, y: 0.62 },
+      { id: "field-0", kind: "field", index: 0, x: 0.7, y: 0.3 },
+      { id: "field-1", kind: "field", index: 1, x: 0.16, y: 0.84 }
+    ],
+    W: [
+      { id: "road-0", kind: "road", index: 0, x: 0.78, y: 0.5 },
+      { id: "road-1", kind: "road", index: 1, x: 0.5, y: 0.78 },
+      { id: "road-2", kind: "road", index: 2, x: 0.22, y: 0.5 },
+      { id: "field-0", kind: "field", index: 0, x: 0.5, y: 0.14 },
+      { id: "field-1", kind: "field", index: 1, x: 0.86, y: 0.86 },
+      { id: "field-2", kind: "field", index: 2, x: 0.14, y: 0.86 }
+    ],
+    X: [
+      { id: "road-0", kind: "road", index: 0, x: 0.5, y: 0.22 },
+      { id: "road-1", kind: "road", index: 1, x: 0.78, y: 0.5 },
+      { id: "road-2", kind: "road", index: 2, x: 0.5, y: 0.78 },
+      { id: "road-3", kind: "road", index: 3, x: 0.22, y: 0.5 },
+      { id: "field-0", kind: "field", index: 0, x: 0.14, y: 0.14 },
+      { id: "field-1", kind: "field", index: 1, x: 0.86, y: 0.14 },
+      { id: "field-2", kind: "field", index: 2, x: 0.86, y: 0.86 },
+      { id: "field-3", kind: "field", index: 3, x: 0.14, y: 0.86 }
+    ]
+  };
 
   // js/i18n.js
   var KEY = "tile-city-lang";
@@ -369,12 +507,21 @@
       colorWhite: "White",
       colorBrown: "Brown",
       rulesTitle: "TileCity Rules",
-      rulesLead: "Follow the board step by step, then skim the notes below if you need them. Original art \u2014 not the publisher\u2019s illustrations.",
+      basicsTitle: "Your turn",
+      basicsPlace: "Draw one tile and place it adjacent to tiles already on the board. Every touching edge must match.",
+      basicsMeeple: "You may place one meeple on a city, road, monastery, or grassland on the tile you just placed.",
+      basicsOccupied: "You cannot place a meeple on a feature that already has any meeple \u2014 even far along the same connected area.",
+      basicsScore: "A finished city, road, or monastery scores right away, and those meeples return to their owners.",
+      basicsFarm: "A meeple laid on grassland stays until the end of the game.",
+      refCity: "City",
+      refRoad: "Road",
+      refMonastery: "Monastery",
+      refField: "Grassland",
+      refMeeple: "Meeple",
       tocTutorial: "Tutorial",
       tocDetails: "Notes",
       tocTiles: "Tiles A\u2013X",
       tutTitle: "How to play",
-      tutLead: "One board, building as you go. Switch the explanation \u2014 the map keeps every tile you placed.",
       tutStep: "{n} / {total}",
       tutPrev: "Previous",
       tutNext: "Next",
@@ -385,20 +532,20 @@
       tut2Body: "A crossroads closes the end of a road. When both ends are closed, the road scores.",
       tut2Score: "Road: 1 point per tile \u2192 here +4",
       tut3Title: "Place a monastery",
-      tut3Body: "Put a monastery tile down and you may seat a meeple on it. It scores later, when every neighboring space is filled.",
-      tut3Score: "No points yet \u2014 the monk waits",
+      tut3Body: "Put a monastery tile down and you may seat a meeple on it. Framed cells can earn monastery points once filled \u2014 it scores when all eight neighbors are taken.",
+      tut3Score: "No points yet",
       tut4Title: "Cities merge \u2014 shared score",
-      tut4Body: "Connecting two cities joins their meeples. If you and an opponent are tied for most, you both get the full points.",
-      tut4Score: "Tied majority \u2192 both score +12",
+      tut4Body: "When each side has the same number of meeples in a merged city, both score the same points.",
+      tut4Score: "Tied majority (4 tiles)",
       tut5Title: "Finish a monastery",
-      tut5Body: "Fill the last empty space around a monastery. The monk scores and returns to your hand.",
+      tut5Body: "Fill the last empty space around a monastery. The meeple scores and returns to your hand.",
       tut5Score: "Monastery: 9 points when the 3\xD73 is full",
       tut6Title: "Cities merge \u2014 you alone",
-      tut6Body: "If you bring more meeples into the merged city than anyone else, only you score.",
-      tut6Score: "2 vs 1 \u2192 only you score +12",
-      tut7Title: "Fields at game end",
-      tut7Body: "Farmers stay out until the end. Each completed city your field touches is worth 3 points.",
-      tut7Score: "Two completed cities \u2192 +6 for the farmer",
+      tut6Body: "If you have more meeples than anyone else in a merged city, only you score. If the city has a pennant, add +2 for the pennant.",
+      tut6Score: "2 vs 1 \u2192 only you +12 (5 tiles + 1 pennant)",
+      tut7Title: "Grassland scoring",
+      tut7Body: "At game end, grassland scores 3 points for each completed city it touches. Terrain cut off by roads or cities \u2014 including corners \u2014 is treated as separate.",
+      tut7Score: "Three completed cities \u2192 +9",
       detailsTitle: "Notes",
       notesLead: "Extras the tutorial doesn\u2019t cover \u2014 placement limits, controls, and a scoring cheat sheet.",
       tocPlace: "How to place",
@@ -410,7 +557,7 @@
       tocTurn: "Turn",
       tocEnd: "Game end",
       goalTitle: "Goal",
-      goalBody: "Take turns placing tiles and meeples. Complete roads, cities, and monasteries during the game to score points. When the last tile is placed, score leftover roads, cities, monasteries, and fields. Highest score wins.",
+      goalBody: "Take turns placing tiles and meeples. Complete roads, cities, and monasteries during the game to score points. When the last tile is placed, score leftover roads, cities, monasteries, and grasslands. Highest score wins.",
       setupSecTitle: "Setup",
       setupPlayers: "Players",
       setupPlayersBody: "2\u20138 players. Each color has 7 meeples. On the prepare screen, choose names (max 10 letters) and unique colors.",
@@ -424,29 +571,29 @@
       turnPlace: "2. Place the tile",
       turnPlaceBody: "Rotate in 90\xB0 steps and place it so the edges match neighboring tiles (see Placement). If it cannot be placed in any orientation, discard it and draw again \u2014 your turn is not spent.",
       turnMeeple: "3. Place a meeple (optional)",
-      turnMeepleBody: "You may put one of your meeples on a free road, city, monastery, or field on the tile you just placed.",
+      turnMeepleBody: "You may put one of your meeples on a free road, city, monastery, or grassland on the tile you just placed.",
       turnScore: "4. Score completed areas",
       turnScoreBody: "If that placement completes a road, city, or monastery, score it now. Meeples on those completed areas return to their owners.",
       placeTitle: "How to place tiles",
       placeTouch: "Share a full side",
       placeTouchBody: "The new tile must touch an existing tile along at least one full side. Touching only at a corner does not count.",
       placeEdges: "Matching edges",
-      placeEdgesBody: "Where tiles touch, the terrain must continue: city to city, road to road, field to field.",
+      placeEdgesBody: "Where tiles touch, the terrain must continue: city to city, road to road, grassland to grassland.",
       placeNoFlip: "Rotate only",
       placeNoFlipBody: "You may rotate the tile, but you cannot flip or mirror it.",
       placeOpen: "Grow in any direction",
       placeOpenBody: "The map can expand freely in every direction.",
       legalTitle: "OK example",
-      legalBody: "Center is start tile D. North city matches E rotated 180\xB0. East road matches U rotated 90\xB0. South field matches V\u2019s north field.",
+      legalBody: "Center is start tile D. North city matches E rotated 180\xB0. East road matches U rotated 90\xB0. South grassland matches V\u2019s north grassland.",
       illegalEdgesTitle: "Not allowed \u2014 edges clash",
-      illegalEdgesBody: "D\u2019s east edge is a road, but unrotated E\u2019s west edge is a field. Even one mismatched side means you cannot place it there.",
+      illegalEdgesBody: "D\u2019s east edge is a road, but unrotated E\u2019s west edge is a grassland. Even one mismatched side means you cannot place it there.",
       illegalCornerTitle: "Not allowed \u2014 corner only",
       illegalCornerBody: "Tiles that only meet at a corner do not share a side, so you cannot place them that way.",
       meepleTitle: "Meeples",
       meepleWhere: "Where you can place",
-      meepleWhereBody: "Only on the tile you just placed \u2014 on a free road, city, monastery, or field mark.",
+      meepleWhereBody: "Only on the tile you just placed \u2014 on a free road, city, monastery, or grassland mark.",
       meepleOne: "No joining occupied areas",
-      meepleOneBody: "You cannot place a meeple on a road, city, or field that already has any meeple somewhere in its connected area.",
+      meepleOneBody: "You cannot place a meeple on a road, city, or grassland that already has any meeple somewhere in its connected area.",
       meepleStock: "Running out",
       meepleStockBody: "If you have no meeples left, place the tile only. Completing a road, city, or monastery returns those meeples (except during final scoring).",
       meepleSkip: "Skipping",
@@ -461,7 +608,7 @@
       scoreCityBody: "2 points per tile + 2 per pennant (banner)",
       scoreMonastery: "Monastery",
       scoreMonasteryBody: "9 points when all 8 surrounding spaces are filled",
-      scoreField: "Field",
+      scoreField: "Grassland",
       scoreFieldBody: "Not scored during the game",
       endTitle: "Game end",
       endWhen: "When it ends",
@@ -472,8 +619,8 @@
       endCitiesBody: "1 point per tile + 1 per pennant.",
       endMonasteries: "Incomplete monasteries",
       endMonasteriesBody: "1 point per filled space in the 3\xD73 area (including the monastery tile).",
-      endFields: "Fields",
-      endFieldsBody: "Farmers stay on the board. Each field scores 3 points for every completed city it touches. Majority works the same as above.",
+      endFields: "Grasslands",
+      endFieldsBody: "Farmers stay on the board. Each grassland scores 3 points for every completed city it touches. Majority works the same as above.",
       endMeeples: "Meeples",
       endMeeplesBody: "Final scoring does not return meeples. +N labels show what each one scored.",
       endTies: "Ties",
@@ -494,10 +641,10 @@
       tileIWest: "Joining the west city",
       tileIWestBody: "E rotated 90\xB0 matches I\u2019s west city edge. I\u2019s north city stays separate.",
       tileIBoth: "Still two cities",
-      tileIBothBody: "Even with both sides filled, I\u2019s cities stay split by the field inside the tile. Corner-only contact between the two E tiles does not merge them.",
+      tileIBothBody: "Even with both sides filled, I\u2019s cities stay split by the grassland inside the tile. Corner-only contact between the two E tiles does not merge them.",
       tilesTitle: "Tiles A\u2013X",
       tilesIntro: "Same letter codes and counts as the classic base set. North is up in the catalog. J and K are mirrors \u2014 rotation never turns one into the other. Pennants (banners) are listed separately from plain twins.",
-      legendField: "Field",
+      legendField: "Grassland",
       legendRoad: "Road",
       legendCity: "City",
       legendPennant: "Pennant",
@@ -528,10 +675,10 @@
       tileV: "Curve",
       tileW: "3-way road",
       tileX: "Crossroads",
-      edgesA: "N field \xB7 E field \xB7 S road \xB7 W field",
-      edgesB: "All sides field",
-      edgesD: "N city \xB7 E road \xB7 S field \xB7 W road",
-      edgesE: "N city \xB7 else field",
+      edgesA: "N grassland \xB7 E grassland \xB7 S road \xB7 W grassland",
+      edgesB: "All sides grassland",
+      edgesD: "N city \xB7 E road \xB7 S grassland \xB7 W road",
+      edgesE: "N city \xB7 else grassland",
       rulesFoot: "TileCity \xB7 base-set rules adapted for this browser version.",
       canPlace: "Can place",
       needsRotate: "Needs rotate",
@@ -622,12 +769,21 @@
       colorWhite: "\u767D",
       colorBrown: "\u8336",
       rulesTitle: "TileCity \u30EB\u30FC\u30EB",
-      rulesLead: "\u76E4\u9762\u3092\u898B\u306A\u304C\u3089\u624B\u3092\u9032\u3081\u3066\u3001\u5FC5\u8981\u306A\u3089\u4E0B\u306E\u88DC\u8DB3\u3092\u8AAD\u3093\u3067\u304F\u3060\u3055\u3044\u3002\u30AA\u30EA\u30B8\u30CA\u30EB\u7D75\u67C4\u3067\u3059\uFF08\u88FD\u54C1\u306E\u30A4\u30E9\u30B9\u30C8\u3067\u306F\u3042\u308A\u307E\u305B\u3093\uFF09\u3002",
+      basicsTitle: "\u81EA\u5206\u306E\u624B\u756A",
+      basicsPlace: "\u30BF\u30A4\u30EB\u30921\u679A\u5F15\u304D\u3001\u5834\u306E\u30BF\u30A4\u30EB\u306B\u96A3\u63A5\u3055\u305B\u308B\u3088\u3046\u306B\u7F6E\u304F\u3002\u3059\u3079\u3066\u306E\u8FBA\u304C\u6210\u7ACB\u3059\u308B\u3053\u3068\u304C\u6761\u4EF6\u3002",
+      basicsMeeple: "\u7F6E\u3044\u305F\u3070\u304B\u308A\u306E\u30BF\u30A4\u30EB\u306E\u90FD\u5E02\u30FB\u9053\u30FB\u4FEE\u9053\u9662\u30FB\u8349\u539F\u306E\u3044\u305A\u308C\u304B\u306B\u30DF\u30FC\u30D7\u30EB\u30921\u4EBA\u7F6E\u304F\u3053\u3068\u304C\u3067\u304D\u308B\u3002",
+      basicsOccupied: "\u3059\u3067\u306B\u30DF\u30FC\u30D7\u30EB\u304C\u3044\u308B\u5730\u5F62\u306B\u306F\u3001\u9060\u304F\u96E2\u308C\u3066\u3044\u3066\u3082\u30DF\u30FC\u30D7\u30EB\u3092\u7F6E\u304F\u3053\u3068\u304C\u3067\u304D\u306A\u3044\u3002",
+      basicsScore: "\u5B8C\u6210\u3057\u305F\u90FD\u5E02\u30FB\u9053\u30FB\u4FEE\u9053\u9662\u306F\u3059\u3050\u306B\u5F97\u70B9\u3057\u3001\u305D\u306E\u30DF\u30FC\u30D7\u30EB\u306F\u6301\u3061\u4E3B\u306E\u624B\u5143\u306B\u623B\u308B\u3002",
+      basicsFarm: "\u8349\u539F\u306B\u5BDD\u304B\u305B\u305F\u30DF\u30FC\u30D7\u30EB\u306F\u6700\u5F8C\u307E\u3067\u6B8B\u308B\u3002",
+      refCity: "\u90FD\u5E02",
+      refRoad: "\u9053",
+      refMonastery: "\u4FEE\u9053\u9662",
+      refField: "\u8349\u539F",
+      refMeeple: "\u30DF\u30FC\u30D7\u30EB",
       tocTutorial: "\u30C1\u30E5\u30FC\u30C8\u30EA\u30A2\u30EB",
       tocDetails: "\u88DC\u8DB3",
       tocTiles: "\u30BF\u30A4\u30EB A\u2013X",
       tutTitle: "\u904A\u3073\u65B9",
-      tutLead: "\u76E4\u9762\u306F\u3072\u3068\u3064\u3002\u30BF\u30A4\u30EB\u306F\u5F15\u304D\u7D99\u304C\u308C\u307E\u3059\u3002\u77E2\u5370\u3067\u89E3\u8AAC\u3060\u3051\u5207\u308A\u66FF\u3048\u307E\u3059\u3002",
       tutStep: "{n} / {total}",
       tutPrev: "\u524D\u3078",
       tutNext: "\u6B21\u3078",
@@ -638,20 +794,20 @@
       tut2Body: "\u4EA4\u5DEE\u70B9\u3092\u7F6E\u304F\u3068\u9053\u306E\u7AEF\u304C\u9589\u3058\u3066\u5B8C\u6210\u3057\u307E\u3059\u3002\u4E21\u7AEF\u304C\u9589\u3058\u305F\u9053\u304C\u5F97\u70B9\u306B\u306A\u308A\u307E\u3059\u3002",
       tut2Score: "\u9053\uFF1A\u30BF\u30A4\u30EB1\u679A\u306B\u3064\u304D1\u70B9 \u2192 \u3053\u3053\u3067\u306F +4",
       tut3Title: "\u4FEE\u9053\u9662\u3092\u7F6E\u304F",
-      tut3Body: "\u4FEE\u9053\u9662\u30BF\u30A4\u30EB\u3092\u7F6E\u304D\u3001\u30DF\u30FC\u30D7\u30EB\u3092\u4E57\u305B\u308B\u3053\u3068\u304C\u3067\u304D\u307E\u3059\u3002\u5F97\u70B9\u306F\u3001\u5468\u56F2\u304C\u3059\u3079\u3066\u57CB\u307E\u3063\u305F\u3068\u304D\u306B\u5165\u308A\u307E\u3059\u3002",
-      tut3Score: "\u307E\u3060\u5F97\u70B9\u306A\u3057 \u2014 \u4FEE\u9053\u58EB\u306F\u5F85\u3061\u307E\u3059",
+      tut3Body: "\u4FEE\u9053\u9662\u30BF\u30A4\u30EB\u3092\u7F6E\u304D\u3001\u30DF\u30FC\u30D7\u30EB\u3092\u4E57\u305B\u308B\u3053\u3068\u304C\u3067\u304D\u307E\u3059\u3002\u67A0\u306E\u30DE\u30B9\u304C\u57CB\u307E\u308B\u3068\u4FEE\u9053\u9662\u306E\u5F97\u70B9\u306B\u306A\u308A\u307E\u3059\u3002\u5468\u56F28\u30DE\u30B9\u304C\u3059\u3079\u3066\u57CB\u307E\u3063\u305F\u3068\u304D\u306B\u5F97\u70B9\u3057\u307E\u3059\u3002",
+      tut3Score: "\u307E\u3060\u5F97\u70B9\u306A\u3057",
       tut4Title: "\u90FD\u5E02\u304C\u5408\u6D41 \u2014 \u540C\u6642\u306B\u5F97\u70B9",
-      tut4Body: "\u5225\u3005\u306E\u90FD\u5E02\u3092\u3064\u306A\u3050\u3068\u30DF\u30FC\u30D7\u30EB\u3082\u5408\u6D41\u3057\u307E\u3059\u3002\u6700\u591A\u304C\u540C\u6570\u306A\u3089\u3001\u305D\u306E\u5168\u54E1\u304C\u540C\u3058\u70B9\u6570\u3092\u5F97\u307E\u3059\u3002",
-      tut4Score: "\u540C\u6570 \u2192 \u3069\u3061\u3089\u3082 +12",
+      tut4Body: "\u5408\u6D41\u3057\u305F\u90FD\u5E02\u3067\u5404\u81EA\u306E\u30DF\u30FC\u30D7\u30EB\u304C\u540C\u6570\u306E\u3068\u304D\u3001\u3069\u3061\u3089\u3082\u540C\u3058\u70B9\u6570\u3092\u5F97\u307E\u3059\u3002",
+      tut4Score: "\u540C\u6570\uFF084\u679A\uFF09",
       tut5Title: "\u4FEE\u9053\u9662\u306E\u5468\u308A\u3092\u57CB\u3081\u3066\u5F97\u70B9",
-      tut5Body: "\u4FEE\u9053\u9662\u306E\u5468\u56F2\u3067\u6700\u5F8C\u306E1\u30DE\u30B9\u3092\u57CB\u3081\u308B\u3068\u5B8C\u6210\u3002\u4FEE\u9053\u58EB\u304C\u5F97\u70B9\u3057\u3066\u624B\u5143\u306B\u623B\u308A\u307E\u3059\u3002",
+      tut5Body: "\u4FEE\u9053\u9662\u306E\u5468\u56F2\u3067\u6700\u5F8C\u306E1\u30DE\u30B9\u3092\u57CB\u3081\u308B\u3068\u5B8C\u6210\u3002\u30DF\u30FC\u30D7\u30EB\u304C\u5F97\u70B9\u3057\u3066\u624B\u5143\u306B\u623B\u308A\u307E\u3059\u3002",
       tut5Score: "\u4FEE\u9053\u9662\uFF1A3\xD73\u304C\u57CB\u307E\u308B\u3068 9\u70B9",
       tut6Title: "\u90FD\u5E02\u304C\u5408\u6D41 \u2014 \u81EA\u5206\u3060\u3051\u5F97\u70B9",
-      tut6Body: "\u5408\u6D41\u3057\u305F\u90FD\u5E02\u3067\u81EA\u5206\u306E\u30DF\u30FC\u30D7\u30EB\u304C\u76F8\u624B\u3088\u308A\u591A\u3044\u3068\u304D\u3001\u5F97\u70B9\u3067\u304D\u308B\u306E\u306F\u81EA\u5206\u3060\u3051\u3067\u3059\u3002",
-      tut6Score: "2\u5BFE1 \u2192 \u81EA\u5206\u3060\u3051 +12",
-      tut7Title: "\u30B2\u30FC\u30E0\u7D42\u4E86\u3068\u7551\u306E\u5F97\u70B9",
-      tut7Body: "\u8FB2\u6C11\uFF08\u7551\u306E\u30DF\u30FC\u30D7\u30EB\uFF09\u306F\u6700\u5F8C\u307E\u3067\u76E4\u9762\u306B\u6B8B\u308A\u307E\u3059\u3002\u63A5\u3057\u3066\u3044\u308B\u5B8C\u6210\u90FD\u5E021\u3064\u306B\u3064\u304D3\u70B9\u3067\u3059\u3002",
-      tut7Score: "\u5B8C\u6210\u90FD\u5E02\u304C2\u3064 \u2192 \u8FB2\u6C11\u306F +6",
+      tut6Body: "\u5408\u6D41\u3057\u305F\u90FD\u5E02\u3067\u81EA\u5206\u306E\u30DF\u30FC\u30D7\u30EB\u304C\u76F8\u624B\u3088\u308A\u591A\u3044\u3068\u304D\u3001\u5F97\u70B9\u3067\u304D\u308B\u306E\u306F\u81EA\u5206\u3060\u3051\u3067\u3059\u3002\u90FD\u5E02\u306B\u30DA\u30CA\u30F3\u30C8\u304C\u3042\u308B\u5834\u5408\u3001\u30DA\u30CA\u30F3\u30C8\u5206 +2 \u3055\u308C\u307E\u3059\u3002",
+      tut6Score: "2\u5BFE1 \u2192 \u81EA\u5206\u3060\u3051 +12\uFF08\u30BF\u30A4\u30EB5 + \u30DA\u30CA\u30F3\u30C81\uFF09",
+      tut7Title: "\u8349\u539F\u306E\u5F97\u70B9",
+      tut7Body: "\u30B2\u30FC\u30E0\u7D42\u4E86\u6642\u3001\u8349\u539F\u306F\u63A5\u3057\u3066\u3044\u308B\u5B8C\u6210\u90FD\u5E021\u3064\u306B\u3064\u304D3\u70B9\u3002\u9053\u3084\u90FD\u5E02\uFF08\u89D2\u542B\u3080\uFF09\u3067\u906E\u3089\u308C\u305F\u5730\u5F62\u306F\u5206\u65AD\u3068\u307F\u306A\u3057\u307E\u3059\u3002",
+      tut7Score: "\u5B8C\u6210\u90FD\u5E02\u304C3\u3064 \u2192 +9",
       detailsTitle: "\u88DC\u8DB3",
       notesLead: "\u30C1\u30E5\u30FC\u30C8\u30EA\u30A2\u30EB\u3067\u89E6\u308C\u3066\u3044\u306A\u3044\u7F6E\u304D\u65B9\u306E\u5236\u9650\u3001\u64CD\u4F5C\u3001\u5F97\u70B9\u65E9\u898B\u8868\u3067\u3059\u3002",
       tocPlace: "\u7F6E\u304D\u65B9",
@@ -663,7 +819,7 @@
       tocTurn: "\u624B\u756A",
       tocEnd: "\u7D42\u4E86",
       goalTitle: "\u76EE\u7684",
-      goalBody: "\u9806\u756A\u306B\u30BF\u30A4\u30EB\u3068\u30DF\u30FC\u30D7\u30EB\u3092\u7F6E\u3044\u3066\u3044\u304D\u307E\u3059\u3002\u30B2\u30FC\u30E0\u4E2D\u306B\u9053\u30FB\u90FD\u5E02\u30FB\u4FEE\u9053\u9662\u3092\u5B8C\u6210\u3055\u305B\u308B\u3068\u5F97\u70B9\u3002\u6700\u5F8C\u306E\u30BF\u30A4\u30EB\u3092\u7F6E\u3044\u305F\u3089\u3001\u6B8B\u3063\u3066\u3044\u308B\u9053\u30FB\u90FD\u5E02\u30FB\u4FEE\u9053\u9662\u3068\u7551\u3082\u5F97\u70B9\u3057\u3001\u4E00\u756A\u70B9\u304C\u9AD8\u3044\u4EBA\u304C\u52DD\u3061\u3067\u3059\u3002",
+      goalBody: "\u9806\u756A\u306B\u30BF\u30A4\u30EB\u3068\u30DF\u30FC\u30D7\u30EB\u3092\u7F6E\u3044\u3066\u3044\u304D\u307E\u3059\u3002\u30B2\u30FC\u30E0\u4E2D\u306B\u9053\u30FB\u90FD\u5E02\u30FB\u4FEE\u9053\u9662\u3092\u5B8C\u6210\u3055\u305B\u308B\u3068\u5F97\u70B9\u3002\u6700\u5F8C\u306E\u30BF\u30A4\u30EB\u3092\u7F6E\u3044\u305F\u3089\u3001\u6B8B\u3063\u3066\u3044\u308B\u9053\u30FB\u90FD\u5E02\u30FB\u4FEE\u9053\u9662\u3068\u8349\u539F\u3082\u5F97\u70B9\u3057\u3001\u4E00\u756A\u70B9\u304C\u9AD8\u3044\u4EBA\u304C\u52DD\u3061\u3067\u3059\u3002",
       setupSecTitle: "\u6E96\u5099",
       setupPlayers: "\u30D7\u30EC\u30A4\u30E4\u30FC",
       setupPlayersBody: "2\u301C8\u4EBA\u3002\u5404\u82727\u4F53\u306E\u30DF\u30FC\u30D7\u30EB\u3092\u4F7F\u3044\u307E\u3059\u3002\u6E96\u5099\u753B\u9762\u3067\u540D\u524D\uFF08\u6700\u592710\u6587\u5B57\uFF09\u3068\u8272\u3092\u9078\u3073\u307E\u3059\uFF08\u8272\u306E\u91CD\u8907\u306F\u4E0D\u53EF\uFF09\u3002",
@@ -677,29 +833,29 @@
       turnPlace: "2. \u30BF\u30A4\u30EB\u3092\u7F6E\u304F",
       turnPlaceBody: "90\xB0\u5358\u4F4D\u3067\u56DE\u8EE2\u3057\u3001\u96A3\u306E\u30BF\u30A4\u30EB\u3068\u7D75\u67C4\u304C\u3064\u306A\u304C\u308B\u3088\u3046\u306B\u7F6E\u304D\u307E\u3059\uFF08\u7F6E\u304D\u65B9\u53C2\u7167\uFF09\u3002\u3069\u306E\u5411\u304D\u3067\u3082\u7F6E\u3051\u306A\u3044\u5834\u5408\u306F\u6368\u3066\u3066\u5F15\u304D\u76F4\u3057\u307E\u3059\u3002\u3053\u306E\u3068\u304D\u624B\u756A\u306F\u6D88\u8CBB\u3057\u307E\u305B\u3093\u3002",
       turnMeeple: "3. \u30DF\u30FC\u30D7\u30EB\u3092\u7F6E\u304F\uFF08\u4EFB\u610F\uFF09",
-      turnMeepleBody: "\u4ECA\u7F6E\u3044\u305F\u30BF\u30A4\u30EB\u306E\u3001\u7A7A\u3044\u3066\u3044\u308B\u9053\u30FB\u90FD\u5E02\u30FB\u4FEE\u9053\u9662\u30FB\u7551\u306B\u3001\u81EA\u5206\u306E\u30DF\u30FC\u30D7\u30EB\u30921\u4F53\u7F6E\u3051\u307E\u3059\u3002\u7F6E\u304B\u306A\u304F\u3066\u3082\u69CB\u3044\u307E\u305B\u3093\u3002",
+      turnMeepleBody: "\u4ECA\u7F6E\u3044\u305F\u30BF\u30A4\u30EB\u306E\u3001\u7A7A\u3044\u3066\u3044\u308B\u9053\u30FB\u90FD\u5E02\u30FB\u4FEE\u9053\u9662\u30FB\u8349\u539F\u306B\u3001\u81EA\u5206\u306E\u30DF\u30FC\u30D7\u30EB\u30921\u4F53\u7F6E\u3051\u307E\u3059\u3002\u7F6E\u304B\u306A\u304F\u3066\u3082\u69CB\u3044\u307E\u305B\u3093\u3002",
       turnScore: "4. \u5B8C\u6210\u3057\u305F\u5834\u6240\u306E\u5F97\u70B9",
       turnScoreBody: "\u305D\u306E\u914D\u7F6E\u3067\u9053\u30FB\u90FD\u5E02\u30FB\u4FEE\u9053\u9662\u304C\u5B8C\u6210\u3057\u305F\u3089\u3001\u3059\u3050\u306B\u5F97\u70B9\u3057\u307E\u3059\u3002\u305D\u3053\u306B\u3044\u305F\u30DF\u30FC\u30D7\u30EB\u306F\u6301\u3061\u4E3B\u306E\u624B\u5143\u3078\u623B\u308A\u307E\u3059\u3002",
       placeTitle: "\u30BF\u30A4\u30EB\u306E\u7F6E\u304D\u65B9",
       placeTouch: "\u8FBA\u3067\u63A5\u3059\u308B",
       placeTouchBody: "\u65B0\u3057\u3044\u30BF\u30A4\u30EB\u306F\u3001\u3059\u3067\u306B\u7F6E\u3044\u3066\u3042\u308B\u30BF\u30A4\u30EB\u3068\u5C11\u306A\u304F\u3068\u30821\u8FBA\u5168\u4F53\u3067\u63A5\u3059\u308B\u3088\u3046\u306B\u7F6E\u304D\u307E\u3059\u3002\u89D2\u3060\u3051\u304C\u89E6\u308C\u3066\u3044\u308B\u72B6\u614B\u3067\u306F\u7F6E\u3051\u307E\u305B\u3093\u3002",
       placeEdges: "\u7D75\u67C4\u3092\u3064\u306A\u3052\u308B",
-      placeEdgesBody: "\u63A5\u3059\u308B\u8FBA\u306F\u7AEF\u304B\u3089\u7AEF\u307E\u3067\u540C\u3058\u5730\u5F62\u3067\u3042\u308B\u3053\u3068\u3002\u90FD\u5E02\u306F\u90FD\u5E02\u3001\u9053\u306F\u9053\u3001\u7551\u306F\u7551\u306B\u3064\u306A\u304C\u308A\u307E\u3059\u3002",
+      placeEdgesBody: "\u63A5\u3059\u308B\u8FBA\u306F\u7AEF\u304B\u3089\u7AEF\u307E\u3067\u540C\u3058\u5730\u5F62\u3067\u3042\u308B\u3053\u3068\u3002\u90FD\u5E02\u306F\u90FD\u5E02\u3001\u9053\u306F\u9053\u3001\u8349\u539F\u306F\u8349\u539F\u306B\u3064\u306A\u304C\u308A\u307E\u3059\u3002",
       placeNoFlip: "\u56DE\u8EE2\u306E\u307F",
       placeNoFlipBody: "\u30BF\u30A4\u30EB\u306F\u56DE\u8EE2\u3067\u304D\u307E\u3059\u304C\u3001\u88CF\u8FD4\u3057\u305F\u308A\u93E1\u6620\u3057\u305F\u308A\u306F\u3067\u304D\u307E\u305B\u3093\u3002",
       placeOpen: "\u3069\u306E\u65B9\u5411\u306B\u3082\u4F38\u3070\u305B\u308B",
       placeOpenBody: "\u30DE\u30C3\u30D7\u306F\u4E0A\u4E0B\u5DE6\u53F3\u3001\u3069\u306E\u65B9\u5411\u306B\u3082\u5E83\u3052\u3089\u308C\u307E\u3059\u3002",
       legalTitle: "\u7F6E\u3051\u308B\u4F8B",
-      legalBody: "\u4E2D\u592E\u306F\u30B9\u30BF\u30FC\u30C8\u30BF\u30A4\u30EB D\u3002\u5317\u306E\u90FD\u5E02\u306F 180\xB0 \u56DE\u8EE2\u306E E\u3001\u6771\u306E\u9053\u306F 90\xB0 \u56DE\u8EE2\u306E U\u3001\u5357\u306E\u7551\u306F V \u306E\u5317\u7551\u3068\u3064\u306A\u304C\u3063\u3066\u3044\u307E\u3059\u3002",
+      legalBody: "\u4E2D\u592E\u306F\u30B9\u30BF\u30FC\u30C8\u30BF\u30A4\u30EB D\u3002\u5317\u306E\u90FD\u5E02\u306F 180\xB0 \u56DE\u8EE2\u306E E\u3001\u6771\u306E\u9053\u306F 90\xB0 \u56DE\u8EE2\u306E U\u3001\u5357\u306E\u8349\u539F\u306F V \u306E\u5317\u8349\u539F\u3068\u3064\u306A\u304C\u3063\u3066\u3044\u307E\u3059\u3002",
       illegalEdgesTitle: "\u7F6E\u3051\u306A\u3044\u4F8B \u2014 \u8FBA\u304C\u5408\u308F\u306A\u3044",
-      illegalEdgesBody: "D \u306E\u6771\u8FBA\u306F\u9053\u306A\u306E\u306B\u3001\u7121\u56DE\u8EE2\u306E E \u306E\u897F\u8FBA\u306F\u7551\u3067\u3059\u30021\u8FBA\u3067\u3082\u5408\u308F\u306A\u3051\u308C\u3070\u3001\u305D\u3053\u306B\u306F\u7F6E\u3051\u307E\u305B\u3093\u3002",
+      illegalEdgesBody: "D \u306E\u6771\u8FBA\u306F\u9053\u306A\u306E\u306B\u3001\u7121\u56DE\u8EE2\u306E E \u306E\u897F\u8FBA\u306F\u8349\u539F\u3067\u3059\u30021\u8FBA\u3067\u3082\u5408\u308F\u306A\u3051\u308C\u3070\u3001\u305D\u3053\u306B\u306F\u7F6E\u3051\u307E\u305B\u3093\u3002",
       illegalCornerTitle: "\u7F6E\u3051\u306A\u3044\u4F8B \u2014 \u89D2\u3060\u3051",
       illegalCornerBody: "\u89D2\u3060\u3051\u3067\u89E6\u308C\u3066\u3044\u308B\u30BF\u30A4\u30EB\u306F\u8FBA\u3092\u5171\u6709\u3057\u3066\u3044\u306A\u3044\u306E\u3067\u3001\u7F6E\u3051\u307E\u305B\u3093\u3002",
       meepleTitle: "\u30DF\u30FC\u30D7\u30EB",
       meepleWhere: "\u7F6E\u304D\u5834\u6240",
-      meepleWhereBody: "\u4ECA\u7F6E\u3044\u305F\u30BF\u30A4\u30EB\u306E\u4E0A\u3060\u3051\u3002\u7A7A\u3044\u3066\u3044\u308B\u9053\u30FB\u90FD\u5E02\u30FB\u4FEE\u9053\u9662\u30FB\u7551\u306E\u30DE\u30FC\u30AF\u306B\u7F6E\u3051\u307E\u3059\u3002",
+      meepleWhereBody: "\u4ECA\u7F6E\u3044\u305F\u30BF\u30A4\u30EB\u306E\u4E0A\u3060\u3051\u3002\u7A7A\u3044\u3066\u3044\u308B\u9053\u30FB\u90FD\u5E02\u30FB\u4FEE\u9053\u9662\u30FB\u8349\u539F\u306E\u30DE\u30FC\u30AF\u306B\u7F6E\u3051\u307E\u3059\u3002",
       meepleOne: "\u3059\u3067\u306B\u30DF\u30FC\u30D7\u30EB\u304C\u3042\u308B\u5834\u6240\u3078\u306F\u7F6E\u3051\u306A\u3044",
-      meepleOneBody: "\u3064\u306A\u304C\u3063\u3066\u3044\u308B\u9053\u30FB\u90FD\u5E02\u30FB\u7551\u306E\u3069\u3053\u304B\u306B\u3001\u3059\u3067\u306B\u30DF\u30FC\u30D7\u30EB\uFF08\u81EA\u5206\u306E\u3082\u76F8\u624B\u306E\u3082\uFF09\u304C\u3042\u308B\u5834\u5408\u3001\u305D\u3053\u306B\u306F\u7F6E\u3051\u307E\u305B\u3093\u3002",
+      meepleOneBody: "\u3064\u306A\u304C\u3063\u3066\u3044\u308B\u9053\u30FB\u90FD\u5E02\u30FB\u8349\u539F\u306E\u3069\u3053\u304B\u306B\u3001\u3059\u3067\u306B\u30DF\u30FC\u30D7\u30EB\uFF08\u81EA\u5206\u306E\u3082\u76F8\u624B\u306E\u3082\uFF09\u304C\u3042\u308B\u5834\u5408\u3001\u305D\u3053\u306B\u306F\u7F6E\u3051\u307E\u305B\u3093\u3002",
       meepleStock: "\u30DF\u30FC\u30D7\u30EB\u304C\u306A\u304F\u306A\u3063\u305F\u3089",
       meepleStockBody: "\u624B\u5143\u306B\u30DF\u30FC\u30D7\u30EB\u304C\u306A\u3051\u308C\u3070\u3001\u30BF\u30A4\u30EB\u3092\u7F6E\u304F\u3060\u3051\u306B\u306A\u308A\u307E\u3059\u3002\u9053\u30FB\u90FD\u5E02\u30FB\u4FEE\u9053\u9662\u304C\u5B8C\u6210\u3059\u308B\u3068\u3001\u305D\u3053\u306B\u3044\u305F\u30DF\u30FC\u30D7\u30EB\u306F\u624B\u5143\u306B\u623B\u308A\u307E\u3059\uFF08\u6700\u7D42\u5F97\u70B9\u6642\u3092\u9664\u304F\uFF09\u3002",
       meepleSkip: "\u7F6E\u304B\u306A\u3044\u9078\u629E",
@@ -714,7 +870,7 @@
       scoreCityBody: "\u30BF\u30A4\u30EB1\u679A\u306B\u3064\u304D2\u70B9 + \u30DA\u30CA\u30F3\u30C8\uFF08\u65D7\uFF091\u3064\u306B\u3064\u304D2\u70B9",
       scoreMonastery: "\u4FEE\u9053\u9662",
       scoreMonasteryBody: "\u5468\u56F28\u30DE\u30B9\u304C\u3059\u3079\u3066\u57CB\u307E\u308B\u30689\u70B9",
-      scoreField: "\u7551",
+      scoreField: "\u8349\u539F",
       scoreFieldBody: "\u30B2\u30FC\u30E0\u4E2D\u306F\u5F97\u70B9\u3057\u306A\u3044",
       endTitle: "\u30B2\u30FC\u30E0\u7D42\u4E86",
       endWhen: "\u3044\u3064\u7D42\u308F\u308B\u304B",
@@ -725,8 +881,8 @@
       endCitiesBody: "\u30BF\u30A4\u30EB1\u679A\u306B\u3064\u304D1\u70B9 + \u30DA\u30CA\u30F3\u30C81\u3064\u306B\u3064\u304D1\u70B9\u3002",
       endMonasteries: "\u672A\u5B8C\u6210\u306E\u4FEE\u9053\u9662",
       endMonasteriesBody: "3\xD73\uFF08\u4FEE\u9053\u9662\u30BF\u30A4\u30EB\u3092\u542B\u3080\uFF09\u306E\u57CB\u307E\u3063\u3066\u3044\u308B\u30DE\u30B91\u3064\u306B\u3064\u304D1\u70B9\u3002",
-      endFields: "\u7551",
-      endFieldsBody: "\u7551\u306B\u7F6E\u3044\u305F\u30DF\u30FC\u30D7\u30EB\uFF08\u8FB2\u6C11\uFF09\u306F\u305D\u306E\u307E\u307E\u3002\u63A5\u3057\u3066\u3044\u308B\u5B8C\u6210\u90FD\u5E021\u3064\u306B\u3064\u304D3\u70B9\u3002\u540C\u6570\u306E\u3068\u304D\u306F\u4E0A\u8A18\u3068\u540C\u3058\u3067\u3059\u3002",
+      endFields: "\u8349\u539F",
+      endFieldsBody: "\u8349\u539F\u306B\u7F6E\u3044\u305F\u30DF\u30FC\u30D7\u30EB\uFF08\u8FB2\u6C11\uFF09\u306F\u305D\u306E\u307E\u307E\u3002\u63A5\u3057\u3066\u3044\u308B\u5B8C\u6210\u90FD\u5E021\u3064\u306B\u3064\u304D3\u70B9\u3002\u540C\u6570\u306E\u3068\u304D\u306F\u4E0A\u8A18\u3068\u540C\u3058\u3067\u3059\u3002",
       endMeeples: "\u30DF\u30FC\u30D7\u30EB",
       endMeeplesBody: "\u6700\u7D42\u5F97\u70B9\u3067\u306F\u30DF\u30FC\u30D7\u30EB\u306F\u624B\u5143\u306B\u623B\u308A\u307E\u305B\u3093\u3002+N \u8868\u793A\u3067\u5F97\u70B9\u3092\u793A\u3057\u307E\u3059\u3002",
       endTies: "\u540C\u70B9",
@@ -747,10 +903,10 @@
       tileIWest: "\u897F\u306E\u90FD\u5E02\u3068\u3064\u306A\u3050",
       tileIWestBody: "90\xB0 \u56DE\u8EE2\u306E E \u304C I \u306E\u897F\u306E\u90FD\u5E02\u8FBA\u3068\u5408\u3044\u307E\u3059\u3002\u5317\u306E\u90FD\u5E02\u306F\u5225\u306E\u307E\u307E\u3067\u3059\u3002",
       tileIBoth: "\u305D\u308C\u3067\u30822\u3064\u306E\u90FD\u5E02",
-      tileIBothBody: "\u4E21\u5074\u304C\u57CB\u307E\u3063\u3066\u3082\u3001\u30BF\u30A4\u30EB\u5185\u306E\u7551\u3067\u90FD\u5E02\u306F\u5206\u304B\u308C\u307E\u3059\u30022\u679A\u306E E \u304C\u89D2\u3060\u3051\u3067\u89E6\u308C\u3066\u3044\u3066\u3082\u3001\u5408\u4F75\u3057\u307E\u305B\u3093\u3002",
+      tileIBothBody: "\u4E21\u5074\u304C\u57CB\u307E\u3063\u3066\u3082\u3001\u30BF\u30A4\u30EB\u5185\u306E\u8349\u539F\u3067\u90FD\u5E02\u306F\u5206\u304B\u308C\u307E\u3059\u30022\u679A\u306E E \u304C\u89D2\u3060\u3051\u3067\u89E6\u308C\u3066\u3044\u3066\u3082\u3001\u5408\u4F75\u3057\u307E\u305B\u3093\u3002",
       tilesTitle: "\u30BF\u30A4\u30EB A\u2013X",
       tilesIntro: "\u30AF\u30E9\u30B7\u30C3\u30AF\u57FA\u672C\u30BB\u30C3\u30C8\u3068\u540C\u3058\u6587\u5B57\u30B3\u30FC\u30C9\u3068\u679A\u6570\u3067\u3059\u3002\u30AB\u30BF\u30ED\u30B0\u3067\u306F\u4E0A\u304C\u5317\u3002J \u3068 K \u306F\u93E1\u6620\u3067\u3001\u56DE\u8EE2\u3067\u306F\u4E92\u3044\u306B\u306A\u308A\u307E\u305B\u3093\u3002\u30DA\u30CA\u30F3\u30C8\u4ED8\u304D\u306F\u7121\u5370\u3068\u5206\u3051\u3066\u8A18\u8F09\u3057\u3066\u3044\u307E\u3059\u3002",
-      legendField: "\u7551",
+      legendField: "\u8349\u539F",
       legendRoad: "\u9053",
       legendCity: "\u90FD\u5E02",
       legendPennant: "\u30DA\u30CA\u30F3\u30C8",
@@ -781,10 +937,10 @@
       tileV: "\u30AB\u30FC\u30D6",
       tileW: "\u4E09\u53C9\u8DEF",
       tileX: "\u5341\u5B57\u8DEF",
-      edgesA: "\u5317\u7551 \xB7 \u6771\u7551 \xB7 \u5357\u9053 \xB7 \u897F\u7551",
-      edgesB: "\u5168\u8FBA\u7551",
-      edgesD: "\u5317\u90FD\u5E02 \xB7 \u6771\u9053 \xB7 \u5357\u7551 \xB7 \u897F\u9053",
-      edgesE: "\u5317\u90FD\u5E02 \xB7 \u307B\u304B\u7551",
+      edgesA: "\u5317\u8349\u539F \xB7 \u6771\u8349\u539F \xB7 \u5357\u9053 \xB7 \u897F\u8349\u539F",
+      edgesB: "\u5168\u8FBA\u8349\u539F",
+      edgesD: "\u5317\u90FD\u5E02 \xB7 \u6771\u9053 \xB7 \u5357\u8349\u539F \xB7 \u897F\u9053",
+      edgesE: "\u5317\u90FD\u5E02 \xB7 \u307B\u304B\u8349\u539F",
       rulesFoot: "TileCity \xB7 \u30D6\u30E9\u30A6\u30B6\u7248\u5411\u3051\u306B\u57FA\u672C\u30BB\u30C3\u30C8\u30EB\u30FC\u30EB\u3092\u518D\u69CB\u6210\u3002",
       canPlace: "\u7F6E\u3051\u308B",
       needsRotate: "\u8981\u56DE\u8EE2",
@@ -917,11 +1073,607 @@
   if (typeof globalThis !== "undefined") globalThis.TileCityI18n = TileCityI18n;
   var i18n_default = TileCityI18n;
 
+  // js/game/tiles.js
+  function rotClass(rot) {
+    const deg = (rot % 4 + 4) % 4 * 90;
+    return deg ? "rot-" + deg : "";
+  }
+  function tileHTML(id, rot) {
+    if (!MARKUP[id]) throw new Error("unknown tile " + id);
+    const cls = ["tile", rotClass(rot)].filter(Boolean).join(" ");
+    return '<div class="' + cls + '" aria-hidden="true">' + MARKUP[id] + "</div>";
+  }
+  function rotatePoint(point, rot) {
+    let x = point.x - 0.5;
+    let y = point.y - 0.5;
+    const turns = (rot % 4 + 4) % 4;
+    for (let i = 0; i < turns; i++) {
+      const nextX = -y;
+      y = x;
+      x = nextX;
+    }
+    return { x: x + 0.5, y: y + 0.5 };
+  }
+
+  // js/rules-tutorial.js
+  function keyOf(x, y) {
+    return x + "," + y;
+  }
+  var CLAIM_HEX = {
+    red: "#ff5d78",
+    blue: "#49c4ff",
+    green: "#3dff9a",
+    yellow: "#ffe14a",
+    orange: "#ff9a3d",
+    purple: "#7c3aed",
+    white: "#f4f7fb",
+    brown: "#a67c52"
+  };
+  function meepleAt(tileId, rot, slotId, color, extra) {
+    const layout = MEEPLE_LAYOUTS[tileId];
+    const slot = layout && layout.find((item) => item.id === slotId);
+    if (!slot) return null;
+    const point = rotatePoint(slot, rot || 0);
+    return Object.assign(
+      {
+        id: slot.id,
+        kind: slot.kind,
+        color,
+        x: point.x,
+        y: point.y,
+        field: slot.kind === "field"
+      },
+      extra || {}
+    );
+  }
+  function T(x, y, id, rot, owner, meeple) {
+    const tile = { x, y, id, rot: rot || 0, owner: owner || null };
+    if (meeple) tile.meeple = meeple;
+    return tile;
+  }
+  function claim(x, y, color, kind, feat, extra) {
+    return Object.assign(
+      { pos: keyOf(x, y), color: color || null, kind, feat: feat || null },
+      extra || {}
+    );
+  }
+  var MONO_RING = [
+    keyOf(-1, 0),
+    keyOf(0, 0),
+    keyOf(1, 0),
+    keyOf(-1, 1),
+    keyOf(1, 1),
+    keyOf(-1, 2),
+    keyOf(0, 2),
+    keyOf(1, 2)
+  ];
+  function boardThrough3(monasteryMeeple) {
+    return [
+      T(0, 0, "D", 0, "red"),
+      T(0, -1, "E", 2, "red"),
+      T(-1, 0, "U", 1, "red"),
+      T(1, 0, "X", 0, "red"),
+      T(-2, 0, "X", 0, "red"),
+      T(0, 1, "B", 0, "red", monasteryMeeple || null)
+    ];
+  }
+  function boardThrough4(monasteryMeeple) {
+    return boardThrough3(monasteryMeeple).concat([
+      T(2, 0, "V", 0, "red"),
+      T(2, -1, "E", 1, "red"),
+      T(3, -1, "G", 0, "red"),
+      T(4, -1, "G", 0, "blue"),
+      T(5, -1, "E", 3, "blue")
+    ]);
+  }
+  function boardThrough5() {
+    return boardThrough4(null).concat([
+      T(-1, 1, "V", 0, "red"),
+      T(1, 1, "U", 0, "red"),
+      T(-1, 2, "V", 2, "red"),
+      T(1, 2, "V", 1, "red"),
+      T(0, 2, "U", 1, "red")
+    ]);
+  }
+  function boardThrough6() {
+    return boardThrough5().concat([
+      // I @ 270° north of C (was E@180); E@90 closes I's west city edge.
+      T(4, 0, "I", 3, "red"),
+      T(3, 0, "E", 1, "red"),
+      T(3, 1, "E", 1, "red"),
+      T(5, 1, "E", 3, "blue"),
+      T(4, 2, "E", 0, "red"),
+      T(4, 1, "C", 0, "red")
+    ]);
+  }
+  var CLAIMS_CITY1 = [
+    claim(0, 0, "red", "city", "city-0"),
+    claim(0, -1, "red", "city", "city-0")
+  ];
+  var CLAIMS_ROAD1 = [
+    claim(-2, 0, "red", "road", "road-1"),
+    // X east arm
+    claim(-1, 0, "red", "road", "road-0"),
+    // U
+    claim(0, 0, "red", "road", "road-0"),
+    // D
+    claim(1, 0, "red", "road", "road-3")
+    // X west arm
+  ];
+  var CLAIMS_MONO = [claim(0, 1, "red", "monastery")];
+  var CLAIMS_CITY4 = [
+    claim(2, -1, "red", "city", "city-0"),
+    claim(3, -1, null, "city", "city-0", {
+      mode: "half-a",
+      colors: ["red", "blue"],
+      angle: 90
+    }),
+    claim(4, -1, null, "city", "city-0", {
+      mode: "half-b",
+      colors: ["red", "blue"],
+      angle: 90
+    }),
+    claim(5, -1, "blue", "city", "city-0")
+  ];
+  var CLAIMS_CITY6 = [
+    claim(4, 0, "red", "city", "city-1"),
+    // I south arm → C
+    claim(3, 1, "red", "city", "city-0"),
+    claim(5, 1, "red", "city", "city-0"),
+    claim(4, 2, "red", "city", "city-0"),
+    claim(4, 1, "red", "city", "city-0")
+  ];
+  var STEPS = [
+    {
+      titleKey: "tut1Title",
+      bodyKey: "tut1Body",
+      scoreKey: "tut1Score",
+      setup: [T(0, 0, "D", 0, "red", meepleAt("D", 0, "city-0", "red"))],
+      place: T(0, -1, "E", 2, "red"),
+      scores: [{ x: 0, y: 0, points: 4, color: "red", slotId: "city-0", tileId: "D", rot: 0 }],
+      settled: [T(0, 0, "D", 0, "red"), T(0, -1, "E", 2, "red")],
+      claims: CLAIMS_CITY1
+    },
+    {
+      titleKey: "tut2Title",
+      bodyKey: "tut2Body",
+      scoreKey: "tut2Score",
+      setup: [
+        T(-1, 0, "U", 1, "red", meepleAt("U", 1, "road-0", "red")),
+        T(1, 0, "X", 0, "red")
+      ],
+      place: T(-2, 0, "X", 0, "red"),
+      scores: [{ x: -1, y: 0, points: 4, color: "red", slotId: "road-0", tileId: "U", rot: 1 }],
+      settled: [
+        T(0, 0, "D", 0, "red"),
+        T(0, -1, "E", 2, "red"),
+        T(-1, 0, "U", 1, "red"),
+        T(1, 0, "X", 0, "red"),
+        T(-2, 0, "X", 0, "red")
+      ],
+      claims: CLAIMS_CITY1.concat(CLAIMS_ROAD1)
+    },
+    {
+      titleKey: "tut3Title",
+      bodyKey: "tut3Body",
+      scoreKey: "tut3Score",
+      monoRing: true,
+      setup: [],
+      place: T(0, 1, "B", 0, "red", meepleAt("B", 0, "monastery", "red")),
+      scores: [],
+      settled: boardThrough3(meepleAt("B", 0, "monastery", "red")),
+      claims: CLAIMS_CITY1.concat(CLAIMS_ROAD1)
+    },
+    {
+      titleKey: "tut4Title",
+      bodyKey: "tut4Body",
+      scoreKey: "tut4Score",
+      setup: [
+        T(2, 0, "V", 0, "red"),
+        T(2, -1, "E", 1, "red", meepleAt("E", 1, "city-0", "red")),
+        T(3, -1, "G", 0, "red"),
+        T(5, -1, "E", 3, "blue", meepleAt("E", 3, "city-0", "blue"))
+      ],
+      place: T(4, -1, "G", 0, "blue"),
+      scores: [
+        { x: 2, y: -1, points: 8, color: "red", slotId: "city-0", tileId: "E", rot: 1 },
+        { x: 5, y: -1, points: 8, color: "blue", slotId: "city-0", tileId: "E", rot: 3 }
+      ],
+      settled: boardThrough4(meepleAt("B", 0, "monastery", "red")),
+      claims: CLAIMS_CITY1.concat(CLAIMS_ROAD1, CLAIMS_CITY4)
+    },
+    {
+      titleKey: "tut5Title",
+      bodyKey: "tut5Body",
+      scoreKey: "tut5Score",
+      monoRing: true,
+      setup: [
+        T(-1, 1, "V", 0, "red"),
+        T(1, 1, "U", 0, "red"),
+        T(-1, 2, "V", 2, "red"),
+        T(1, 2, "V", 1, "red")
+      ],
+      place: T(0, 2, "U", 1, "red"),
+      scores: [{ x: 0, y: 1, points: 9, color: "red", slotId: "monastery", tileId: "B", rot: 0 }],
+      settled: boardThrough5(),
+      claims: CLAIMS_CITY1.concat(CLAIMS_ROAD1, CLAIMS_MONO, CLAIMS_CITY4)
+    },
+    {
+      titleKey: "tut6Title",
+      bodyKey: "tut6Body",
+      scoreKey: "tut6Score",
+      setup: [
+        T(4, 0, "I", 3, "red"),
+        T(3, 0, "E", 1, "red"),
+        T(3, 1, "E", 1, "red", meepleAt("E", 1, "city-0", "red")),
+        T(5, 1, "E", 3, "blue", meepleAt("E", 3, "city-0", "blue")),
+        T(4, 2, "E", 0, "red", meepleAt("E", 0, "city-0", "red"))
+      ],
+      place: T(4, 1, "C", 0, "red"),
+      scores: [
+        { x: 3, y: 1, points: 12, color: "red", slotId: "city-0", tileId: "E", rot: 1 },
+        { x: 4, y: 2, points: 12, color: "red", slotId: "city-0", tileId: "E", rot: 0 },
+        { x: 5, y: 1, points: 0, color: "blue", slotId: "city-0", tileId: "E", rot: 3, dim: true }
+      ],
+      settled: boardThrough6(),
+      claims: CLAIMS_CITY1.concat(CLAIMS_ROAD1, CLAIMS_MONO, CLAIMS_CITY4, CLAIMS_CITY6)
+    },
+    {
+      titleKey: "tut7Title",
+      bodyKey: "tut7Body",
+      scoreKey: "tut7Score",
+      endField: true,
+      setup: [
+        T(1, -1, "A", 0, "red"),
+        T(5, 0, "E", 1, "red", meepleAt("E", 1, "field-0", "red", { earned: 9, stay: true }))
+      ],
+      place: null,
+      scores: [],
+      settled: boardThrough6().concat([
+        T(1, -1, "A", 0, "red"),
+        T(5, 0, "E", 1, "red", meepleAt("E", 1, "field-0", "red", { earned: 9, stay: true }))
+      ]),
+      claims: CLAIMS_CITY1.concat(CLAIMS_ROAD1, CLAIMS_MONO, CLAIMS_CITY4, CLAIMS_CITY6)
+    }
+  ];
+  function cloneTile(tile) {
+    if (!tile) return null;
+    const next = {
+      x: tile.x,
+      y: tile.y,
+      id: tile.id,
+      rot: tile.rot || 0,
+      owner: tile.owner || null
+    };
+    if (tile.meeple) next.meeple = Object.assign({}, tile.meeple);
+    return next;
+  }
+  function boardMap(tiles) {
+    const map = /* @__PURE__ */ new Map();
+    tiles.forEach((tile) => map.set(keyOf(tile.x, tile.y), cloneTile(tile)));
+    return map;
+  }
+  function previousSettled(index) {
+    if (index <= 0) return [];
+    return STEPS[index - 1].settled || [];
+  }
+  function boundsFor(tiles) {
+    let minX = 0;
+    let maxX = 0;
+    let minY = 0;
+    let maxY = 0;
+    if (!tiles.length) return { minX: -1, maxX: 1, minY: -1, maxY: 1 };
+    tiles.forEach((tile) => {
+      minX = Math.min(minX, tile.x);
+      maxX = Math.max(maxX, tile.x);
+      minY = Math.min(minY, tile.y);
+      maxY = Math.max(maxY, tile.y);
+    });
+    return { minX, maxX, minY, maxY };
+  }
+  var BOARD_BOUNDS = boundsFor(STEPS[STEPS.length - 1].settled || []);
+  function pinHTML(meeple, leaving) {
+    if (!meeple) return "";
+    const fieldClass = meeple.field || meeple.kind === "field" ? " field-meeple" : "";
+    let earned = "";
+    if (meeple.earned != null && meeple.earned !== 0) {
+      const dim = meeple.earnedDim ? " sub" : "";
+      const color = meeple.color ? " " + meeple.color : "";
+      earned = '<span class="meeple-earned' + color + dim + '">' + (meeple.earnedDim ? String(meeple.earned) : "+" + meeple.earned) + "</span>";
+    }
+    return '<span class="meeple-pin' + (leaving ? " leaving" : "") + '" style="left:' + meeple.x * 100 + "%;top:" + meeple.y * 100 + '%"><i class="meeple on-tile ' + meeple.color + fieldClass + '" aria-hidden="true"></i>' + earned + "</span>";
+  }
+  function centerFixedBoard(host) {
+    const scroller = host.closest(".scroller");
+    const grid = host.querySelector(".board-grid");
+    if (!scroller || !grid) return;
+    scroller.scrollLeft = Math.max(0, (grid.offsetWidth - scroller.clientWidth) / 2);
+    scroller.scrollTop = Math.max(0, (grid.offsetHeight - scroller.clientHeight) / 2);
+  }
+  function claimSelector(kind, feat) {
+    let base = ".city";
+    if (kind === "road") base = ".road, .bend, i.road, i.bend";
+    else if (kind === "monastery") base = ".monastery";
+    if (!feat) return base;
+    return base.split(",").map((part) => part.trim() + '[data-feat="' + feat + '"]').join(", ");
+  }
+  function applyClaims(host, claims) {
+    (claims || []).forEach((item) => {
+      const slot = host.querySelector('.slot[data-pos="' + item.pos + '"]');
+      if (!slot) return;
+      const els = slot.querySelectorAll(claimSelector(item.kind, item.feat));
+      if (!els.length) return;
+      if (item.mode === "half-a" || item.mode === "half-b") {
+        const colors = item.colors || [];
+        const hexA = CLAIM_HEX[colors[0]] || CLAIM_HEX.red;
+        const hexB = CLAIM_HEX[colors[1]] || CLAIM_HEX.blue;
+        const mid = "color-mix(in srgb, " + hexA + " 50%, " + hexB + " 50%)";
+        const angle = (item.angle != null ? item.angle : 90) + "deg";
+        els.forEach((el) => {
+          el.classList.add("claim-blend", "claim-" + item.mode);
+          el.style.setProperty("--claim-a", hexA);
+          el.style.setProperty("--claim-b", hexB);
+          el.style.setProperty("--claim-mid", mid);
+          el.style.setProperty("--claim-angle", angle);
+        });
+        return;
+      }
+      const hex = CLAIM_HEX[item.color] || CLAIM_HEX.red;
+      els.forEach((el) => {
+        el.classList.add("claim-solo");
+        el.style.setProperty("--claim", hex);
+      });
+    });
+  }
+  function renderGrid(host, tiles, opts) {
+    const options = opts || {};
+    const recentKey = options.recentKey || null;
+    const placingKey = options.placingKey || null;
+    const hintKey = options.hintKey || null;
+    const leavePins = options.leavePins || [];
+    const monoRing = options.monoRing ? new Set(MONO_RING) : null;
+    const bounds = BOARD_BOUNDS;
+    const cols = bounds.maxX - bounds.minX + 1;
+    const grid = document.createElement("div");
+    grid.className = "board-grid";
+    grid.style.gridTemplateColumns = "repeat(" + cols + ", var(--cell))";
+    grid.style.setProperty("--sand-min-x", String(bounds.minX));
+    grid.style.setProperty("--sand-min-y", String(bounds.minY));
+    const byKey = boardMap(tiles);
+    const parts = [];
+    for (let y = bounds.minY; y <= bounds.maxY; y += 1) {
+      for (let x = bounds.minX; x <= bounds.maxX; x += 1) {
+        const pos = keyOf(x, y);
+        const tile = byKey.get(pos);
+        const mono = monoRing && monoRing.has(pos) ? " mono-ring" : "";
+        if (tile) {
+          const owner = tile.owner ? " owner-" + tile.owner : "";
+          const recent = recentKey === pos ? " recent" : "";
+          const placing = placingKey === pos ? " is-placing" : "";
+          let marks = pinHTML(tile.meeple, false);
+          leavePins.filter((pin) => pin.pos === pos).forEach((pin) => {
+            marks += pinHTML(pin.meeple, true);
+          });
+          const ring = recent ? '<span class="recent-ring" aria-hidden="true"></span>' : "";
+          parts.push(
+            '<div class="slot filled' + owner + recent + placing + mono + '" data-pos="' + pos + '"><div class="scaler">' + tileHTML(tile.id, tile.rot) + "</div>" + marks + ring + "</div>"
+          );
+          continue;
+        }
+        if (hintKey === pos) {
+          parts.push('<div class="slot empty hint-now' + mono + '" data-pos="' + pos + '"></div>');
+          continue;
+        }
+        parts.push('<div class="slot empty' + mono + '" data-pos="' + pos + '"></div>');
+      }
+    }
+    grid.innerHTML = parts.join("");
+    host.innerHTML = "";
+    host.appendChild(grid);
+    if (options.claims) applyClaims(host, options.claims);
+    centerFixedBoard(host);
+  }
+  function mergeTiles(base, extra) {
+    const map = boardMap(base);
+    (extra || []).forEach((tile) => map.set(keyOf(tile.x, tile.y), cloneTile(tile)));
+    return Array.from(map.values());
+  }
+  function leavePinsFor(scores) {
+    return (scores || []).map((score) => {
+      const m = meepleAt(score.tileId, score.rot, score.slotId, score.color, {
+        earned: score.points,
+        dim: score.dim,
+        earnedDim: score.dim
+      });
+      if (!m) return null;
+      return { pos: keyOf(score.x, score.y), meeple: m };
+    }).filter(Boolean);
+  }
+  function escapeHtml(text) {
+    return String(text).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  }
+  function bindTutorial(root) {
+    const stage = root.querySelector("[data-tutorial]");
+    if (!stage) return null;
+    const boardHost = stage.querySelector("[data-tutorial-board]");
+    const titleEl = stage.querySelector("[data-tutorial-title]");
+    const bodyEl = stage.querySelector("[data-tutorial-body]");
+    const scoreEl = stage.querySelector("[data-tutorial-score]");
+    const stepEl = stage.querySelector("[data-tutorial-step]");
+    const dotsEl = stage.querySelector("[data-tutorial-dots]");
+    const prevBtn = stage.querySelector("[data-tutorial-prev]");
+    const nextBtn = stage.querySelector("[data-tutorial-next]");
+    let index = 0;
+    let timers = [];
+    let reduced = false;
+    try {
+      reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    } catch (err) {
+    }
+    function clearTimers() {
+      timers.forEach((id) => window.clearTimeout(id));
+      timers = [];
+    }
+    function later(fn, ms) {
+      timers.push(window.setTimeout(fn, ms));
+    }
+    function stepOpts(extra) {
+      const step = STEPS[index];
+      return Object.assign(
+        {
+          monoRing: !!step.monoRing,
+          claims: step.claims || null
+        },
+        extra || {}
+      );
+    }
+    function paintCopy() {
+      const step = STEPS[index];
+      const lang = getLang();
+      if (stepEl) stepEl.textContent = t("tutStep", lang, { n: index + 1, total: STEPS.length });
+      if (titleEl) titleEl.textContent = t(step.titleKey, lang);
+      if (bodyEl) bodyEl.textContent = t(step.bodyKey, lang);
+      if (scoreEl) {
+        const text = step.scoreKey ? t(step.scoreKey, lang) : "";
+        const chips = (step.scores || []).filter((s) => s.points);
+        const chipColors = new Set(chips.map((s) => s.color));
+        const showChips = chipColors.size > 1;
+        if (!text && !showChips) {
+          scoreEl.hidden = true;
+          scoreEl.innerHTML = "";
+        } else {
+          scoreEl.hidden = false;
+          let html = text ? '<span class="tut-score-text">' + escapeHtml(text) + "</span>" : "";
+          if (showChips) {
+            chips.forEach((s) => {
+              html += '<span class="tut-score-chip ' + s.color + (s.dim ? " sub" : "") + '">' + (s.dim ? String(s.points) : "+" + s.points) + "</span>";
+            });
+          }
+          scoreEl.innerHTML = html;
+        }
+      }
+      if (dotsEl) {
+        dotsEl.querySelectorAll("button").forEach((btn, i) => {
+          const on = i === index;
+          btn.classList.toggle("on", on);
+          if (on) btn.setAttribute("aria-current", "true");
+          else btn.removeAttribute("aria-current");
+        });
+      }
+      if (prevBtn) prevBtn.disabled = index === 0;
+      if (nextBtn) nextBtn.disabled = index === STEPS.length - 1;
+    }
+    function showSettled() {
+      renderGrid(boardHost, STEPS[index].settled || [], stepOpts());
+    }
+    function scheduleLoop(delay) {
+      later(() => playStep(true), delay == null ? 1800 : delay);
+    }
+    function playStep(animate) {
+      clearTimers();
+      paintCopy();
+      const step = STEPS[index];
+      const base = previousSettled(index);
+      const withSetup = mergeTiles(base, step.setup);
+      const priorClaims = index > 0 ? STEPS[index - 1].claims : null;
+      if (!animate || reduced) {
+        showSettled();
+        scheduleLoop(reduced ? 3200 : 2200);
+        return;
+      }
+      if (step.place) {
+        renderGrid(
+          boardHost,
+          withSetup,
+          stepOpts({ hintKey: keyOf(step.place.x, step.place.y), claims: priorClaims })
+        );
+      } else if (step.endField) {
+        renderGrid(boardHost, base, stepOpts({ claims: priorClaims }));
+      } else {
+        renderGrid(boardHost, base, stepOpts({ claims: priorClaims }));
+      }
+      later(() => {
+        if (step.place) {
+          const placed = mergeTiles(withSetup, [step.place]);
+          const placeKey = keyOf(step.place.x, step.place.y);
+          renderGrid(
+            boardHost,
+            placed,
+            stepOpts({ recentKey: placeKey, placingKey: placeKey, claims: priorClaims })
+          );
+          later(() => {
+            if (step.scores && step.scores.length) {
+              const scored = new Set(step.scores.map((s) => keyOf(s.x, s.y)));
+              const during = placed.map((tile) => {
+                const copy = cloneTile(tile);
+                if (scored.has(keyOf(copy.x, copy.y))) copy.meeple = null;
+                return copy;
+              });
+              renderGrid(boardHost, during, {
+                ...stepOpts(),
+                recentKey: placeKey,
+                leavePins: leavePinsFor(step.scores),
+                claims: step.claims || priorClaims
+              });
+              later(() => {
+                showSettled();
+                scheduleLoop(1600);
+              }, 2e3);
+            } else {
+              later(() => {
+                showSettled();
+                scheduleLoop(1600);
+              }, 900);
+            }
+          }, 550);
+        } else if (step.endField) {
+          renderGrid(boardHost, step.settled || [], stepOpts());
+          scheduleLoop(2800);
+        } else {
+          showSettled();
+          scheduleLoop(1800);
+        }
+      }, step.place ? 700 : 500);
+    }
+    function go(to, animate) {
+      index = Math.max(0, Math.min(STEPS.length - 1, to));
+      playStep(animate !== false);
+    }
+    if (dotsEl) {
+      dotsEl.innerHTML = STEPS.map((_, i) => {
+        return '<button type="button" data-tut-dot="' + i + '" aria-label="' + (i + 1) + '"></button>';
+      }).join("");
+      dotsEl.addEventListener("click", (ev) => {
+        const btn = ev.target.closest("[data-tut-dot]");
+        if (!btn) return;
+        go(Number(btn.getAttribute("data-tut-dot")), true);
+      });
+    }
+    if (prevBtn) prevBtn.addEventListener("click", () => go(index - 1, true));
+    if (nextBtn) nextBtn.addEventListener("click", () => go(index + 1, true));
+    document.addEventListener("visibilitychange", () => {
+      if (document.hidden) clearTimers();
+      else playStep(true);
+    });
+    go(0, true);
+    return {
+      refresh() {
+        paintCopy();
+      },
+      destroy() {
+        clearTimers();
+      }
+    };
+  }
+
   // js/rules.js
-  i18n_default.bindLangBar();
+  i18n_default.bindLangBar(() => {
+    if (tutorial) tutorial.refresh();
+  });
   audio_default.bindVolumeBar();
   document.querySelectorAll(".tile[data-id]").forEach((tile) => {
     const id = tile.getAttribute("data-id");
     if (id && MARKUP[id]) tile.innerHTML = MARKUP[id];
   });
+  var tutorial = bindTutorial(document);
 })();
