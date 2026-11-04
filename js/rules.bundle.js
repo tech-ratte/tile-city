@@ -322,150 +322,12 @@
     X: road("v-n", "road-0") + road("h-e", "road-1") + road("v-s", "road-2") + road("h-w", "road-3") + '<i class="village"></i>'
   };
   var BY_ID = Object.fromEntries(TYPES.map((type) => [type.id, type]));
-  var MEEPLE_LAYOUTS = {
-    A: [
-      { id: "monastery", kind: "monastery", x: 0.5, y: 0.4 },
-      { id: "road-0", kind: "road", index: 0, x: 0.5, y: 0.78 },
-      { id: "field-0", kind: "field", index: 0, x: 0.78, y: 0.28 }
-    ],
-    B: [
-      { id: "monastery", kind: "monastery", x: 0.5, y: 0.4 },
-      { id: "field-0", kind: "field", index: 0, x: 0.78, y: 0.72 }
-    ],
-    C: [
-      { id: "city-0", kind: "city", index: 0, x: 0.5, y: 0.5 }
-    ],
-    D: [
-      { id: "city-0", kind: "city", index: 0, x: 0.5, y: 0.14 },
-      { id: "road-0", kind: "road", index: 0, x: 0.5, y: 0.5 },
-      // Gap under the city tip joins left/right above the road into one field.
-      { id: "field-0", kind: "field", index: 0, x: 0.2, y: 0.36 },
-      { id: "field-1", kind: "field", index: 1, x: 0.5, y: 0.8 }
-    ],
-    E: [
-      { id: "city-0", kind: "city", index: 0, x: 0.5, y: 0.18 },
-      { id: "field-0", kind: "field", index: 0, x: 0.5, y: 0.68 }
-    ],
-    F: [
-      { id: "city-0", kind: "city", index: 0, x: 0.5, y: 0.5 },
-      { id: "field-0", kind: "field", index: 0, x: 0.5, y: 0.16 },
-      { id: "field-1", kind: "field", index: 1, x: 0.5, y: 0.84 }
-    ],
-    G: [
-      { id: "city-0", kind: "city", index: 0, x: 0.5, y: 0.5 },
-      { id: "field-0", kind: "field", index: 0, x: 0.5, y: 0.16 },
-      { id: "field-1", kind: "field", index: 1, x: 0.5, y: 0.84 }
-    ],
-    H: [
-      { id: "city-0", kind: "city", index: 0, x: 0.5, y: 0.16 },
-      { id: "city-1", kind: "city", index: 1, x: 0.5, y: 0.84 },
-      // East/west grass joins through the middle gap between the two cities.
-      { id: "field-0", kind: "field", index: 0, x: 0.5, y: 0.5 }
-    ],
-    I: [
-      { id: "city-0", kind: "city", index: 0, x: 0.5, y: 0.16 },
-      { id: "city-1", kind: "city", index: 1, x: 0.16, y: 0.5 },
-      { id: "field-0", kind: "field", index: 0, x: 0.72, y: 0.72 }
-    ],
-    J: [
-      { id: "city-0", kind: "city", index: 0, x: 0.5, y: 0.16 },
-      // SE bend: road on the arc, inner field in the SE pocket, large field west.
-      { id: "road-0", kind: "road", index: 0, x: 0.62, y: 0.62 },
-      { id: "field-0", kind: "field", index: 0, x: 0.24, y: 0.42 },
-      { id: "field-1", kind: "field", index: 1, x: 0.84, y: 0.84 }
-    ],
-    K: [
-      { id: "city-0", kind: "city", index: 0, x: 0.5, y: 0.16 },
-      { id: "road-0", kind: "road", index: 0, x: 0.38, y: 0.62 },
-      { id: "field-0", kind: "field", index: 0, x: 0.76, y: 0.42 },
-      { id: "field-1", kind: "field", index: 1, x: 0.16, y: 0.84 }
-    ],
-    L: [
-      { id: "city-0", kind: "city", index: 0, x: 0.5, y: 0.14 },
-      { id: "road-0", kind: "road", index: 0, x: 0.78, y: 0.5 },
-      { id: "road-1", kind: "road", index: 1, x: 0.5, y: 0.78 },
-      { id: "road-2", kind: "road", index: 2, x: 0.22, y: 0.5 },
-      { id: "field-0", kind: "field", index: 0, x: 0.86, y: 0.86 },
-      { id: "field-1", kind: "field", index: 1, x: 0.14, y: 0.86 },
-      // Northern strip field: outer NE pocket (top corners are city).
-      { id: "field-2", kind: "field", index: 2, x: 0.86, y: 0.14 }
-    ],
-    M: [
-      { id: "city-0", kind: "city", index: 0, x: 0.68, y: 0.24 },
-      { id: "field-0", kind: "field", index: 0, x: 0.28, y: 0.72 }
-    ],
-    N: [
-      { id: "city-0", kind: "city", index: 0, x: 0.68, y: 0.24 },
-      { id: "field-0", kind: "field", index: 0, x: 0.28, y: 0.72 }
-    ],
-    O: [
-      { id: "city-0", kind: "city", index: 0, x: 0.28, y: 0.22 },
-      { id: "road-0", kind: "road", index: 0, x: 0.62, y: 0.62 },
-      { id: "field-0", kind: "field", index: 0, x: 0.78, y: 0.28 },
-      { id: "field-1", kind: "field", index: 1, x: 0.84, y: 0.84 }
-    ],
-    P: [
-      { id: "city-0", kind: "city", index: 0, x: 0.28, y: 0.22 },
-      { id: "road-0", kind: "road", index: 0, x: 0.62, y: 0.62 },
-      { id: "field-0", kind: "field", index: 0, x: 0.78, y: 0.28 },
-      { id: "field-1", kind: "field", index: 1, x: 0.84, y: 0.84 }
-    ],
-    Q: [
-      { id: "city-0", kind: "city", index: 0, x: 0.5, y: 0.32 },
-      { id: "field-0", kind: "field", index: 0, x: 0.5, y: 0.82 }
-    ],
-    R: [
-      { id: "city-0", kind: "city", index: 0, x: 0.5, y: 0.32 },
-      { id: "field-0", kind: "field", index: 0, x: 0.5, y: 0.82 }
-    ],
-    S: [
-      { id: "city-0", kind: "city", index: 0, x: 0.5, y: 0.28 },
-      { id: "road-0", kind: "road", index: 0, x: 0.5, y: 0.78 },
-      { id: "field-0", kind: "field", index: 0, x: 0.14, y: 0.86 },
-      { id: "field-1", kind: "field", index: 1, x: 0.86, y: 0.86 }
-    ],
-    T: [
-      { id: "city-0", kind: "city", index: 0, x: 0.5, y: 0.28 },
-      { id: "road-0", kind: "road", index: 0, x: 0.5, y: 0.78 },
-      { id: "field-0", kind: "field", index: 0, x: 0.14, y: 0.86 },
-      { id: "field-1", kind: "field", index: 1, x: 0.86, y: 0.86 }
-    ],
-    U: [
-      { id: "road-0", kind: "road", index: 0, x: 0.5, y: 0.5 },
-      { id: "field-0", kind: "field", index: 0, x: 0.22, y: 0.5 },
-      { id: "field-1", kind: "field", index: 1, x: 0.78, y: 0.5 }
-    ],
-    // Large outer field (N/E) and small field inside the SW curve.
-    V: [
-      { id: "road-0", kind: "road", index: 0, x: 0.38, y: 0.62 },
-      { id: "field-0", kind: "field", index: 0, x: 0.7, y: 0.3 },
-      { id: "field-1", kind: "field", index: 1, x: 0.16, y: 0.84 }
-    ],
-    W: [
-      { id: "road-0", kind: "road", index: 0, x: 0.78, y: 0.5 },
-      { id: "road-1", kind: "road", index: 1, x: 0.5, y: 0.78 },
-      { id: "road-2", kind: "road", index: 2, x: 0.22, y: 0.5 },
-      { id: "field-0", kind: "field", index: 0, x: 0.5, y: 0.14 },
-      { id: "field-1", kind: "field", index: 1, x: 0.86, y: 0.86 },
-      { id: "field-2", kind: "field", index: 2, x: 0.14, y: 0.86 }
-    ],
-    X: [
-      { id: "road-0", kind: "road", index: 0, x: 0.5, y: 0.22 },
-      { id: "road-1", kind: "road", index: 1, x: 0.78, y: 0.5 },
-      { id: "road-2", kind: "road", index: 2, x: 0.5, y: 0.78 },
-      { id: "road-3", kind: "road", index: 3, x: 0.22, y: 0.5 },
-      { id: "field-0", kind: "field", index: 0, x: 0.14, y: 0.14 },
-      { id: "field-1", kind: "field", index: 1, x: 0.86, y: 0.14 },
-      { id: "field-2", kind: "field", index: 2, x: 0.86, y: 0.86 },
-      { id: "field-3", kind: "field", index: 3, x: 0.14, y: 0.86 }
-    ]
-  };
 
   // js/i18n.js
   var KEY = "tile-city-lang";
   var dict = {
     en: {
-      homeTitle: "Tile City",
+      homeTitle: "TileCity",
       homeLead: "A tile-laying game of expanding roads and cities to score points.",
       play: "Play",
       rules: "Rules",
@@ -506,7 +368,7 @@
       colorPurple: "Purple",
       colorWhite: "White",
       colorBrown: "Brown",
-      rulesTitle: "Tile City Rules",
+      rulesTitle: "TileCity Rules",
       rulesLead: "Follow the board step by step, then skim the notes below if you need them. Original art \u2014 not the publisher\u2019s illustrations.",
       tocTutorial: "Tutorial",
       tocDetails: "Notes",
@@ -670,7 +532,7 @@
       edgesB: "All sides field",
       edgesD: "N city \xB7 E road \xB7 S field \xB7 W road",
       edgesE: "N city \xB7 else field",
-      rulesFoot: "Tile City \xB7 base-set rules adapted for this browser version.",
+      rulesFoot: "TileCity \xB7 base-set rules adapted for this browser version.",
       canPlace: "Can place",
       needsRotate: "Needs rotate",
       rotHint: "Right-click or R to rotate \xB7 Wheel to zoom",
@@ -696,10 +558,23 @@
       gameOver: "Ranking",
       pickMeeple: "Pick a mark to place a meeple",
       noMeeplesLeft: "No meeples left",
-      noOpenSpot: "No open spot for a meeple"
+      noOpenSpot: "No open spot for a meeple",
+      share: "Share",
+      shareTitle: "Share ranking",
+      shareLead: "Share the ranking text and a link to TileCity.",
+      shareNative: "Share\u2026",
+      shareCopy: "Copy text",
+      shareCopyUrl: "Copy link",
+      shareSns: "Social",
+      shareTextTitle: "I played TileCity!",
+      shareDone: "Shared.",
+      shareCopied: "Ranking text copied.",
+      shareLinkCopied: "Link copied.",
+      shareCopyFail: "Copy failed.",
+      shareNativeUnavailable: "System share is unavailable here. Copy the text instead."
     },
     ja: {
-      homeTitle: "Tile City",
+      homeTitle: "TileCity",
       homeLead: "\u9053\u3068\u90FD\u5E02\u3092\u5E83\u3052\u3066\u5F97\u70B9\u3092\u7AF6\u3046\u30BF\u30A4\u30EB\u914D\u7F6E\u30B2\u30FC\u30E0\u3002",
       play: "\u904A\u3076",
       rules: "\u30EB\u30FC\u30EB",
@@ -740,7 +615,7 @@
       colorPurple: "\u7D2B",
       colorWhite: "\u767D",
       colorBrown: "\u8336",
-      rulesTitle: "Tile City \u30EB\u30FC\u30EB",
+      rulesTitle: "TileCity \u30EB\u30FC\u30EB",
       rulesLead: "\u76E4\u9762\u3092\u898B\u306A\u304C\u3089\u624B\u3092\u9032\u3081\u3066\u3001\u5FC5\u8981\u306A\u3089\u4E0B\u306E\u88DC\u8DB3\u3092\u8AAD\u3093\u3067\u304F\u3060\u3055\u3044\u3002\u30AA\u30EA\u30B8\u30CA\u30EB\u7D75\u67C4\u3067\u3059\uFF08\u88FD\u54C1\u306E\u30A4\u30E9\u30B9\u30C8\u3067\u306F\u3042\u308A\u307E\u305B\u3093\uFF09\u3002",
       tocTutorial: "\u30C1\u30E5\u30FC\u30C8\u30EA\u30A2\u30EB",
       tocDetails: "\u88DC\u8DB3",
@@ -904,7 +779,7 @@
       edgesB: "\u5168\u8FBA\u7551",
       edgesD: "\u5317\u90FD\u5E02 \xB7 \u6771\u9053 \xB7 \u5357\u7551 \xB7 \u897F\u9053",
       edgesE: "\u5317\u90FD\u5E02 \xB7 \u307B\u304B\u7551",
-      rulesFoot: "Tile City \xB7 \u30D6\u30E9\u30A6\u30B6\u7248\u5411\u3051\u306B\u57FA\u672C\u30BB\u30C3\u30C8\u30EB\u30FC\u30EB\u3092\u518D\u69CB\u6210\u3002",
+      rulesFoot: "TileCity \xB7 \u30D6\u30E9\u30A6\u30B6\u7248\u5411\u3051\u306B\u57FA\u672C\u30BB\u30C3\u30C8\u30EB\u30FC\u30EB\u3092\u518D\u69CB\u6210\u3002",
       canPlace: "\u7F6E\u3051\u308B",
       needsRotate: "\u8981\u56DE\u8EE2",
       rotHint: "\u53F3\u30AF\u30EA\u30C3\u30AF / R \u3067\u56DE\u8EE2 \xB7 \u30DB\u30A4\u30FC\u30EB\u3067\u30BA\u30FC\u30E0",
@@ -930,7 +805,20 @@
       gameOver: "\u30E9\u30F3\u30AD\u30F3\u30B0",
       pickMeeple: "\u30DE\u30FC\u30AF\u3092\u9078\u3093\u3067\u30DF\u30FC\u30D7\u30EB\u3092\u7F6E\u304F",
       noMeeplesLeft: "\u30DF\u30FC\u30D7\u30EB\u304C\u3042\u308A\u307E\u305B\u3093",
-      noOpenSpot: "\u7F6E\u3051\u308B\u5834\u6240\u304C\u3042\u308A\u307E\u305B\u3093"
+      noOpenSpot: "\u7F6E\u3051\u308B\u5834\u6240\u304C\u3042\u308A\u307E\u305B\u3093",
+      share: "\u5171\u6709",
+      shareTitle: "\u30E9\u30F3\u30AD\u30F3\u30B0\u3092\u5171\u6709",
+      shareLead: "\u30E9\u30F3\u30AD\u30F3\u30B0\u6587\u3068 TileCity \u3078\u306E\u30EA\u30F3\u30AF\u3092\u5171\u6709\u3067\u304D\u307E\u3059\u3002",
+      shareNative: "\u5171\u6709\u2026",
+      shareCopy: "\u30C6\u30AD\u30B9\u30C8\u3092\u30B3\u30D4\u30FC",
+      shareCopyUrl: "\u30EA\u30F3\u30AF\u3092\u30B3\u30D4\u30FC",
+      shareSns: "SNS",
+      shareTextTitle: "TileCity \u3092\u30D7\u30EC\u30A4\u3057\u307E\u3057\u305F\uFF01",
+      shareDone: "\u5171\u6709\u3057\u307E\u3057\u305F\u3002",
+      shareCopied: "\u30E9\u30F3\u30AD\u30F3\u30B0\u6587\u3092\u30B3\u30D4\u30FC\u3057\u307E\u3057\u305F\u3002",
+      shareLinkCopied: "\u30EA\u30F3\u30AF\u3092\u30B3\u30D4\u30FC\u3057\u307E\u3057\u305F\u3002",
+      shareCopyFail: "\u30B3\u30D4\u30FC\u306B\u5931\u6557\u3057\u307E\u3057\u305F\u3002",
+      shareNativeUnavailable: "\u3053\u306E\u74B0\u5883\u3067\u306F\u30B7\u30B9\u30C6\u30E0\u5171\u6709\u3092\u4F7F\u3048\u307E\u305B\u3093\u3002\u30C6\u30AD\u30B9\u30C8\u3092\u30B3\u30D4\u30FC\u3057\u3066\u304F\u3060\u3055\u3044\u3002"
     }
   };
   function getLang() {
@@ -1017,490 +905,11 @@
   if (typeof globalThis !== "undefined") globalThis.TileCityI18n = TileCityI18n;
   var i18n_default = TileCityI18n;
 
-  // js/game/tiles.js
-  function rotClass(rot) {
-    const deg = (rot % 4 + 4) % 4 * 90;
-    return deg ? "rot-" + deg : "";
-  }
-  function tileHTML(id, rot) {
-    if (!MARKUP[id]) throw new Error("unknown tile " + id);
-    const cls = ["tile", rotClass(rot)].filter(Boolean).join(" ");
-    return '<div class="' + cls + '" aria-hidden="true">' + MARKUP[id] + "</div>";
-  }
-  function rotatePoint(point, rot) {
-    let x = point.x - 0.5;
-    let y = point.y - 0.5;
-    const turns = (rot % 4 + 4) % 4;
-    for (let i = 0; i < turns; i++) {
-      const nextX = -y;
-      y = x;
-      x = nextX;
-    }
-    return { x: x + 0.5, y: y + 0.5 };
-  }
-
-  // js/rules-tutorial.js
-  function keyOf(x, y) {
-    return x + "," + y;
-  }
-  function meepleAt(tileId, rot, slotId, color, extra) {
-    const layout = MEEPLE_LAYOUTS[tileId];
-    const slot = layout && layout.find((item) => item.id === slotId);
-    if (!slot) return null;
-    const point = rotatePoint(slot, rot || 0);
-    return Object.assign(
-      {
-        id: slot.id,
-        kind: slot.kind,
-        color,
-        x: point.x,
-        y: point.y,
-        field: slot.kind === "field"
-      },
-      extra || {}
-    );
-  }
-  function T(x, y, id, rot, owner, meeple) {
-    const tile = { x, y, id, rot: rot || 0, owner: owner || null };
-    if (meeple) tile.meeple = meeple;
-    return tile;
-  }
-  var STEPS = [
-    {
-      titleKey: "tut1Title",
-      bodyKey: "tut1Body",
-      scoreKey: "tut1Score",
-      setup: [T(0, 0, "D", 0, "red", meepleAt("D", 0, "city-0", "red"))],
-      place: T(0, -1, "E", 2, "red"),
-      scores: [{ x: 0, y: 0, points: 4, color: "red", slotId: "city-0", tileId: "D", rot: 0 }],
-      settled: [T(0, 0, "D", 0, "red"), T(0, -1, "E", 2, "red")]
-    },
-    {
-      titleKey: "tut2Title",
-      bodyKey: "tut2Body",
-      scoreKey: "tut2Score",
-      setup: [
-        T(-1, 0, "U", 1, "red", meepleAt("U", 1, "road-0", "red")),
-        T(1, 0, "X", 0, "red")
-      ],
-      place: T(-2, 0, "X", 0, "red"),
-      scores: [{ x: -1, y: 0, points: 4, color: "red", slotId: "road-0", tileId: "U", rot: 1 }],
-      settled: [
-        T(0, 0, "D", 0, "red"),
-        T(0, -1, "E", 2, "red"),
-        T(-1, 0, "U", 1, "red"),
-        T(1, 0, "X", 0, "red"),
-        T(-2, 0, "X", 0, "red")
-      ]
-    },
-    {
-      titleKey: "tut3Title",
-      bodyKey: "tut3Body",
-      scoreKey: "tut3Score",
-      setup: [],
-      place: T(0, 1, "B", 0, "red", meepleAt("B", 0, "monastery", "red")),
-      scores: [],
-      settled: [
-        T(0, 0, "D", 0, "red"),
-        T(0, -1, "E", 2, "red"),
-        T(-1, 0, "U", 1, "red"),
-        T(1, 0, "X", 0, "red"),
-        T(-2, 0, "X", 0, "red"),
-        T(0, 1, "B", 0, "red", meepleAt("B", 0, "monastery", "red"))
-      ]
-    },
-    {
-      titleKey: "tut4Title",
-      bodyKey: "tut4Body",
-      scoreKey: "tut4Score",
-      setup: [
-        T(2, -1, "E", 3, "red", meepleAt("E", 3, "city-0", "red")),
-        T(4, -1, "E", 1, "blue", meepleAt("E", 1, "city-0", "blue")),
-        T(3, -2, "E", 2, "red"),
-        T(3, 0, "E", 0, "red")
-      ],
-      place: T(3, -1, "C", 0, "red"),
-      scores: [
-        { x: 2, y: -1, points: 12, color: "red", slotId: "city-0", tileId: "E", rot: 3 },
-        { x: 4, y: -1, points: 12, color: "blue", slotId: "city-0", tileId: "E", rot: 1 }
-      ],
-      settled: [
-        T(0, 0, "D", 0, "red"),
-        T(0, -1, "E", 2, "red"),
-        T(-1, 0, "U", 1, "red"),
-        T(1, 0, "X", 0, "red"),
-        T(-2, 0, "X", 0, "red"),
-        T(0, 1, "B", 0, "red", meepleAt("B", 0, "monastery", "red")),
-        T(2, -1, "E", 3, "red"),
-        T(4, -1, "E", 1, "blue"),
-        T(3, -2, "E", 2, "red"),
-        T(3, 0, "E", 0, "red"),
-        T(3, -1, "C", 0, "red")
-      ]
-    },
-    {
-      titleKey: "tut5Title",
-      bodyKey: "tut5Body",
-      scoreKey: "tut5Score",
-      // Monastery at (0,1): neighbors N D, NE X, NW U already present.
-      // Fill E/W/S/corners; last tile is the action.
-      setup: [
-        T(-1, 1, "V", 1, "red"),
-        T(1, 1, "V", 0, "red"),
-        T(-1, 2, "E", 0, "red"),
-        T(1, 2, "E", 2, "red")
-      ],
-      place: T(0, 2, "U", 1, "red"),
-      scores: [{ x: 0, y: 1, points: 9, color: "red", slotId: "monastery", tileId: "B", rot: 0 }],
-      settled: [
-        T(0, 0, "D", 0, "red"),
-        T(0, -1, "E", 2, "red"),
-        T(-1, 0, "U", 1, "red"),
-        T(1, 0, "X", 0, "red"),
-        T(-2, 0, "X", 0, "red"),
-        T(0, 1, "B", 0, "red"),
-        T(2, -1, "E", 3, "red"),
-        T(4, -1, "E", 1, "blue"),
-        T(3, -2, "E", 2, "red"),
-        T(3, 0, "E", 0, "red"),
-        T(3, -1, "C", 0, "red"),
-        T(-1, 1, "V", 1, "red"),
-        T(1, 1, "V", 0, "red"),
-        T(-1, 2, "E", 0, "red"),
-        T(1, 2, "E", 2, "red"),
-        T(0, 2, "U", 1, "red")
-      ]
-    },
-    {
-      titleKey: "tut6Title",
-      bodyKey: "tut6Body",
-      scoreKey: "tut6Score",
-      setup: [
-        T(2, 1, "E", 3, "red", meepleAt("E", 3, "city-0", "red")),
-        T(2, 2, "E", 2, "red", meepleAt("E", 2, "city-0", "red")),
-        T(4, 1, "E", 1, "blue", meepleAt("E", 1, "city-0", "blue")),
-        T(3, 2, "E", 0, "red")
-      ],
-      place: T(3, 1, "C", 0, "red"),
-      scores: [
-        { x: 2, y: 1, points: 12, color: "red", slotId: "city-0", tileId: "E", rot: 3 },
-        { x: 2, y: 2, points: 12, color: "red", slotId: "city-0", tileId: "E", rot: 2 },
-        { x: 4, y: 1, points: 0, color: "blue", slotId: "city-0", tileId: "E", rot: 1, dim: true }
-      ],
-      settled: [
-        T(0, 0, "D", 0, "red"),
-        T(0, -1, "E", 2, "red"),
-        T(-1, 0, "U", 1, "red"),
-        T(1, 0, "X", 0, "red"),
-        T(-2, 0, "X", 0, "red"),
-        T(0, 1, "B", 0, "red"),
-        T(2, -1, "E", 3, "red"),
-        T(4, -1, "E", 1, "blue"),
-        T(3, -2, "E", 2, "red"),
-        T(3, 0, "E", 0, "red"),
-        T(3, -1, "C", 0, "red"),
-        T(-1, 1, "V", 1, "red"),
-        T(1, 1, "V", 0, "red"),
-        T(-1, 2, "E", 0, "red"),
-        T(1, 2, "E", 2, "red"),
-        T(0, 2, "U", 1, "red"),
-        T(2, 1, "E", 3, "red"),
-        T(2, 2, "E", 2, "red"),
-        T(4, 1, "E", 1, "blue"),
-        T(3, 2, "E", 0, "red"),
-        T(3, 1, "C", 0, "red")
-      ]
-    },
-    {
-      titleKey: "tut7Title",
-      bodyKey: "tut7Body",
-      scoreKey: "tut7Score",
-      endField: true,
-      setup: [
-        T(
-          4,
-          2,
-          "V",
-          1,
-          "red",
-          meepleAt("V", 1, "field-0", "red", { earned: 6, stay: true })
-        )
-      ],
-      place: null,
-      scores: [],
-      settled: [
-        T(0, 0, "D", 0, "red"),
-        T(0, -1, "E", 2, "red"),
-        T(-1, 0, "U", 1, "red"),
-        T(1, 0, "X", 0, "red"),
-        T(-2, 0, "X", 0, "red"),
-        T(0, 1, "B", 0, "red"),
-        T(2, -1, "E", 3, "red"),
-        T(4, -1, "E", 1, "blue"),
-        T(3, -2, "E", 2, "red"),
-        T(3, 0, "E", 0, "red"),
-        T(3, -1, "C", 0, "red"),
-        T(-1, 1, "V", 1, "red"),
-        T(1, 1, "V", 0, "red"),
-        T(-1, 2, "E", 0, "red"),
-        T(1, 2, "E", 2, "red"),
-        T(0, 2, "U", 1, "red"),
-        T(2, 1, "E", 3, "red"),
-        T(2, 2, "E", 2, "red"),
-        T(4, 1, "E", 1, "blue"),
-        T(3, 2, "E", 0, "red"),
-        T(3, 1, "C", 0, "red"),
-        T(4, 2, "V", 1, "red", meepleAt("V", 1, "field-0", "red", { earned: 6, stay: true }))
-      ]
-    }
-  ];
-  function cloneTile(tile) {
-    if (!tile) return null;
-    const next = {
-      x: tile.x,
-      y: tile.y,
-      id: tile.id,
-      rot: tile.rot || 0,
-      owner: tile.owner || null
-    };
-    if (tile.meeple) next.meeple = Object.assign({}, tile.meeple);
-    return next;
-  }
-  function boardMap(tiles) {
-    const map = /* @__PURE__ */ new Map();
-    tiles.forEach((tile) => map.set(keyOf(tile.x, tile.y), cloneTile(tile)));
-    return map;
-  }
-  function previousSettled(index) {
-    if (index <= 0) return [];
-    return STEPS[index - 1].settled || [];
-  }
-  function boundsFor(tiles) {
-    let minX = 0;
-    let maxX = 0;
-    let minY = 0;
-    let maxY = 0;
-    if (!tiles.length) return { minX: -1, maxX: 1, minY: -1, maxY: 1 };
-    tiles.forEach((tile) => {
-      minX = Math.min(minX, tile.x);
-      maxX = Math.max(maxX, tile.x);
-      minY = Math.min(minY, tile.y);
-      maxY = Math.max(maxY, tile.y);
-    });
-    return { minX, maxX, minY, maxY };
-  }
-  function pinHTML(meeple, leaving) {
-    if (!meeple) return "";
-    const fieldClass = meeple.field || meeple.kind === "field" ? " field-meeple" : "";
-    let earned = "";
-    if (meeple.earned != null && meeple.earned !== 0) {
-      earned = '<span class="meeple-earned">' + (meeple.earnedDim ? String(meeple.earned) : "+" + meeple.earned) + "</span>";
-    } else if (meeple.earned === 0 || meeple.dim) {
-      earned = "";
-    }
-    return '<span class="meeple-pin' + (leaving ? " leaving" : "") + '" style="left:' + meeple.x * 100 + "%;top:" + meeple.y * 100 + '%"><i class="meeple on-tile ' + meeple.color + fieldClass + '" aria-hidden="true"></i>' + earned + "</span>";
-  }
-  function renderGrid(host, tiles, opts) {
-    const options = opts || {};
-    const recentKey = options.recentKey || null;
-    const placingKey = options.placingKey || null;
-    const hintKey = options.hintKey || null;
-    const leavePins = options.leavePins || [];
-    const bounds = boundsFor(tiles);
-    const cols = bounds.maxX - bounds.minX + 1;
-    const grid = document.createElement("div");
-    grid.className = "board-grid";
-    grid.style.gridTemplateColumns = "repeat(" + cols + ", var(--cell))";
-    grid.style.setProperty("--sand-min-x", String(bounds.minX));
-    grid.style.setProperty("--sand-min-y", String(bounds.minY));
-    const byKey = boardMap(tiles);
-    const parts = [];
-    for (let y = bounds.minY; y <= bounds.maxY; y += 1) {
-      for (let x = bounds.minX; x <= bounds.maxX; x += 1) {
-        const pos = keyOf(x, y);
-        const tile = byKey.get(pos);
-        if (tile) {
-          const owner = tile.owner ? " owner-" + tile.owner : "";
-          const recent = recentKey === pos ? " recent" : "";
-          const placing = placingKey === pos ? " is-placing" : "";
-          let marks = pinHTML(tile.meeple, false);
-          leavePins.filter((pin) => pin.pos === pos).forEach((pin) => {
-            marks += pinHTML(pin.meeple, true);
-          });
-          const ring = recent ? '<span class="recent-ring" aria-hidden="true"></span>' : "";
-          parts.push(
-            '<div class="slot filled' + owner + recent + placing + '" data-pos="' + pos + '"><div class="scaler">' + tileHTML(tile.id, tile.rot) + "</div>" + marks + ring + "</div>"
-          );
-          continue;
-        }
-        if (hintKey === pos) {
-          parts.push('<div class="slot empty hint-now" data-pos="' + pos + '"></div>');
-          continue;
-        }
-        parts.push('<div class="slot empty" data-pos="' + pos + '"></div>');
-      }
-    }
-    grid.innerHTML = parts.join("");
-    host.innerHTML = "";
-    host.appendChild(grid);
-    const scroller = host.closest(".scroller");
-    if (scroller) {
-      const focus = host.querySelector(".slot.is-placing, .slot.recent, .slot.filled") || grid;
-      const hostBox = scroller.getBoundingClientRect();
-      const focusBox = focus.getBoundingClientRect();
-      scroller.scrollLeft += focusBox.left + focusBox.width / 2 - (hostBox.left + hostBox.width / 2);
-      scroller.scrollTop += focusBox.top + focusBox.height / 2 - (hostBox.top + hostBox.height / 2);
-    }
-  }
-  function mergeTiles(base, extra) {
-    const map = boardMap(base);
-    (extra || []).forEach((tile) => map.set(keyOf(tile.x, tile.y), cloneTile(tile)));
-    return Array.from(map.values());
-  }
-  function leavePinsFor(scores) {
-    return (scores || []).map((score) => {
-      const m = meepleAt(score.tileId, score.rot, score.slotId, score.color, {
-        earned: score.points,
-        dim: score.dim,
-        earnedDim: score.dim
-      });
-      if (!m) return null;
-      return { pos: keyOf(score.x, score.y), meeple: m };
-    }).filter(Boolean);
-  }
-  function bindTutorial(root) {
-    const stage = root.querySelector("[data-tutorial]");
-    if (!stage) return null;
-    const boardHost = stage.querySelector("[data-tutorial-board]");
-    const titleEl = stage.querySelector("[data-tutorial-title]");
-    const bodyEl = stage.querySelector("[data-tutorial-body]");
-    const scoreEl = stage.querySelector("[data-tutorial-score]");
-    const stepEl = stage.querySelector("[data-tutorial-step]");
-    const dotsEl = stage.querySelector("[data-tutorial-dots]");
-    const prevBtn = stage.querySelector("[data-tutorial-prev]");
-    const nextBtn = stage.querySelector("[data-tutorial-next]");
-    let index = 0;
-    let timers = [];
-    let reduced = false;
-    try {
-      reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    } catch (err) {
-    }
-    function clearTimers() {
-      timers.forEach((id) => window.clearTimeout(id));
-      timers = [];
-    }
-    function later(fn, ms) {
-      timers.push(window.setTimeout(fn, ms));
-    }
-    function paintCopy() {
-      const step = STEPS[index];
-      const lang = getLang();
-      if (stepEl) stepEl.textContent = t("tutStep", lang, { n: index + 1, total: STEPS.length });
-      if (titleEl) titleEl.textContent = t(step.titleKey, lang);
-      if (bodyEl) bodyEl.textContent = t(step.bodyKey, lang);
-      if (scoreEl) {
-        const text = t(step.scoreKey, lang);
-        scoreEl.textContent = text;
-        scoreEl.hidden = !text;
-      }
-      if (dotsEl) {
-        dotsEl.querySelectorAll("button").forEach((btn, i) => {
-          const on = i === index;
-          btn.classList.toggle("on", on);
-          if (on) btn.setAttribute("aria-current", "true");
-          else btn.removeAttribute("aria-current");
-        });
-      }
-      if (prevBtn) prevBtn.disabled = index === 0;
-      if (nextBtn) nextBtn.disabled = index === STEPS.length - 1;
-    }
-    function showSettled() {
-      renderGrid(boardHost, STEPS[index].settled || [], {});
-    }
-    function playStep(animate) {
-      clearTimers();
-      paintCopy();
-      const step = STEPS[index];
-      const base = previousSettled(index);
-      const withSetup = mergeTiles(base, step.setup);
-      if (!animate || reduced) {
-        showSettled();
-        return;
-      }
-      if (step.place) {
-        renderGrid(boardHost, withSetup, { hintKey: keyOf(step.place.x, step.place.y) });
-      } else {
-        renderGrid(boardHost, base, {});
-      }
-      later(() => {
-        if (step.place) {
-          const placed = mergeTiles(withSetup, [step.place]);
-          const placeKey = keyOf(step.place.x, step.place.y);
-          renderGrid(boardHost, placed, { recentKey: placeKey, placingKey: placeKey });
-          later(() => {
-            if (step.scores && step.scores.length) {
-              const scored = new Set(step.scores.map((s) => keyOf(s.x, s.y)));
-              const during = placed.map((tile) => {
-                const copy = cloneTile(tile);
-                if (scored.has(keyOf(copy.x, copy.y))) copy.meeple = null;
-                return copy;
-              });
-              renderGrid(boardHost, during, {
-                recentKey: placeKey,
-                leavePins: leavePinsFor(step.scores)
-              });
-              later(showSettled, 2e3);
-            } else {
-              later(showSettled, 900);
-            }
-          }, 550);
-        } else if (step.endField) {
-          renderGrid(boardHost, step.settled || [], {});
-        } else {
-          showSettled();
-        }
-      }, step.place ? 700 : 500);
-    }
-    function go(to, animate) {
-      index = Math.max(0, Math.min(STEPS.length - 1, to));
-      playStep(animate !== false);
-    }
-    if (dotsEl) {
-      dotsEl.innerHTML = STEPS.map((_, i) => {
-        return '<button type="button" data-tut-dot="' + i + '" aria-label="' + (i + 1) + '"></button>';
-      }).join("");
-      dotsEl.addEventListener("click", (ev) => {
-        const btn = ev.target.closest("[data-tut-dot]");
-        if (!btn) return;
-        go(Number(btn.getAttribute("data-tut-dot")), true);
-      });
-    }
-    if (prevBtn) prevBtn.addEventListener("click", () => go(index - 1, true));
-    if (nextBtn) nextBtn.addEventListener("click", () => go(index + 1, true));
-    document.addEventListener("visibilitychange", () => {
-      if (document.hidden) clearTimers();
-      else playStep(false);
-    });
-    go(0, true);
-    return {
-      refresh() {
-        paintCopy();
-      },
-      destroy() {
-        clearTimers();
-      }
-    };
-  }
-
   // js/rules.js
-  i18n_default.bindLangBar(() => {
-    if (tutorial) tutorial.refresh();
-  });
+  i18n_default.bindLangBar();
   audio_default.bindVolumeBar();
   document.querySelectorAll(".tile[data-id]").forEach((tile) => {
     const id = tile.getAttribute("data-id");
     if (id && MARKUP[id]) tile.innerHTML = MARKUP[id];
   });
-  var tutorial = bindTutorial(document);
 })();

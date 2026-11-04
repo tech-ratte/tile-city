@@ -3059,7 +3059,7 @@
   var KEY = "tile-city-lang";
   var dict = {
     en: {
-      homeTitle: "Tile City",
+      homeTitle: "TileCity",
       homeLead: "A tile-laying game of expanding roads and cities to score points.",
       play: "Play",
       rules: "Rules",
@@ -3100,7 +3100,7 @@
       colorPurple: "Purple",
       colorWhite: "White",
       colorBrown: "Brown",
-      rulesTitle: "Tile City Rules",
+      rulesTitle: "TileCity Rules",
       rulesLead: "Follow the board step by step, then skim the notes below if you need them. Original art \u2014 not the publisher\u2019s illustrations.",
       tocTutorial: "Tutorial",
       tocDetails: "Notes",
@@ -3264,7 +3264,7 @@
       edgesB: "All sides field",
       edgesD: "N city \xB7 E road \xB7 S field \xB7 W road",
       edgesE: "N city \xB7 else field",
-      rulesFoot: "Tile City \xB7 base-set rules adapted for this browser version.",
+      rulesFoot: "TileCity \xB7 base-set rules adapted for this browser version.",
       canPlace: "Can place",
       needsRotate: "Needs rotate",
       rotHint: "Right-click or R to rotate \xB7 Wheel to zoom",
@@ -3290,10 +3290,23 @@
       gameOver: "Ranking",
       pickMeeple: "Pick a mark to place a meeple",
       noMeeplesLeft: "No meeples left",
-      noOpenSpot: "No open spot for a meeple"
+      noOpenSpot: "No open spot for a meeple",
+      share: "Share",
+      shareTitle: "Share ranking",
+      shareLead: "Share the ranking text and a link to TileCity.",
+      shareNative: "Share\u2026",
+      shareCopy: "Copy text",
+      shareCopyUrl: "Copy link",
+      shareSns: "Social",
+      shareTextTitle: "I played TileCity!",
+      shareDone: "Shared.",
+      shareCopied: "Ranking text copied.",
+      shareLinkCopied: "Link copied.",
+      shareCopyFail: "Copy failed.",
+      shareNativeUnavailable: "System share is unavailable here. Copy the text instead."
     },
     ja: {
-      homeTitle: "Tile City",
+      homeTitle: "TileCity",
       homeLead: "\u9053\u3068\u90FD\u5E02\u3092\u5E83\u3052\u3066\u5F97\u70B9\u3092\u7AF6\u3046\u30BF\u30A4\u30EB\u914D\u7F6E\u30B2\u30FC\u30E0\u3002",
       play: "\u904A\u3076",
       rules: "\u30EB\u30FC\u30EB",
@@ -3334,7 +3347,7 @@
       colorPurple: "\u7D2B",
       colorWhite: "\u767D",
       colorBrown: "\u8336",
-      rulesTitle: "Tile City \u30EB\u30FC\u30EB",
+      rulesTitle: "TileCity \u30EB\u30FC\u30EB",
       rulesLead: "\u76E4\u9762\u3092\u898B\u306A\u304C\u3089\u624B\u3092\u9032\u3081\u3066\u3001\u5FC5\u8981\u306A\u3089\u4E0B\u306E\u88DC\u8DB3\u3092\u8AAD\u3093\u3067\u304F\u3060\u3055\u3044\u3002\u30AA\u30EA\u30B8\u30CA\u30EB\u7D75\u67C4\u3067\u3059\uFF08\u88FD\u54C1\u306E\u30A4\u30E9\u30B9\u30C8\u3067\u306F\u3042\u308A\u307E\u305B\u3093\uFF09\u3002",
       tocTutorial: "\u30C1\u30E5\u30FC\u30C8\u30EA\u30A2\u30EB",
       tocDetails: "\u88DC\u8DB3",
@@ -3498,7 +3511,7 @@
       edgesB: "\u5168\u8FBA\u7551",
       edgesD: "\u5317\u90FD\u5E02 \xB7 \u6771\u9053 \xB7 \u5357\u7551 \xB7 \u897F\u9053",
       edgesE: "\u5317\u90FD\u5E02 \xB7 \u307B\u304B\u7551",
-      rulesFoot: "Tile City \xB7 \u30D6\u30E9\u30A6\u30B6\u7248\u5411\u3051\u306B\u57FA\u672C\u30BB\u30C3\u30C8\u30EB\u30FC\u30EB\u3092\u518D\u69CB\u6210\u3002",
+      rulesFoot: "TileCity \xB7 \u30D6\u30E9\u30A6\u30B6\u7248\u5411\u3051\u306B\u57FA\u672C\u30BB\u30C3\u30C8\u30EB\u30FC\u30EB\u3092\u518D\u69CB\u6210\u3002",
       canPlace: "\u7F6E\u3051\u308B",
       needsRotate: "\u8981\u56DE\u8EE2",
       rotHint: "\u53F3\u30AF\u30EA\u30C3\u30AF / R \u3067\u56DE\u8EE2 \xB7 \u30DB\u30A4\u30FC\u30EB\u3067\u30BA\u30FC\u30E0",
@@ -3524,7 +3537,20 @@
       gameOver: "\u30E9\u30F3\u30AD\u30F3\u30B0",
       pickMeeple: "\u30DE\u30FC\u30AF\u3092\u9078\u3093\u3067\u30DF\u30FC\u30D7\u30EB\u3092\u7F6E\u304F",
       noMeeplesLeft: "\u30DF\u30FC\u30D7\u30EB\u304C\u3042\u308A\u307E\u305B\u3093",
-      noOpenSpot: "\u7F6E\u3051\u308B\u5834\u6240\u304C\u3042\u308A\u307E\u305B\u3093"
+      noOpenSpot: "\u7F6E\u3051\u308B\u5834\u6240\u304C\u3042\u308A\u307E\u305B\u3093",
+      share: "\u5171\u6709",
+      shareTitle: "\u30E9\u30F3\u30AD\u30F3\u30B0\u3092\u5171\u6709",
+      shareLead: "\u30E9\u30F3\u30AD\u30F3\u30B0\u6587\u3068 TileCity \u3078\u306E\u30EA\u30F3\u30AF\u3092\u5171\u6709\u3067\u304D\u307E\u3059\u3002",
+      shareNative: "\u5171\u6709\u2026",
+      shareCopy: "\u30C6\u30AD\u30B9\u30C8\u3092\u30B3\u30D4\u30FC",
+      shareCopyUrl: "\u30EA\u30F3\u30AF\u3092\u30B3\u30D4\u30FC",
+      shareSns: "SNS",
+      shareTextTitle: "TileCity \u3092\u30D7\u30EC\u30A4\u3057\u307E\u3057\u305F\uFF01",
+      shareDone: "\u5171\u6709\u3057\u307E\u3057\u305F\u3002",
+      shareCopied: "\u30E9\u30F3\u30AD\u30F3\u30B0\u6587\u3092\u30B3\u30D4\u30FC\u3057\u307E\u3057\u305F\u3002",
+      shareLinkCopied: "\u30EA\u30F3\u30AF\u3092\u30B3\u30D4\u30FC\u3057\u307E\u3057\u305F\u3002",
+      shareCopyFail: "\u30B3\u30D4\u30FC\u306B\u5931\u6557\u3057\u307E\u3057\u305F\u3002",
+      shareNativeUnavailable: "\u3053\u306E\u74B0\u5883\u3067\u306F\u30B7\u30B9\u30C6\u30E0\u5171\u6709\u3092\u4F7F\u3048\u307E\u305B\u3093\u3002\u30C6\u30AD\u30B9\u30C8\u3092\u30B3\u30D4\u30FC\u3057\u3066\u304F\u3060\u3055\u3044\u3002"
     }
   };
   function getLang() {
@@ -3691,6 +3717,75 @@
       }));
     } catch (err) {
     }
+  }
+
+  // js/site-origin.js
+  var SITE_ORIGIN = "https://tech-ratte.github.io/tile-city";
+
+  // js/play/share.js
+  function siteUrl() {
+    if (SITE_ORIGIN) {
+      return String(SITE_ORIGIN).replace(/\/$/, "") + "/";
+    }
+    try {
+      return new URL("index.html", location.href).href;
+    } catch (err) {
+      return location.href;
+    }
+  }
+  function rankingRows(game2, nameOf) {
+    const order = game2.standings || game2.players.map((_, index) => index);
+    return order.map((index, rank) => {
+      const player = game2.players[index];
+      return {
+        rank: rank + 1,
+        name: nameOf(player),
+        score: game2.scores[index]
+      };
+    });
+  }
+  function buildShareText(game2, nameOf, labels) {
+    const rows = rankingRows(game2, nameOf);
+    const lines = [labels.title, ""].concat(
+      rows.map((row) => row.rank + ". " + row.name + " \u2014 " + row.score),
+      ["", labels.hashtag]
+    );
+    return lines.join("\n");
+  }
+  function snsLinks(text) {
+    const url = siteUrl();
+    const encodedUrl = encodeURIComponent(url);
+    const withUrl = encodeURIComponent(text + "\n" + url);
+    return {
+      url,
+      x: "https://twitter.com/intent/tweet?text=" + withUrl,
+      facebook: "https://www.facebook.com/sharer/sharer.php?u=" + encodedUrl,
+      line: "https://social-plugins.line.me/lineit/share?url=" + encodedUrl,
+      bluesky: "https://bsky.app/intent/compose?text=" + withUrl,
+      threads: "https://www.threads.net/intent/post?text=" + withUrl,
+      text
+    };
+  }
+  async function nativeShare({ text, url }) {
+    if (!navigator.share) return null;
+    await navigator.share({ title: "TileCity", text, url });
+    return "text";
+  }
+  async function copyText(text) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      await navigator.clipboard.writeText(text);
+      return true;
+    }
+    const area = document.createElement("textarea");
+    area.value = text;
+    area.setAttribute("readonly", "");
+    area.style.position = "fixed";
+    area.style.left = "-9999px";
+    document.body.appendChild(area);
+    area.select();
+    const ok = document.execCommand("copy");
+    area.remove();
+    return ok;
   }
 
   // js/play/main.js
@@ -3924,9 +4019,9 @@
   }
   function endActionsHTML(layout) {
     if (layout === "row") {
-      return '<button type="button" class="quit-chip js-quit">' + t2("home") + '</button><button type="button" class="ranking-chip js-open-ranking">' + t2("rank") + '</button><button type="button" class="again-chip js-again">' + t2("again") + "</button>";
+      return '<button type="button" class="quit-chip js-quit">' + t2("home") + '</button><button type="button" class="ranking-chip js-open-ranking">' + t2("rank") + '</button><button type="button" class="share-chip js-share">' + t2("share") + '</button><button type="button" class="again-chip js-again">' + t2("again") + "</button>";
     }
-    return '<button type="button" class="ranking-chip js-open-ranking">' + t2("rank") + '</button><div class="end-actions"><button type="button" class="quit-chip js-quit">' + t2("home") + '</button><button type="button" class="again-chip js-again">' + t2("again") + "</button></div>";
+    return '<button type="button" class="ranking-chip js-open-ranking">' + t2("rank") + '</button><button type="button" class="share-chip js-share">' + t2("share") + '</button><div class="end-actions"><button type="button" class="quit-chip js-quit">' + t2("home") + '</button><button type="button" class="again-chip js-again">' + t2("again") + "</button></div>";
   }
   function boardCap() {
     return Math.max(
@@ -4015,6 +4110,87 @@
       return '<li><span class="rank-num">' + (rank + 1) + '</span><span class="rank-name ' + player.id + '">' + displayPlayerName(player) + '</span><b class="rank-score">' + game.scores[index] + "</b></li>";
     }).join("");
     return '<ul class="ranking-list">' + rows + "</ul>";
+  }
+  var sharePayload = null;
+  function shareLabels() {
+    return {
+      title: t2("shareTextTitle"),
+      hashtag: "#TileCity"
+    };
+  }
+  function setShareStatus(message, kind) {
+    const status = document.getElementById("share-status");
+    if (!status) return;
+    if (!message) {
+      status.hidden = true;
+      status.textContent = "";
+      status.className = "share-status";
+      return;
+    }
+    status.hidden = false;
+    status.textContent = message;
+    status.className = "share-status" + (kind ? " " + kind : "");
+  }
+  function bindShareLinks(text) {
+    const links = snsLinks(text);
+    const map = {
+      "share-x": links.x,
+      "share-line": links.line,
+      "share-facebook": links.facebook,
+      "share-bluesky": links.bluesky,
+      "share-threads": links.threads
+    };
+    Object.entries(map).forEach(([id, href]) => {
+      const el = document.getElementById(id);
+      if (el) el.href = href;
+    });
+    return links;
+  }
+  function openShareSheet() {
+    if (!game.finished) return;
+    const sheet = document.getElementById("share-sheet");
+    const preview = document.getElementById("share-preview-text");
+    const nativeBtn = document.getElementById("share-native");
+    if (!sheet || !preview) return;
+    const labels = shareLabels();
+    const text = buildShareText(game, displayPlayerName, labels);
+    const links = bindShareLinks(text);
+    sharePayload = { text, links };
+    preview.textContent = text + "\n" + links.url;
+    setShareStatus("");
+    if (nativeBtn) nativeBtn.hidden = !navigator.share;
+    sheet.hidden = false;
+  }
+  function closeShareSheet() {
+    const sheet = document.getElementById("share-sheet");
+    if (sheet) sheet.hidden = true;
+    sharePayload = null;
+    setShareStatus("");
+  }
+  async function onShareNative() {
+    if (!sharePayload) return;
+    try {
+      const mode = await nativeShare({
+        text: sharePayload.text,
+        url: sharePayload.links.url
+      });
+      if (mode) setShareStatus(t2("shareDone"), "ok");
+      else setShareStatus(t2("shareNativeUnavailable"), "error");
+    } catch (err) {
+      if (err && err.name === "AbortError") return;
+      console.error(err);
+      setShareStatus(t2("shareNativeUnavailable"), "error");
+    }
+  }
+  async function onShareCopyText() {
+    if (!sharePayload) return;
+    const ok = await copyText(sharePayload.text + "\n" + sharePayload.links.url);
+    setShareStatus(ok ? t2("shareCopied") : t2("shareCopyFail"), ok ? "ok" : "error");
+  }
+  async function onShareCopyUrl() {
+    if (!sharePayload) return;
+    const ok = await copyText(sharePayload.links.url);
+    setShareStatus(ok ? t2("shareLinkCopied") : t2("shareCopyFail"), ok ? "ok" : "error");
   }
   function paintDiscardOverlay() {
     const overlay = document.getElementById("discard-overlay");
@@ -4811,6 +4987,26 @@
       render({ keep: true });
       return;
     }
+    if (button.id === "share-ranking" || button.classList.contains("js-share")) {
+      openShareSheet();
+      return;
+    }
+    if (button.id === "share-sheet-close") {
+      closeShareSheet();
+      return;
+    }
+    if (button.id === "share-native") {
+      void onShareNative();
+      return;
+    }
+    if (button.id === "share-copy") {
+      void onShareCopyText();
+      return;
+    }
+    if (button.id === "share-copy-url") {
+      void onShareCopyUrl();
+      return;
+    }
     if (button.classList.contains("js-open-ranking")) {
       game.rankingOpen = true;
       exitConfirmOpen = false;
@@ -4886,7 +5082,21 @@
   document.getElementById("scroller").addEventListener("pointerleave", () => {
     pointerOnBoard = false;
   });
+  var shareSheetEl = document.getElementById("share-sheet");
+  if (shareSheetEl) {
+    shareSheetEl.addEventListener("click", (event) => {
+      if (event.target.id === "share-sheet") closeShareSheet();
+    });
+  }
   document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") {
+      const sheet = document.getElementById("share-sheet");
+      if (sheet && !sheet.hidden) {
+        event.preventDefault();
+        closeShareSheet();
+        return;
+      }
+    }
     if (event.repeat) return;
     if (humanControlsLocked()) return;
     if (game.pendingDiscard && (event.key === "Enter" || event.key === " ")) {

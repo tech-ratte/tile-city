@@ -8,6 +8,12 @@ import {
   loadSavedGame as loadSavedGameFromStorage,
   writeSave,
 } from "./storage.js";
+import {
+  buildShareText,
+  copyText,
+  nativeShare,
+  snsLinks,
+} from "./share.js";
 
 const t = (key) => TileCityI18n.t(key);
 const playSound = (name) => TileCityAudio.playSound(name);
@@ -295,9 +301,11 @@ function endActionsHTML(layout) {
   if (layout === "row") {
     return '<button type="button" class="quit-chip js-quit">' + t("home") + "</button>" +
       '<button type="button" class="ranking-chip js-open-ranking">' + t("rank") + "</button>" +
+      '<button type="button" class="share-chip js-share">' + t("share") + "</button>" +
       '<button type="button" class="again-chip js-again">' + t("again") + "</button>";
   }
   return '<button type="button" class="ranking-chip js-open-ranking">' + t("rank") + "</button>" +
+    '<button type="button" class="share-chip js-share">' + t("share") + "</button>" +
     '<div class="end-actions">' +
     '<button type="button" class="quit-chip js-quit">' + t("home") + "</button>" +
     '<button type="button" class="again-chip js-again">' + t("again") + "</button></div>";
@@ -447,6 +455,97 @@ function rankingHTML() {
       '<b class="rank-score">' + game.scores[index] + "</b></li>";
   }).join("");
   return '<ul class="ranking-list">' + rows + "</ul>";
+}
+
+let sharePayload = null;
+
+function shareLabels() {
+  return {
+    title: t("shareTextTitle"),
+    hashtag: "#TileCity",
+  };
+}
+
+function setShareStatus(message, kind) {
+  const status = document.getElementById("share-status");
+  if (!status) return;
+  if (!message) {
+    status.hidden = true;
+    status.textContent = "";
+    status.className = "share-status";
+    return;
+  }
+  status.hidden = false;
+  status.textContent = message;
+  status.className = "share-status" + (kind ? " " + kind : "");
+}
+
+function bindShareLinks(text) {
+  const links = snsLinks(text);
+  const map = {
+    "share-x": links.x,
+    "share-line": links.line,
+    "share-facebook": links.facebook,
+    "share-bluesky": links.bluesky,
+    "share-threads": links.threads,
+  };
+  Object.entries(map).forEach(([id, href]) => {
+    const el = document.getElementById(id);
+    if (el) el.href = href;
+  });
+  return links;
+}
+
+function openShareSheet() {
+  if (!game.finished) return;
+  const sheet = document.getElementById("share-sheet");
+  const preview = document.getElementById("share-preview-text");
+  const nativeBtn = document.getElementById("share-native");
+  if (!sheet || !preview) return;
+
+  const labels = shareLabels();
+  const text = buildShareText(game, displayPlayerName, labels);
+  const links = bindShareLinks(text);
+  sharePayload = { text, links };
+  preview.textContent = text + "\n" + links.url;
+  setShareStatus("");
+  if (nativeBtn) nativeBtn.hidden = !navigator.share;
+  sheet.hidden = false;
+}
+
+function closeShareSheet() {
+  const sheet = document.getElementById("share-sheet");
+  if (sheet) sheet.hidden = true;
+  sharePayload = null;
+  setShareStatus("");
+}
+
+async function onShareNative() {
+  if (!sharePayload) return;
+  try {
+    const mode = await nativeShare({
+      text: sharePayload.text,
+      url: sharePayload.links.url,
+    });
+    if (mode) setShareStatus(t("shareDone"), "ok");
+    else setShareStatus(t("shareNativeUnavailable"), "error");
+  } catch (err) {
+    if (err && err.name === "AbortError") return;
+    console.error(err);
+    setShareStatus(t("shareNativeUnavailable"), "error");
+  }
+}
+
+async function onShareCopyText() {
+  if (!sharePayload) return;
+  const ok = await copyText(sharePayload.text + "\n" + sharePayload.links.url);
+  setShareStatus(ok ? t("shareCopied") : t("shareCopyFail"), ok ? "ok" : "error");
+}
+
+async function onShareCopyUrl() {
+  if (!sharePayload) return;
+  const ok = await copyText(sharePayload.links.url);
+  setShareStatus(ok ? t("shareLinkCopied") : t("shareCopyFail"), ok ? "ok" : "error");
 }
 
 function paintDiscardOverlay() {
@@ -1352,6 +1451,26 @@ document.addEventListener("click", (event) => {
     render({ keep: true });
     return;
   }
+  if (button.id === "share-ranking" || button.classList.contains("js-share")) {
+    openShareSheet();
+    return;
+  }
+  if (button.id === "share-sheet-close") {
+    closeShareSheet();
+    return;
+  }
+  if (button.id === "share-native") {
+    void onShareNative();
+    return;
+  }
+  if (button.id === "share-copy") {
+    void onShareCopyText();
+    return;
+  }
+  if (button.id === "share-copy-url") {
+    void onShareCopyUrl();
+    return;
+  }
   if (button.classList.contains("js-open-ranking")) {
     game.rankingOpen = true;
     exitConfirmOpen = false;
@@ -1430,7 +1549,22 @@ document.getElementById("scroller").addEventListener("pointerleave", () => {
   pointerOnBoard = false;
 });
 
+const shareSheetEl = document.getElementById("share-sheet");
+if (shareSheetEl) {
+  shareSheetEl.addEventListener("click", (event) => {
+    if (event.target.id === "share-sheet") closeShareSheet();
+  });
+}
+
 document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape") {
+    const sheet = document.getElementById("share-sheet");
+    if (sheet && !sheet.hidden) {
+      event.preventDefault();
+      closeShareSheet();
+      return;
+    }
+  }
   if (event.repeat) return;
   if (humanControlsLocked()) return;
   if (game.pendingDiscard && (event.key === "Enter" || event.key === " ")) {

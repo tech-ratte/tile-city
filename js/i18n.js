@@ -2,7 +2,7 @@ const KEY = "tile-city-lang";
 
 const dict = {
   en: {
-    homeTitle: "Tile City",
+    homeTitle: "TileCity",
     homeLead: "A tile-laying game of expanding roads and cities to score points.",
     play: "Play",
     rules: "Rules",
@@ -45,7 +45,7 @@ const dict = {
     colorWhite: "White",
     colorBrown: "Brown",
 
-    rulesTitle: "Tile City Rules",
+    rulesTitle: "TileCity Rules",
     rulesLead: "Follow the board step by step, then skim the notes below if you need them. Original art — not the publisher’s illustrations.",
     tocTutorial: "Tutorial",
     tocDetails: "Notes",
@@ -209,7 +209,7 @@ const dict = {
     edgesB: "All sides field",
     edgesD: "N city · E road · S field · W road",
     edgesE: "N city · else field",
-    rulesFoot: "Tile City · base-set rules adapted for this browser version.",
+    rulesFoot: "TileCity · base-set rules adapted for this browser version.",
 
     canPlace: "Can place",
     needsRotate: "Needs rotate",
@@ -237,9 +237,22 @@ const dict = {
     pickMeeple: "Pick a mark to place a meeple",
     noMeeplesLeft: "No meeples left",
     noOpenSpot: "No open spot for a meeple",
+    share: "Share",
+    shareTitle: "Share ranking",
+    shareLead: "Share the ranking text and a link to TileCity.",
+    shareNative: "Share…",
+    shareCopy: "Copy text",
+    shareCopyUrl: "Copy link",
+    shareSns: "Social",
+    shareTextTitle: "I played TileCity!",
+    shareDone: "Shared.",
+    shareCopied: "Ranking text copied.",
+    shareLinkCopied: "Link copied.",
+    shareCopyFail: "Copy failed.",
+    shareNativeUnavailable: "System share is unavailable here. Copy the text instead.",
   },
   ja: {
-    homeTitle: "Tile City",
+    homeTitle: "TileCity",
     homeLead: "道と都市を広げて得点を競うタイル配置ゲーム。",
     play: "遊ぶ",
     rules: "ルール",
@@ -282,7 +295,7 @@ const dict = {
     colorWhite: "白",
     colorBrown: "茶",
 
-    rulesTitle: "Tile City ルール",
+    rulesTitle: "TileCity ルール",
     rulesLead: "盤面を見ながら手を進めて、必要なら下の補足を読んでください。オリジナル絵柄です（製品のイラストではありません）。",
     tocTutorial: "チュートリアル",
     tocDetails: "補足",
@@ -446,7 +459,7 @@ const dict = {
     edgesB: "全辺畑",
     edgesD: "北都市 · 東道 · 南畑 · 西道",
     edgesE: "北都市 · ほか畑",
-    rulesFoot: "Tile City · ブラウザ版向けに基本セットルールを再構成。",
+    rulesFoot: "TileCity · ブラウザ版向けに基本セットルールを再構成。",
 
     canPlace: "置ける",
     needsRotate: "要回転",
@@ -474,6 +487,19 @@ const dict = {
     pickMeeple: "マークを選んでミープルを置く",
     noMeeplesLeft: "ミープルがありません",
     noOpenSpot: "置ける場所がありません",
+    share: "共有",
+    shareTitle: "ランキングを共有",
+    shareLead: "ランキング文と TileCity へのリンクを共有できます。",
+    shareNative: "共有…",
+    shareCopy: "テキストをコピー",
+    shareCopyUrl: "リンクをコピー",
+    shareSns: "SNS",
+    shareTextTitle: "TileCity をプレイしました！",
+    shareDone: "共有しました。",
+    shareCopied: "ランキング文をコピーしました。",
+    shareLinkCopied: "リンクをコピーしました。",
+    shareCopyFail: "コピーに失敗しました。",
+    shareNativeUnavailable: "この環境ではシステム共有を使えません。テキストをコピーしてください。",
   },
 };
 

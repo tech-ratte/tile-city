@@ -3,7 +3,27 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Tile City</title>
+  <title>TileCity</title>
+  <meta name="description" content="道と都市を広げて得点を競うタイル配置ゲーム。">
+  <meta name="theme-color" content="#142018">
+  <link rel="icon" href="assets/icons/favicon-32.png" type="image/png" sizes="32x32">
+  <link rel="icon" href="assets/icons/favicon-48.png" type="image/png" sizes="48x48">
+  <link rel="icon" href="assets/icons/favicon-192.png" type="image/png" sizes="192x192">
+  <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png" sizes="180x180">
+  <link rel="manifest" href="site.webmanifest">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://tech-ratte.github.io/tile-city/play.html">
+  <meta property="og:site_name" content="TileCity">
+  <meta property="og:title" content="TileCity">
+  <meta property="og:description" content="道と都市を広げて得点を競うタイル配置ゲーム。">
+  <meta property="og:image" content="https://tech-ratte.github.io/tile-city/assets/og.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="TileCity">
+  <meta name="twitter:description" content="道と都市を広げて得点を競うタイル配置ゲーム。">
+  <meta name="twitter:image" content="https://tech-ratte.github.io/tile-city/assets/og.png">
+  <link rel="canonical" href="https://tech-ratte.github.io/tile-city/play.html">
   <script>
     (function () {
       var ua = navigator.userAgent || "";
@@ -40,6 +60,7 @@
             <div id="ranking-root" hidden></div>
             <div id="ranking-actions" class="ranking-actions" hidden>
               <button type="button" id="end-game" class="quit-chip" data-i18n="home">Home</button>
+              <button type="button" id="share-ranking" class="share-chip" data-i18n="share">Share</button>
               <button type="button" id="again-game" class="again-chip" data-i18n="again">Again</button>
             </div>
             <div id="overlay-actions">
@@ -58,6 +79,29 @@
         <div id="hand-root" class="hud-bottom"></div>
         <div class="foot" id="foot-root"></div>
       </aside>
+    </div>
+  </div>
+  <div id="share-sheet" class="share-sheet" hidden>
+    <div class="share-sheet-card" role="dialog" aria-modal="true" aria-labelledby="share-sheet-title">
+      <button type="button" id="share-sheet-close" class="share-sheet-close" data-i18n-aria="cancel" aria-label="Cancel">×</button>
+      <h2 id="share-sheet-title" data-i18n="shareTitle">Share ranking</h2>
+      <p class="share-sheet-lead" data-i18n="shareLead">Share the ranking text and a link to TileCity.</p>
+      <pre id="share-preview-text" class="share-preview-text"></pre>
+      <p id="share-status" class="share-status" hidden></p>
+      <div class="share-actions-primary">
+        <button type="button" id="share-native" class="share-primary" data-i18n="shareNative">Share…</button>
+        <button type="button" id="share-copy" class="share-secondary" data-i18n="shareCopy">Copy text</button>
+      </div>
+      <div class="share-sns" role="group" data-i18n-aria="shareSns" aria-label="Social">
+        <a id="share-x" class="share-sns-btn" target="_blank" rel="noopener noreferrer">X</a>
+        <a id="share-line" class="share-sns-btn" target="_blank" rel="noopener noreferrer">LINE</a>
+        <a id="share-facebook" class="share-sns-btn" target="_blank" rel="noopener noreferrer">Facebook</a>
+        <a id="share-bluesky" class="share-sns-btn" target="_blank" rel="noopener noreferrer">Bluesky</a>
+        <a id="share-threads" class="share-sns-btn" target="_blank" rel="noopener noreferrer">Threads</a>
+      </div>
+      <div class="share-actions-secondary">
+        <button type="button" id="share-copy-url" class="share-text-btn" data-i18n="shareCopyUrl">Copy link</button>
+      </div>
     </div>
   </div>
   <script src="js/play.bundle.js"></script>

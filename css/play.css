@@ -363,7 +363,8 @@ html, body { height: 100%; overflow: hidden; }
     }
 
     .discard-card.ranking-open .ranking-actions .again-chip,
-    .discard-card.ranking-open .ranking-actions .quit-chip {
+    .discard-card.ranking-open .ranking-actions .quit-chip,
+    .discard-card.ranking-open .ranking-actions .share-chip {
       min-width: 5em;
       padding: 10px 18px;
       font: inherit;
@@ -474,7 +475,8 @@ html, body { height: 100%; overflow: hidden; }
 
     .ranking-chip,
     .again-chip,
-    .quit-chip {
+    .quit-chip,
+    .share-chip {
       font: inherit;
       color: #dfffee;
       background: transparent;
@@ -488,6 +490,18 @@ html, body { height: 100%; overflow: hidden; }
     .ranking-chip:hover {
       border-color: #d6ff6a;
       color: #f4ffd2;
+    }
+
+    .share-chip {
+      color: #d7ecff;
+      border-color: rgba(120, 190, 255, 0.55);
+      box-shadow: 0 0 12px rgba(80, 160, 255, 0.14);
+    }
+
+    .share-chip:hover {
+      border-color: #9fd0ff;
+      color: #ffffff;
+      background: rgba(60, 120, 200, 0.24);
     }
 
     .again-chip:hover {
@@ -1699,7 +1713,8 @@ html, body { height: 100%; overflow: hidden; }
 
       html.is-overlay .hand.ranking-hand .again-chip,
       html.is-overlay .hand.ranking-hand .ranking-chip,
-      html.is-overlay .hand.ranking-hand .quit-chip {
+      html.is-overlay .hand.ranking-hand .quit-chip,
+      html.is-overlay .hand.ranking-hand .share-chip {
         flex: 1;
         text-align: center;
         background: rgba(10, 16, 28, 0.78);
@@ -1791,4 +1806,174 @@ html, body { height: 100%; overflow: hidden; }
       width: 22px;
       height: 22px;
     }
+
+/* —— Share sheet —— */
+.share-sheet {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: flex;
+  align-items: safe center;
+  justify-content: center;
+  padding: 16px 12px;
+  overflow: auto;
+  background: rgba(6, 10, 16, 0.72);
+}
+
+.share-sheet[hidden] {
+  display: none;
+}
+
+.share-sheet-card {
+  position: relative;
+  width: min(28rem, 100%);
+  margin: auto;
+  padding: 18px 18px 16px;
+  border-radius: 18px;
+  background: rgba(12, 18, 30, 0.96);
+  border: 1px solid rgba(140, 220, 255, 0.28);
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.5);
+  color: #f4f7fb;
+}
+
+.share-sheet-close {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #c5d0de;
+  font-size: 24px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.share-sheet-close:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.share-sheet-card h2 {
+  margin: 0 28px 6px 0;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.share-sheet-lead {
+  margin: 0 0 12px;
+  color: rgba(244, 247, 251, 0.7);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.share-preview-text {
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(0, 0, 0, 0.28);
+  color: #e8f0fa;
+  font: 600 13px/1.45 ui-monospace, "Cascadia Mono", Consolas, monospace;
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 40vh;
+  overflow: auto;
+}
+
+.share-status {
+  margin: 10px 0 0;
+  font-size: 13px;
+  color: #9ec0ff;
+}
+
+.share-status.ok { color: #7dffb0; }
+.share-status.error { color: #ff8da0; }
+
+.share-actions-primary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.share-primary,
+.share-secondary {
+  flex: 1 1 8rem;
+  min-height: 42px;
+  border-radius: 999px;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.share-primary {
+  border: 0;
+  background: #f4f7fb;
+  color: #152033;
+}
+
+.share-secondary {
+  border: 1px solid rgba(244, 247, 251, 0.4);
+  background: transparent;
+  color: #f4f7fb;
+}
+
+.share-sns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.share-sns-btn {
+  flex: 1 1 auto;
+  min-width: 4.8em;
+  padding: 9px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(140, 190, 255, 0.35);
+  background: rgba(255, 255, 255, 0.05);
+  color: #e8f2ff;
+  text-align: center;
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.share-sns-btn:hover {
+  border-color: #9fd0ff;
+  background: rgba(80, 140, 220, 0.2);
+}
+
+.share-actions-secondary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.share-text-btn {
+  flex: 1 1 8rem;
+  min-height: 38px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: transparent;
+  color: #c9d6e6;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.share-text-btn:hover {
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.4);
+}
+
+.foot .share-chip {
+  width: 100%;
+  margin-top: 8px;
+}
 

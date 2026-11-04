@@ -5,6 +5,7 @@
   "scripts": {
     "test": "node js/game.test.js",
     "test:audio": "node scripts/test-audio.mjs",
-    "build": "node scripts/build-browser.mjs"
+    "build": "node scripts/build-browser.mjs",
+    "gen:icons": "node scripts/gen-icons.mjs"
   }
 }
