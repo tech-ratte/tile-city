@@ -841,10 +841,17 @@ html, body { height: 100%; overflow: hidden; }
       --cell: calc(var(--tile) * var(--board-zoom));
     }
 
+    /* transform (not CSS zoom): tile internals keep a stable layout and only
+       composite-scale when --board-zoom changes. Slot box still tracks --cell. */
     .slot .scaler {
-      position: relative;
+      position: absolute;
+      left: 0;
+      top: 0;
       z-index: 0;
-      zoom: var(--board-zoom);
+      width: var(--s);
+      height: var(--s);
+      transform: scale(var(--board-zoom));
+      transform-origin: 0 0;
     }
 
     /*

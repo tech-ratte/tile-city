@@ -47,14 +47,29 @@ function loadSavedGame() {
 }
 
 let readyToPersist = false;
+let persistTimer = null;
+const PERSIST_ZOOM_MS = 200;
 
 function persistGame() {
+  if (persistTimer != null) {
+    clearTimeout(persistTimer);
+    persistTimer = null;
+  }
   const box = document.getElementById("scroller");
   writeSave(Carcassonne, game, {
     zoom: boardZoom,
     left: box ? box.scrollLeft : 0,
     top: box ? box.scrollTop : 0,
   }, readyToPersist);
+}
+
+/** Coalesce zoom-driven saves; move/render paths still call persistGame(). */
+function persistGameSoon() {
+  if (persistTimer != null) clearTimeout(persistTimer);
+  persistTimer = setTimeout(() => {
+    persistTimer = null;
+    persistGame();
+  }, PERSIST_ZOOM_MS);
 }
 
 function restoreView(view) {
@@ -103,12 +118,22 @@ function applyBoardZoom() {
   if (label) label.textContent = zoomPercent();
 }
 
+/** Last padding written by syncBoardPadding; avoids getComputedStyle on zoom. */
+let syncedPadX = -1;
+let syncedPadY = -1;
+
 function gridPadBox(grid) {
-  const style = getComputedStyle(grid);
-  const left = parseFloat(style.paddingLeft) || 0;
-  const top = parseFloat(style.paddingTop) || 0;
-  const right = parseFloat(style.paddingRight) || 0;
-  const bottom = parseFloat(style.paddingBottom) || 0;
+  let left = syncedPadX;
+  let top = syncedPadY;
+  let right = syncedPadX;
+  let bottom = syncedPadY;
+  if (!(left >= 0) || !(top >= 0)) {
+    const style = getComputedStyle(grid);
+    left = parseFloat(style.paddingLeft) || 0;
+    top = parseFloat(style.paddingTop) || 0;
+    right = parseFloat(style.paddingRight) || 0;
+    bottom = parseFloat(style.paddingBottom) || 0;
+  }
   return {
     left,
     top,
@@ -126,15 +151,15 @@ function syncBoardPadding() {
   const grid = document.getElementById("grid");
   const padX = Math.max(1, Math.ceil(box.clientWidth));
   const padY = Math.max(1, Math.ceil(box.clientHeight));
+  if (padX === syncedPadX && padY === syncedPadY) return;
   const before = gridPadBox(grid);
-  if (before.left === padX && before.right === padX && before.top === padY && before.bottom === padY) {
-    return;
-  }
   const midX = box.scrollLeft + box.clientWidth / 2;
   const midY = box.scrollTop + box.clientHeight / 2;
   const boardX = midX - before.left;
   const boardY = midY - before.top;
   grid.style.padding = padY + "px " + padX + "px";
+  syncedPadX = padX;
+  syncedPadY = padY;
   void grid.offsetWidth;
   box.scrollLeft = padX + boardX - box.clientWidth / 2;
   box.scrollTop = padY + boardY - box.clientHeight / 2;
@@ -176,7 +201,22 @@ function setBoardZoom(next, pivot) {
   box.scrollTop = mapZoomCoord(
     contentY, beforePad.top, beforePad.innerH, afterPad.top, afterPad.innerH
   ) - py;
-  persistGame();
+  persistGameSoon();
+}
+
+let zoomRaf = null;
+let zoomGoal = null;
+
+/** One zoom apply per frame; wheel deltas accumulate into the goal zoom. */
+function scheduleBoardZoom(next, pivot) {
+  zoomGoal = { zoom: next, pivot };
+  if (zoomRaf != null) return;
+  zoomRaf = requestAnimationFrame(() => {
+    zoomRaf = null;
+    const goal = zoomGoal;
+    zoomGoal = null;
+    if (goal) setBoardZoom(goal.zoom, goal.pivot);
+  });
 }
 
 function paintLegend() {
@@ -1417,7 +1457,8 @@ document.getElementById("scroller").addEventListener("wheel", (event) => {
   event.preventDefault();
   const steps = Math.max(1, Math.min(3, Math.round(Math.abs(event.deltaY) / 100)));
   const delta = (event.deltaY > 0 ? -ZOOM_WHEEL : ZOOM_WHEEL) * steps;
-  setBoardZoom(boardZoom + delta, { x: event.clientX, y: event.clientY });
+  const base = zoomGoal ? zoomGoal.zoom : boardZoom;
+  scheduleBoardZoom(base + delta, { x: event.clientX, y: event.clientY });
 }, { passive: false });
 
 let pinch = null;
@@ -1461,7 +1502,7 @@ document.addEventListener("touchmove", (event) => {
   const dist = pinchDistance(event.touches);
   if (!(pinch.dist > 0) || !(dist > 0)) return;
   event.preventDefault();
-  setBoardZoom(pinch.zoom * (dist / pinch.dist), pinchMidpoint(event.touches));
+  scheduleBoardZoom(pinch.zoom * (dist / pinch.dist), pinchMidpoint(event.touches));
 }, { passive: false });
 
 document.addEventListener("touchend", (event) => {

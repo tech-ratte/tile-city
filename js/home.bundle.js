@@ -323,6 +323,17 @@
   };
   var BY_ID = Object.fromEntries(TYPES.map((type) => [type.id, type]));
 
+  // js/game/tiles.js
+  function rotClass(rot) {
+    const deg = (rot % 4 + 4) % 4 * 90;
+    return deg ? "rot-" + deg : "";
+  }
+  function tileHTML(id, rot) {
+    if (!MARKUP[id]) throw new Error("unknown tile " + id);
+    const cls = ["tile", rotClass(rot)].filter(Boolean).join(" ");
+    return '<div class="' + cls + '" aria-hidden="true">' + MARKUP[id] + "</div>";
+  }
+
   // js/i18n.js
   var KEY = "tile-city-lang";
   var dict = {
@@ -820,7 +831,17 @@
   // js/home.js
   i18n_default.bindLangBar();
   audio_default.bindVolumeBar();
-  document.querySelectorAll(".hero .monastery").forEach((node) => {
-    node.outerHTML = monasteryHTML(false);
+  document.querySelectorAll(".tile-spin").forEach((btn) => {
+    const id = btn.getAttribute("data-tile");
+    if (!id) return;
+    let rot = 0;
+    function paint() {
+      btn.innerHTML = tileHTML(id, rot);
+    }
+    paint();
+    btn.addEventListener("click", () => {
+      rot = (rot + 1) % 4;
+      paint();
+    });
   });
 })();

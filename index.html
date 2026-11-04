@@ -123,21 +123,42 @@
       align-items: flex-end;
       gap: clamp(10px, 2.5vw, 16px);
       margin: 0 auto 22px;
-      pointer-events: none;
     }
 
-    .tile-row .tile {
-      --s: clamp(64px, 18vw, 96px);
+    .tile-spin {
+      appearance: none;
+      display: block;
+      margin: 0;
+      padding: 0;
+      border: 0;
+      background: none;
+      cursor: pointer;
+      line-height: 0;
+      /* Shadow on the wrapper so rotation never flips its direction. */
       box-shadow: 0 14px 32px rgba(0, 0, 0, 0.35);
       animation: bob 5.5s ease-in-out infinite;
+      transition: filter 0.15s ease;
     }
 
-    .tile-row .tile:nth-child(2) {
+    .tile-spin:hover {
+      filter: brightness(1.06);
+    }
+
+    .tile-spin:focus-visible {
+      outline: 2px solid rgba(243, 239, 230, 0.85);
+      outline-offset: 4px;
+    }
+
+    .tile-spin .tile {
+      --s: clamp(64px, 18vw, 96px);
+    }
+
+    .tile-spin:nth-child(2) {
       transform: translateY(clamp(8px, 2vw, 14px));
       animation-delay: -1.8s;
     }
 
-    .tile-row .tile:nth-child(3) {
+    .tile-spin:nth-child(3) {
       animation-delay: -3.2s;
     }
 
@@ -210,7 +231,7 @@
 
     @media (prefers-reduced-motion: reduce) {
       .home::before,
-      .tile-row .tile,
+      .tile-spin,
       .hero,
       .actions,
       .chrome-controls {
@@ -235,19 +256,10 @@
     </div>
 
     <main class="hero">
-      <div class="tile-row" aria-hidden="true">
-        <div class="tile">
-          <i class="road h-e"></i>
-          <i class="road h-w"></i>
-          <i class="road v-s"></i>
-          <i class="village"></i>
-        </div>
-        <div class="tile">
-          <i class="city cap n"></i>
-        </div>
-        <div class="tile">
-          <span class="monastery"><i class="wing left"></i><i class="wing right"></i><i class="cross"></i><i class="roof"></i><i class="body"></i></span>
-        </div>
+      <div class="tile-row">
+        <button type="button" class="tile-spin" data-tile="R" aria-label="Rotate tile R"></button>
+        <button type="button" class="tile-spin" data-tile="L" aria-label="Rotate tile L"></button>
+        <button type="button" class="tile-spin" data-tile="A" aria-label="Rotate tile A"></button>
       </div>
       <h1 class="brand" data-i18n="homeTitle">Tile City</h1>
       <p class="lead" data-i18n="homeLead">A tile-laying game of expanding roads and cities to score points.</p>

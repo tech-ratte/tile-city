@@ -3665,13 +3665,26 @@
     return loadSavedGame(game_default);
   }
   var readyToPersist = false;
+  var persistTimer = null;
+  var PERSIST_ZOOM_MS = 200;
   function persistGame() {
+    if (persistTimer != null) {
+      clearTimeout(persistTimer);
+      persistTimer = null;
+    }
     const box = document.getElementById("scroller");
     writeSave(game_default, game, {
       zoom: boardZoom,
       left: box ? box.scrollLeft : 0,
       top: box ? box.scrollTop : 0
     }, readyToPersist);
+  }
+  function persistGameSoon() {
+    if (persistTimer != null) clearTimeout(persistTimer);
+    persistTimer = setTimeout(() => {
+      persistTimer = null;
+      persistGame();
+    }, PERSIST_ZOOM_MS);
   }
   function restoreView(view) {
     if (!view) return;
@@ -3712,12 +3725,20 @@
     const label = document.getElementById("zoom-label");
     if (label) label.textContent = zoomPercent();
   }
+  var syncedPadX = -1;
+  var syncedPadY = -1;
   function gridPadBox(grid) {
-    const style = getComputedStyle(grid);
-    const left = parseFloat(style.paddingLeft) || 0;
-    const top = parseFloat(style.paddingTop) || 0;
-    const right = parseFloat(style.paddingRight) || 0;
-    const bottom = parseFloat(style.paddingBottom) || 0;
+    let left = syncedPadX;
+    let top = syncedPadY;
+    let right = syncedPadX;
+    let bottom = syncedPadY;
+    if (!(left >= 0) || !(top >= 0)) {
+      const style = getComputedStyle(grid);
+      left = parseFloat(style.paddingLeft) || 0;
+      top = parseFloat(style.paddingTop) || 0;
+      right = parseFloat(style.paddingRight) || 0;
+      bottom = parseFloat(style.paddingBottom) || 0;
+    }
     return {
       left,
       top,
@@ -3732,15 +3753,15 @@
     const grid = document.getElementById("grid");
     const padX = Math.max(1, Math.ceil(box.clientWidth));
     const padY = Math.max(1, Math.ceil(box.clientHeight));
+    if (padX === syncedPadX && padY === syncedPadY) return;
     const before = gridPadBox(grid);
-    if (before.left === padX && before.right === padX && before.top === padY && before.bottom === padY) {
-      return;
-    }
     const midX = box.scrollLeft + box.clientWidth / 2;
     const midY = box.scrollTop + box.clientHeight / 2;
     const boardX = midX - before.left;
     const boardY = midY - before.top;
     grid.style.padding = padY + "px " + padX + "px";
+    syncedPadX = padX;
+    syncedPadY = padY;
     void grid.offsetWidth;
     box.scrollLeft = padX + boardX - box.clientWidth / 2;
     box.scrollTop = padY + boardY - box.clientHeight / 2;
@@ -3786,7 +3807,19 @@
       afterPad.top,
       afterPad.innerH
     ) - py;
-    persistGame();
+    persistGameSoon();
+  }
+  var zoomRaf = null;
+  var zoomGoal = null;
+  function scheduleBoardZoom(next, pivot) {
+    zoomGoal = { zoom: next, pivot };
+    if (zoomRaf != null) return;
+    zoomRaf = requestAnimationFrame(() => {
+      zoomRaf = null;
+      const goal = zoomGoal;
+      zoomGoal = null;
+      if (goal) setBoardZoom(goal.zoom, goal.pivot);
+    });
   }
   function paintLegend() {
     const legend = document.getElementById("legend");
@@ -4816,7 +4849,8 @@
     event.preventDefault();
     const steps = Math.max(1, Math.min(3, Math.round(Math.abs(event.deltaY) / 100)));
     const delta = (event.deltaY > 0 ? -ZOOM_WHEEL : ZOOM_WHEEL) * steps;
-    setBoardZoom(boardZoom + delta, { x: event.clientX, y: event.clientY });
+    const base = zoomGoal ? zoomGoal.zoom : boardZoom;
+    scheduleBoardZoom(base + delta, { x: event.clientX, y: event.clientY });
   }, { passive: false });
   var pinch = null;
   function pinchDistance(touches) {
@@ -4854,7 +4888,7 @@
     const dist = pinchDistance(event.touches);
     if (!(pinch.dist > 0) || !(dist > 0)) return;
     event.preventDefault();
-    setBoardZoom(pinch.zoom * (dist / pinch.dist), pinchMidpoint(event.touches));
+    scheduleBoardZoom(pinch.zoom * (dist / pinch.dist), pinchMidpoint(event.touches));
   }, { passive: false });
   document.addEventListener("touchend", (event) => {
     if (event.touches.length < 2) pinch = null;
