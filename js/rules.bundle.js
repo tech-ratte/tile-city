@@ -561,17 +561,22 @@
       noOpenSpot: "No open spot for a meeple",
       share: "Share",
       shareTitle: "Share ranking",
-      shareLead: "Share the ranking text and a link to TileCity.",
+      shareLead: "Board image with ranking in the corner.",
       shareNative: "Share\u2026",
+      shareDownload: "Save image",
       shareCopy: "Copy text",
       shareCopyUrl: "Copy link",
       shareSns: "Social",
+      shareHint: "Social apps open with text and link. Attach the saved image for the board shot.",
       shareTextTitle: "I played TileCity!",
+      sharePreparing: "Preparing image\u2026",
+      shareCaptureFail: "Could not capture the board. You can still copy the ranking text.",
       shareDone: "Shared.",
+      shareSaved: "Image saved.",
       shareCopied: "Ranking text copied.",
       shareLinkCopied: "Link copied.",
       shareCopyFail: "Copy failed.",
-      shareNativeUnavailable: "System share is unavailable here. Copy the text instead."
+      shareNativeUnavailable: "System share is unavailable here. Save the image and attach it."
     },
     ja: {
       homeTitle: "TileCity",
@@ -808,17 +813,22 @@
       noOpenSpot: "\u7F6E\u3051\u308B\u5834\u6240\u304C\u3042\u308A\u307E\u305B\u3093",
       share: "\u5171\u6709",
       shareTitle: "\u30E9\u30F3\u30AD\u30F3\u30B0\u3092\u5171\u6709",
-      shareLead: "\u30E9\u30F3\u30AD\u30F3\u30B0\u6587\u3068 TileCity \u3078\u306E\u30EA\u30F3\u30AF\u3092\u5171\u6709\u3067\u304D\u307E\u3059\u3002",
+      shareLead: "\u76E4\u9762\u306E\u753B\u50CF\u306B\u30E9\u30F3\u30AD\u30F3\u30B0\u3092\u91CD\u306D\u3066\u5171\u6709\u3067\u304D\u307E\u3059\u3002",
       shareNative: "\u5171\u6709\u2026",
+      shareDownload: "\u753B\u50CF\u3092\u4FDD\u5B58",
       shareCopy: "\u30C6\u30AD\u30B9\u30C8\u3092\u30B3\u30D4\u30FC",
       shareCopyUrl: "\u30EA\u30F3\u30AF\u3092\u30B3\u30D4\u30FC",
       shareSns: "SNS",
+      shareHint: "\u5404SNS\u306F\u30C6\u30AD\u30B9\u30C8\u3068\u30EA\u30F3\u30AF\u3092\u958B\u304D\u307E\u3059\u3002\u76E4\u9762\u753B\u50CF\u306F\u4FDD\u5B58\u3057\u3066\u6295\u7A3F\u306B\u6DFB\u4ED8\u3057\u3066\u304F\u3060\u3055\u3044\u3002",
       shareTextTitle: "TileCity \u3092\u30D7\u30EC\u30A4\u3057\u307E\u3057\u305F\uFF01",
+      sharePreparing: "\u753B\u50CF\u3092\u6E96\u5099\u3057\u3066\u3044\u307E\u3059\u2026",
+      shareCaptureFail: "\u76E4\u9762\u3092\u30AD\u30E3\u30D7\u30C1\u30E3\u3067\u304D\u307E\u305B\u3093\u3067\u3057\u305F\u3002\u30C6\u30AD\u30B9\u30C8\u5171\u6709\u306F\u5229\u7528\u3067\u304D\u307E\u3059\u3002",
       shareDone: "\u5171\u6709\u3057\u307E\u3057\u305F\u3002",
+      shareSaved: "\u753B\u50CF\u3092\u4FDD\u5B58\u3057\u307E\u3057\u305F\u3002",
       shareCopied: "\u30E9\u30F3\u30AD\u30F3\u30B0\u6587\u3092\u30B3\u30D4\u30FC\u3057\u307E\u3057\u305F\u3002",
       shareLinkCopied: "\u30EA\u30F3\u30AF\u3092\u30B3\u30D4\u30FC\u3057\u307E\u3057\u305F\u3002",
       shareCopyFail: "\u30B3\u30D4\u30FC\u306B\u5931\u6557\u3057\u307E\u3057\u305F\u3002",
-      shareNativeUnavailable: "\u3053\u306E\u74B0\u5883\u3067\u306F\u30B7\u30B9\u30C6\u30E0\u5171\u6709\u3092\u4F7F\u3048\u307E\u305B\u3093\u3002\u30C6\u30AD\u30B9\u30C8\u3092\u30B3\u30D4\u30FC\u3057\u3066\u304F\u3060\u3055\u3044\u3002"
+      shareNativeUnavailable: "\u3053\u306E\u74B0\u5883\u3067\u306F\u30B7\u30B9\u30C6\u30E0\u5171\u6709\u3092\u4F7F\u3048\u307E\u305B\u3093\u3002\u753B\u50CF\u3092\u4FDD\u5B58\u3057\u3066\u6DFB\u4ED8\u3057\u3066\u304F\u3060\u3055\u3044\u3002"
     }
   };
   function getLang() {

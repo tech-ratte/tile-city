@@ -85,12 +85,14 @@
     <div class="share-sheet-card" role="dialog" aria-modal="true" aria-labelledby="share-sheet-title">
       <button type="button" id="share-sheet-close" class="share-sheet-close" data-i18n-aria="cancel" aria-label="Cancel">×</button>
       <h2 id="share-sheet-title" data-i18n="shareTitle">Share ranking</h2>
-      <p class="share-sheet-lead" data-i18n="shareLead">Share the ranking text and a link to TileCity.</p>
-      <pre id="share-preview-text" class="share-preview-text"></pre>
+      <p class="share-sheet-lead" data-i18n="shareLead">Board image with ranking in the corner.</p>
+      <div class="share-preview-wrap">
+        <img id="share-preview" alt="" width="1200" height="675">
+      </div>
       <p id="share-status" class="share-status" hidden></p>
       <div class="share-actions-primary">
         <button type="button" id="share-native" class="share-primary" data-i18n="shareNative">Share…</button>
-        <button type="button" id="share-copy" class="share-secondary" data-i18n="shareCopy">Copy text</button>
+        <button type="button" id="share-download" class="share-secondary" data-i18n="shareDownload">Save image</button>
       </div>
       <div class="share-sns" role="group" data-i18n-aria="shareSns" aria-label="Social">
         <a id="share-x" class="share-sns-btn" target="_blank" rel="noopener noreferrer">X</a>
@@ -100,8 +102,10 @@
         <a id="share-threads" class="share-sns-btn" target="_blank" rel="noopener noreferrer">Threads</a>
       </div>
       <div class="share-actions-secondary">
+        <button type="button" id="share-copy" class="share-text-btn" data-i18n="shareCopy">Copy text</button>
         <button type="button" id="share-copy-url" class="share-text-btn" data-i18n="shareCopyUrl">Copy link</button>
       </div>
+      <p class="share-hint" data-i18n="shareHint">Social apps open with text and link. Attach the saved image for the board shot.</p>
     </div>
   </div>
   <script src="js/play.bundle.js"></script>

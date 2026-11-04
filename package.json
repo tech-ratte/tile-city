@@ -7,5 +7,8 @@
     "test:audio": "node scripts/test-audio.mjs",
     "build": "node scripts/build-browser.mjs",
     "gen:icons": "node scripts/gen-icons.mjs"
+  },
+  "dependencies": {
+    "html-to-image": "^1.11.13"
   }
 }

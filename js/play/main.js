@@ -10,7 +10,9 @@ import {
 } from "./storage.js";
 import {
   buildShareText,
+  composeShareImage,
   copyText,
+  downloadBlob,
   nativeShare,
   snsLinks,
 } from "./share.js";
@@ -458,10 +460,12 @@ function rankingHTML() {
 }
 
 let sharePayload = null;
+let shareBusy = false;
 
 function shareLabels() {
   return {
     title: t("shareTextTitle"),
+    ranking: t("gameOver"),
     hashtag: "#TileCity",
   };
 }
@@ -496,21 +500,49 @@ function bindShareLinks(text) {
   return links;
 }
 
-function openShareSheet() {
-  if (!game.finished) return;
+async function openShareSheet() {
+  if (!game.finished || shareBusy) return;
   const sheet = document.getElementById("share-sheet");
-  const preview = document.getElementById("share-preview-text");
+  const preview = document.getElementById("share-preview");
   const nativeBtn = document.getElementById("share-native");
   if (!sheet || !preview) return;
 
-  const labels = shareLabels();
-  const text = buildShareText(game, displayPlayerName, labels);
-  const links = bindShareLinks(text);
-  sharePayload = { text, links };
-  preview.textContent = text + "\n" + links.url;
-  setShareStatus("");
-  if (nativeBtn) nativeBtn.hidden = !navigator.share;
+  shareBusy = true;
+  sharePayload = null;
+  setShareStatus(t("sharePreparing"));
   sheet.hidden = false;
+  preview.removeAttribute("src");
+  preview.alt = t("shareTitle");
+  if (nativeBtn) nativeBtn.hidden = !navigator.share;
+
+  const wasOpen = game.rankingOpen;
+  game.rankingOpen = false;
+  paintSide();
+
+  try {
+    const labels = shareLabels();
+    const text = buildShareText(game, displayPlayerName, labels);
+    const image = await composeShareImage(game, displayPlayerName, labels);
+    sharePayload = { ...image, text, links: bindShareLinks(text) };
+    preview.src = image.dataUrl;
+    setShareStatus("");
+  } catch (err) {
+    console.error(err);
+    const labels = shareLabels();
+    const text = buildShareText(game, displayPlayerName, labels);
+    sharePayload = {
+      blob: null,
+      dataUrl: "",
+      fileName: "tilecity-ranking.png",
+      text,
+      links: bindShareLinks(text),
+    };
+    setShareStatus(t("shareCaptureFail"), "error");
+  } finally {
+    game.rankingOpen = wasOpen;
+    paintSide();
+    shareBusy = false;
+  }
 }
 
 function closeShareSheet() {
@@ -524,6 +556,8 @@ async function onShareNative() {
   if (!sharePayload) return;
   try {
     const mode = await nativeShare({
+      blob: sharePayload.blob,
+      fileName: sharePayload.fileName,
       text: sharePayload.text,
       url: sharePayload.links.url,
     });
@@ -534,6 +568,15 @@ async function onShareNative() {
     console.error(err);
     setShareStatus(t("shareNativeUnavailable"), "error");
   }
+}
+
+function onShareDownload() {
+  if (!sharePayload || !sharePayload.blob) {
+    setShareStatus(t("shareCaptureFail"), "error");
+    return;
+  }
+  downloadBlob(sharePayload.blob, sharePayload.fileName);
+  setShareStatus(t("shareSaved"), "ok");
 }
 
 async function onShareCopyText() {
@@ -1461,6 +1504,10 @@ document.addEventListener("click", (event) => {
   }
   if (button.id === "share-native") {
     void onShareNative();
+    return;
+  }
+  if (button.id === "share-download") {
+    onShareDownload();
     return;
   }
   if (button.id === "share-copy") {

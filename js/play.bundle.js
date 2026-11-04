@@ -3293,17 +3293,22 @@
       noOpenSpot: "No open spot for a meeple",
       share: "Share",
       shareTitle: "Share ranking",
-      shareLead: "Share the ranking text and a link to TileCity.",
+      shareLead: "Board image with ranking in the corner.",
       shareNative: "Share\u2026",
+      shareDownload: "Save image",
       shareCopy: "Copy text",
       shareCopyUrl: "Copy link",
       shareSns: "Social",
+      shareHint: "Social apps open with text and link. Attach the saved image for the board shot.",
       shareTextTitle: "I played TileCity!",
+      sharePreparing: "Preparing image\u2026",
+      shareCaptureFail: "Could not capture the board. You can still copy the ranking text.",
       shareDone: "Shared.",
+      shareSaved: "Image saved.",
       shareCopied: "Ranking text copied.",
       shareLinkCopied: "Link copied.",
       shareCopyFail: "Copy failed.",
-      shareNativeUnavailable: "System share is unavailable here. Copy the text instead."
+      shareNativeUnavailable: "System share is unavailable here. Save the image and attach it."
     },
     ja: {
       homeTitle: "TileCity",
@@ -3540,17 +3545,22 @@
       noOpenSpot: "\u7F6E\u3051\u308B\u5834\u6240\u304C\u3042\u308A\u307E\u305B\u3093",
       share: "\u5171\u6709",
       shareTitle: "\u30E9\u30F3\u30AD\u30F3\u30B0\u3092\u5171\u6709",
-      shareLead: "\u30E9\u30F3\u30AD\u30F3\u30B0\u6587\u3068 TileCity \u3078\u306E\u30EA\u30F3\u30AF\u3092\u5171\u6709\u3067\u304D\u307E\u3059\u3002",
+      shareLead: "\u76E4\u9762\u306E\u753B\u50CF\u306B\u30E9\u30F3\u30AD\u30F3\u30B0\u3092\u91CD\u306D\u3066\u5171\u6709\u3067\u304D\u307E\u3059\u3002",
       shareNative: "\u5171\u6709\u2026",
+      shareDownload: "\u753B\u50CF\u3092\u4FDD\u5B58",
       shareCopy: "\u30C6\u30AD\u30B9\u30C8\u3092\u30B3\u30D4\u30FC",
       shareCopyUrl: "\u30EA\u30F3\u30AF\u3092\u30B3\u30D4\u30FC",
       shareSns: "SNS",
+      shareHint: "\u5404SNS\u306F\u30C6\u30AD\u30B9\u30C8\u3068\u30EA\u30F3\u30AF\u3092\u958B\u304D\u307E\u3059\u3002\u76E4\u9762\u753B\u50CF\u306F\u4FDD\u5B58\u3057\u3066\u6295\u7A3F\u306B\u6DFB\u4ED8\u3057\u3066\u304F\u3060\u3055\u3044\u3002",
       shareTextTitle: "TileCity \u3092\u30D7\u30EC\u30A4\u3057\u307E\u3057\u305F\uFF01",
+      sharePreparing: "\u753B\u50CF\u3092\u6E96\u5099\u3057\u3066\u3044\u307E\u3059\u2026",
+      shareCaptureFail: "\u76E4\u9762\u3092\u30AD\u30E3\u30D7\u30C1\u30E3\u3067\u304D\u307E\u305B\u3093\u3067\u3057\u305F\u3002\u30C6\u30AD\u30B9\u30C8\u5171\u6709\u306F\u5229\u7528\u3067\u304D\u307E\u3059\u3002",
       shareDone: "\u5171\u6709\u3057\u307E\u3057\u305F\u3002",
+      shareSaved: "\u753B\u50CF\u3092\u4FDD\u5B58\u3057\u307E\u3057\u305F\u3002",
       shareCopied: "\u30E9\u30F3\u30AD\u30F3\u30B0\u6587\u3092\u30B3\u30D4\u30FC\u3057\u307E\u3057\u305F\u3002",
       shareLinkCopied: "\u30EA\u30F3\u30AF\u3092\u30B3\u30D4\u30FC\u3057\u307E\u3057\u305F\u3002",
       shareCopyFail: "\u30B3\u30D4\u30FC\u306B\u5931\u6557\u3057\u307E\u3057\u305F\u3002",
-      shareNativeUnavailable: "\u3053\u306E\u74B0\u5883\u3067\u306F\u30B7\u30B9\u30C6\u30E0\u5171\u6709\u3092\u4F7F\u3048\u307E\u305B\u3093\u3002\u30C6\u30AD\u30B9\u30C8\u3092\u30B3\u30D4\u30FC\u3057\u3066\u304F\u3060\u3055\u3044\u3002"
+      shareNativeUnavailable: "\u3053\u306E\u74B0\u5883\u3067\u306F\u30B7\u30B9\u30C6\u30E0\u5171\u6709\u3092\u4F7F\u3048\u307E\u305B\u3093\u3002\u753B\u50CF\u3092\u4FDD\u5B58\u3057\u3066\u6DFB\u4ED8\u3057\u3066\u304F\u3060\u3055\u3044\u3002"
     }
   };
   function getLang() {
@@ -3719,10 +3729,817 @@
     }
   }
 
+  // node_modules/html-to-image/es/util.js
+  function resolveUrl(url, baseUrl) {
+    if (url.match(/^[a-z]+:\/\//i)) {
+      return url;
+    }
+    if (url.match(/^\/\//)) {
+      return window.location.protocol + url;
+    }
+    if (url.match(/^[a-z]+:/i)) {
+      return url;
+    }
+    const doc = document.implementation.createHTMLDocument();
+    const base = doc.createElement("base");
+    const a = doc.createElement("a");
+    doc.head.appendChild(base);
+    doc.body.appendChild(a);
+    if (baseUrl) {
+      base.href = baseUrl;
+    }
+    a.href = url;
+    return a.href;
+  }
+  var uuid = /* @__PURE__ */ (() => {
+    let counter = 0;
+    const random = () => (
+      // eslint-disable-next-line no-bitwise
+      `0000${(Math.random() * 36 ** 4 << 0).toString(36)}`.slice(-4)
+    );
+    return () => {
+      counter += 1;
+      return `u${random()}${counter}`;
+    };
+  })();
+  function toArray(arrayLike) {
+    const arr = [];
+    for (let i = 0, l = arrayLike.length; i < l; i++) {
+      arr.push(arrayLike[i]);
+    }
+    return arr;
+  }
+  var styleProps = null;
+  function getStyleProperties(options = {}) {
+    if (styleProps) {
+      return styleProps;
+    }
+    if (options.includeStyleProperties) {
+      styleProps = options.includeStyleProperties;
+      return styleProps;
+    }
+    styleProps = toArray(window.getComputedStyle(document.documentElement));
+    return styleProps;
+  }
+  function px(node, styleProperty) {
+    const win = node.ownerDocument.defaultView || window;
+    const val = win.getComputedStyle(node).getPropertyValue(styleProperty);
+    return val ? parseFloat(val.replace("px", "")) : 0;
+  }
+  function getNodeWidth(node) {
+    const leftBorder = px(node, "border-left-width");
+    const rightBorder = px(node, "border-right-width");
+    return node.clientWidth + leftBorder + rightBorder;
+  }
+  function getNodeHeight(node) {
+    const topBorder = px(node, "border-top-width");
+    const bottomBorder = px(node, "border-bottom-width");
+    return node.clientHeight + topBorder + bottomBorder;
+  }
+  function getImageSize(targetNode, options = {}) {
+    const width = options.width || getNodeWidth(targetNode);
+    const height = options.height || getNodeHeight(targetNode);
+    return { width, height };
+  }
+  function getPixelRatio() {
+    let ratio;
+    let FINAL_PROCESS;
+    try {
+      FINAL_PROCESS = process;
+    } catch (e) {
+    }
+    const val = FINAL_PROCESS && FINAL_PROCESS.env ? FINAL_PROCESS.env.devicePixelRatio : null;
+    if (val) {
+      ratio = parseInt(val, 10);
+      if (Number.isNaN(ratio)) {
+        ratio = 1;
+      }
+    }
+    return ratio || window.devicePixelRatio || 1;
+  }
+  var canvasDimensionLimit = 16384;
+  function checkCanvasDimensions(canvas) {
+    if (canvas.width > canvasDimensionLimit || canvas.height > canvasDimensionLimit) {
+      if (canvas.width > canvasDimensionLimit && canvas.height > canvasDimensionLimit) {
+        if (canvas.width > canvas.height) {
+          canvas.height *= canvasDimensionLimit / canvas.width;
+          canvas.width = canvasDimensionLimit;
+        } else {
+          canvas.width *= canvasDimensionLimit / canvas.height;
+          canvas.height = canvasDimensionLimit;
+        }
+      } else if (canvas.width > canvasDimensionLimit) {
+        canvas.height *= canvasDimensionLimit / canvas.width;
+        canvas.width = canvasDimensionLimit;
+      } else {
+        canvas.width *= canvasDimensionLimit / canvas.height;
+        canvas.height = canvasDimensionLimit;
+      }
+    }
+  }
+  function createImage(url) {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => {
+        img.decode().then(() => {
+          requestAnimationFrame(() => resolve(img));
+        });
+      };
+      img.onerror = reject;
+      img.crossOrigin = "anonymous";
+      img.decoding = "async";
+      img.src = url;
+    });
+  }
+  async function svgToDataURL(svg) {
+    return Promise.resolve().then(() => new XMLSerializer().serializeToString(svg)).then(encodeURIComponent).then((html) => `data:image/svg+xml;charset=utf-8,${html}`);
+  }
+  async function nodeToDataURL(node, width, height) {
+    const xmlns = "http://www.w3.org/2000/svg";
+    const svg = document.createElementNS(xmlns, "svg");
+    const foreignObject = document.createElementNS(xmlns, "foreignObject");
+    svg.setAttribute("width", `${width}`);
+    svg.setAttribute("height", `${height}`);
+    svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
+    foreignObject.setAttribute("width", "100%");
+    foreignObject.setAttribute("height", "100%");
+    foreignObject.setAttribute("x", "0");
+    foreignObject.setAttribute("y", "0");
+    foreignObject.setAttribute("externalResourcesRequired", "true");
+    svg.appendChild(foreignObject);
+    foreignObject.appendChild(node);
+    return svgToDataURL(svg);
+  }
+  var isInstanceOfElement = (node, instance) => {
+    if (node instanceof instance)
+      return true;
+    const nodePrototype = Object.getPrototypeOf(node);
+    if (nodePrototype === null)
+      return false;
+    return nodePrototype.constructor.name === instance.name || isInstanceOfElement(nodePrototype, instance);
+  };
+
+  // node_modules/html-to-image/es/clone-pseudos.js
+  function formatCSSText(style) {
+    const content = style.getPropertyValue("content");
+    return `${style.cssText} content: '${content.replace(/'|"/g, "")}';`;
+  }
+  function formatCSSProperties(style, options) {
+    return getStyleProperties(options).map((name) => {
+      const value = style.getPropertyValue(name);
+      const priority = style.getPropertyPriority(name);
+      return `${name}: ${value}${priority ? " !important" : ""};`;
+    }).join(" ");
+  }
+  function getPseudoElementStyle(className, pseudo, style, options) {
+    const selector = `.${className}:${pseudo}`;
+    const cssText = style.cssText ? formatCSSText(style) : formatCSSProperties(style, options);
+    return document.createTextNode(`${selector}{${cssText}}`);
+  }
+  function clonePseudoElement(nativeNode, clonedNode, pseudo, options) {
+    const style = window.getComputedStyle(nativeNode, pseudo);
+    const content = style.getPropertyValue("content");
+    if (content === "" || content === "none") {
+      return;
+    }
+    const className = uuid();
+    try {
+      clonedNode.className = `${clonedNode.className} ${className}`;
+    } catch (err) {
+      return;
+    }
+    const styleElement = document.createElement("style");
+    styleElement.appendChild(getPseudoElementStyle(className, pseudo, style, options));
+    clonedNode.appendChild(styleElement);
+  }
+  function clonePseudoElements(nativeNode, clonedNode, options) {
+    clonePseudoElement(nativeNode, clonedNode, ":before", options);
+    clonePseudoElement(nativeNode, clonedNode, ":after", options);
+  }
+
+  // node_modules/html-to-image/es/mimes.js
+  var WOFF = "application/font-woff";
+  var JPEG = "image/jpeg";
+  var mimes = {
+    woff: WOFF,
+    woff2: WOFF,
+    ttf: "application/font-truetype",
+    eot: "application/vnd.ms-fontobject",
+    png: "image/png",
+    jpg: JPEG,
+    jpeg: JPEG,
+    gif: "image/gif",
+    tiff: "image/tiff",
+    svg: "image/svg+xml",
+    webp: "image/webp"
+  };
+  function getExtension(url) {
+    const match = /\.([^./]*?)$/g.exec(url);
+    return match ? match[1] : "";
+  }
+  function getMimeType(url) {
+    const extension = getExtension(url).toLowerCase();
+    return mimes[extension] || "";
+  }
+
+  // node_modules/html-to-image/es/dataurl.js
+  function getContentFromDataUrl(dataURL) {
+    return dataURL.split(/,/)[1];
+  }
+  function isDataUrl(url) {
+    return url.search(/^(data:)/) !== -1;
+  }
+  function makeDataUrl(content, mimeType) {
+    return `data:${mimeType};base64,${content}`;
+  }
+  async function fetchAsDataURL(url, init, process2) {
+    const res = await fetch(url, init);
+    if (res.status === 404) {
+      throw new Error(`Resource "${res.url}" not found`);
+    }
+    const blob = await res.blob();
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onerror = reject;
+      reader.onloadend = () => {
+        try {
+          resolve(process2({ res, result: reader.result }));
+        } catch (error) {
+          reject(error);
+        }
+      };
+      reader.readAsDataURL(blob);
+    });
+  }
+  var cache = {};
+  function getCacheKey(url, contentType, includeQueryParams) {
+    let key = url.replace(/\?.*/, "");
+    if (includeQueryParams) {
+      key = url;
+    }
+    if (/ttf|otf|eot|woff2?/i.test(key)) {
+      key = key.replace(/.*\//, "");
+    }
+    return contentType ? `[${contentType}]${key}` : key;
+  }
+  async function resourceToDataURL(resourceUrl, contentType, options) {
+    const cacheKey = getCacheKey(resourceUrl, contentType, options.includeQueryParams);
+    if (cache[cacheKey] != null) {
+      return cache[cacheKey];
+    }
+    if (options.cacheBust) {
+      resourceUrl += (/\?/.test(resourceUrl) ? "&" : "?") + (/* @__PURE__ */ new Date()).getTime();
+    }
+    let dataURL;
+    try {
+      const content = await fetchAsDataURL(resourceUrl, options.fetchRequestInit, ({ res, result }) => {
+        if (!contentType) {
+          contentType = res.headers.get("Content-Type") || "";
+        }
+        return getContentFromDataUrl(result);
+      });
+      dataURL = makeDataUrl(content, contentType);
+    } catch (error) {
+      dataURL = options.imagePlaceholder || "";
+      let msg = `Failed to fetch resource: ${resourceUrl}`;
+      if (error) {
+        msg = typeof error === "string" ? error : error.message;
+      }
+      if (msg) {
+        console.warn(msg);
+      }
+    }
+    cache[cacheKey] = dataURL;
+    return dataURL;
+  }
+
+  // node_modules/html-to-image/es/clone-node.js
+  async function cloneCanvasElement(canvas) {
+    const dataURL = canvas.toDataURL();
+    if (dataURL === "data:,") {
+      return canvas.cloneNode(false);
+    }
+    return createImage(dataURL);
+  }
+  async function cloneVideoElement(video, options) {
+    if (video.currentSrc) {
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d");
+      canvas.width = video.clientWidth;
+      canvas.height = video.clientHeight;
+      ctx === null || ctx === void 0 ? void 0 : ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      const dataURL2 = canvas.toDataURL();
+      return createImage(dataURL2);
+    }
+    const poster = video.poster;
+    const contentType = getMimeType(poster);
+    const dataURL = await resourceToDataURL(poster, contentType, options);
+    return createImage(dataURL);
+  }
+  async function cloneIFrameElement(iframe, options) {
+    var _a;
+    try {
+      if ((_a = iframe === null || iframe === void 0 ? void 0 : iframe.contentDocument) === null || _a === void 0 ? void 0 : _a.body) {
+        return await cloneNode(iframe.contentDocument.body, options, true);
+      }
+    } catch (_b) {
+    }
+    return iframe.cloneNode(false);
+  }
+  async function cloneSingleNode(node, options) {
+    if (isInstanceOfElement(node, HTMLCanvasElement)) {
+      return cloneCanvasElement(node);
+    }
+    if (isInstanceOfElement(node, HTMLVideoElement)) {
+      return cloneVideoElement(node, options);
+    }
+    if (isInstanceOfElement(node, HTMLIFrameElement)) {
+      return cloneIFrameElement(node, options);
+    }
+    return node.cloneNode(isSVGElement(node));
+  }
+  var isSlotElement = (node) => node.tagName != null && node.tagName.toUpperCase() === "SLOT";
+  var isSVGElement = (node) => node.tagName != null && node.tagName.toUpperCase() === "SVG";
+  async function cloneChildren(nativeNode, clonedNode, options) {
+    var _a, _b;
+    if (isSVGElement(clonedNode)) {
+      return clonedNode;
+    }
+    let children = [];
+    if (isSlotElement(nativeNode) && nativeNode.assignedNodes) {
+      children = toArray(nativeNode.assignedNodes());
+    } else if (isInstanceOfElement(nativeNode, HTMLIFrameElement) && ((_a = nativeNode.contentDocument) === null || _a === void 0 ? void 0 : _a.body)) {
+      children = toArray(nativeNode.contentDocument.body.childNodes);
+    } else {
+      children = toArray(((_b = nativeNode.shadowRoot) !== null && _b !== void 0 ? _b : nativeNode).childNodes);
+    }
+    if (children.length === 0 || isInstanceOfElement(nativeNode, HTMLVideoElement)) {
+      return clonedNode;
+    }
+    await children.reduce((deferred, child) => deferred.then(() => cloneNode(child, options)).then((clonedChild) => {
+      if (clonedChild) {
+        clonedNode.appendChild(clonedChild);
+      }
+    }), Promise.resolve());
+    return clonedNode;
+  }
+  function cloneCSSStyle(nativeNode, clonedNode, options) {
+    const targetStyle = clonedNode.style;
+    if (!targetStyle) {
+      return;
+    }
+    const sourceStyle = window.getComputedStyle(nativeNode);
+    if (sourceStyle.cssText) {
+      targetStyle.cssText = sourceStyle.cssText;
+      targetStyle.transformOrigin = sourceStyle.transformOrigin;
+    } else {
+      getStyleProperties(options).forEach((name) => {
+        let value = sourceStyle.getPropertyValue(name);
+        if (name === "font-size" && value.endsWith("px")) {
+          const reducedFont = Math.floor(parseFloat(value.substring(0, value.length - 2))) - 0.1;
+          value = `${reducedFont}px`;
+        }
+        if (isInstanceOfElement(nativeNode, HTMLIFrameElement) && name === "display" && value === "inline") {
+          value = "block";
+        }
+        if (name === "d" && clonedNode.getAttribute("d")) {
+          value = `path(${clonedNode.getAttribute("d")})`;
+        }
+        targetStyle.setProperty(name, value, sourceStyle.getPropertyPriority(name));
+      });
+    }
+  }
+  function cloneInputValue(nativeNode, clonedNode) {
+    if (isInstanceOfElement(nativeNode, HTMLTextAreaElement)) {
+      clonedNode.innerHTML = nativeNode.value;
+    }
+    if (isInstanceOfElement(nativeNode, HTMLInputElement)) {
+      clonedNode.setAttribute("value", nativeNode.value);
+    }
+  }
+  function cloneSelectValue(nativeNode, clonedNode) {
+    if (isInstanceOfElement(nativeNode, HTMLSelectElement)) {
+      const clonedSelect = clonedNode;
+      const selectedOption = Array.from(clonedSelect.children).find((child) => nativeNode.value === child.getAttribute("value"));
+      if (selectedOption) {
+        selectedOption.setAttribute("selected", "");
+      }
+    }
+  }
+  function decorate(nativeNode, clonedNode, options) {
+    if (isInstanceOfElement(clonedNode, Element)) {
+      cloneCSSStyle(nativeNode, clonedNode, options);
+      clonePseudoElements(nativeNode, clonedNode, options);
+      cloneInputValue(nativeNode, clonedNode);
+      cloneSelectValue(nativeNode, clonedNode);
+    }
+    return clonedNode;
+  }
+  async function ensureSVGSymbols(clone, options) {
+    const uses = clone.querySelectorAll ? clone.querySelectorAll("use") : [];
+    if (uses.length === 0) {
+      return clone;
+    }
+    const processedDefs = {};
+    for (let i = 0; i < uses.length; i++) {
+      const use = uses[i];
+      const id = use.getAttribute("xlink:href");
+      if (id) {
+        const exist = clone.querySelector(id);
+        const definition = document.querySelector(id);
+        if (!exist && definition && !processedDefs[id]) {
+          processedDefs[id] = await cloneNode(definition, options, true);
+        }
+      }
+    }
+    const nodes = Object.values(processedDefs);
+    if (nodes.length) {
+      const ns = "http://www.w3.org/1999/xhtml";
+      const svg = document.createElementNS(ns, "svg");
+      svg.setAttribute("xmlns", ns);
+      svg.style.position = "absolute";
+      svg.style.width = "0";
+      svg.style.height = "0";
+      svg.style.overflow = "hidden";
+      svg.style.display = "none";
+      const defs = document.createElementNS(ns, "defs");
+      svg.appendChild(defs);
+      for (let i = 0; i < nodes.length; i++) {
+        defs.appendChild(nodes[i]);
+      }
+      clone.appendChild(svg);
+    }
+    return clone;
+  }
+  async function cloneNode(node, options, isRoot) {
+    if (!isRoot && options.filter && !options.filter(node)) {
+      return null;
+    }
+    return Promise.resolve(node).then((clonedNode) => cloneSingleNode(clonedNode, options)).then((clonedNode) => cloneChildren(node, clonedNode, options)).then((clonedNode) => decorate(node, clonedNode, options)).then((clonedNode) => ensureSVGSymbols(clonedNode, options));
+  }
+
+  // node_modules/html-to-image/es/embed-resources.js
+  var URL_REGEX = /url\((['"]?)([^'"]+?)\1\)/g;
+  var URL_WITH_FORMAT_REGEX = /url\([^)]+\)\s*format\((["']?)([^"']+)\1\)/g;
+  var FONT_SRC_REGEX = /src:\s*(?:url\([^)]+\)\s*format\([^)]+\)[,;]\s*)+/g;
+  function toRegex(url) {
+    const escaped = url.replace(/([.*+?^${}()|\[\]\/\\])/g, "\\$1");
+    return new RegExp(`(url\\(['"]?)(${escaped})(['"]?\\))`, "g");
+  }
+  function parseURLs(cssText) {
+    const urls = [];
+    cssText.replace(URL_REGEX, (raw, quotation, url) => {
+      urls.push(url);
+      return raw;
+    });
+    return urls.filter((url) => !isDataUrl(url));
+  }
+  async function embed(cssText, resourceURL, baseURL, options, getContentFromUrl) {
+    try {
+      const resolvedURL = baseURL ? resolveUrl(resourceURL, baseURL) : resourceURL;
+      const contentType = getMimeType(resourceURL);
+      let dataURL;
+      if (getContentFromUrl) {
+        const content = await getContentFromUrl(resolvedURL);
+        dataURL = makeDataUrl(content, contentType);
+      } else {
+        dataURL = await resourceToDataURL(resolvedURL, contentType, options);
+      }
+      return cssText.replace(toRegex(resourceURL), `$1${dataURL}$3`);
+    } catch (error) {
+    }
+    return cssText;
+  }
+  function filterPreferredFontFormat(str, { preferredFontFormat }) {
+    return !preferredFontFormat ? str : str.replace(FONT_SRC_REGEX, (match) => {
+      while (true) {
+        const [src, , format] = URL_WITH_FORMAT_REGEX.exec(match) || [];
+        if (!format) {
+          return "";
+        }
+        if (format === preferredFontFormat) {
+          return `src: ${src};`;
+        }
+      }
+    });
+  }
+  function shouldEmbed(url) {
+    return url.search(URL_REGEX) !== -1;
+  }
+  async function embedResources(cssText, baseUrl, options) {
+    if (!shouldEmbed(cssText)) {
+      return cssText;
+    }
+    const filteredCSSText = filterPreferredFontFormat(cssText, options);
+    const urls = parseURLs(filteredCSSText);
+    return urls.reduce((deferred, url) => deferred.then((css) => embed(css, url, baseUrl, options)), Promise.resolve(filteredCSSText));
+  }
+
+  // node_modules/html-to-image/es/embed-images.js
+  async function embedProp(propName, node, options) {
+    var _a;
+    const propValue = (_a = node.style) === null || _a === void 0 ? void 0 : _a.getPropertyValue(propName);
+    if (propValue) {
+      const cssString = await embedResources(propValue, null, options);
+      node.style.setProperty(propName, cssString, node.style.getPropertyPriority(propName));
+      return true;
+    }
+    return false;
+  }
+  async function embedBackground(clonedNode, options) {
+    ;
+    await embedProp("background", clonedNode, options) || await embedProp("background-image", clonedNode, options);
+    await embedProp("mask", clonedNode, options) || await embedProp("-webkit-mask", clonedNode, options) || await embedProp("mask-image", clonedNode, options) || await embedProp("-webkit-mask-image", clonedNode, options);
+  }
+  async function embedImageNode(clonedNode, options) {
+    const isImageElement = isInstanceOfElement(clonedNode, HTMLImageElement);
+    if (!(isImageElement && !isDataUrl(clonedNode.src)) && !(isInstanceOfElement(clonedNode, SVGImageElement) && !isDataUrl(clonedNode.href.baseVal))) {
+      return;
+    }
+    const url = isImageElement ? clonedNode.src : clonedNode.href.baseVal;
+    const dataURL = await resourceToDataURL(url, getMimeType(url), options);
+    await new Promise((resolve, reject) => {
+      clonedNode.onload = resolve;
+      clonedNode.onerror = options.onImageErrorHandler ? (...attributes) => {
+        try {
+          resolve(options.onImageErrorHandler(...attributes));
+        } catch (error) {
+          reject(error);
+        }
+      } : reject;
+      const image = clonedNode;
+      if (image.decode) {
+        image.decode = resolve;
+      }
+      if (image.loading === "lazy") {
+        image.loading = "eager";
+      }
+      if (isImageElement) {
+        clonedNode.srcset = "";
+        clonedNode.src = dataURL;
+      } else {
+        clonedNode.href.baseVal = dataURL;
+      }
+    });
+  }
+  async function embedChildren(clonedNode, options) {
+    const children = toArray(clonedNode.childNodes);
+    const deferreds = children.map((child) => embedImages(child, options));
+    await Promise.all(deferreds).then(() => clonedNode);
+  }
+  async function embedImages(clonedNode, options) {
+    if (isInstanceOfElement(clonedNode, Element)) {
+      await embedBackground(clonedNode, options);
+      await embedImageNode(clonedNode, options);
+      await embedChildren(clonedNode, options);
+    }
+  }
+
+  // node_modules/html-to-image/es/apply-style.js
+  function applyStyle(node, options) {
+    const { style } = node;
+    if (options.backgroundColor) {
+      style.backgroundColor = options.backgroundColor;
+    }
+    if (options.width) {
+      style.width = `${options.width}px`;
+    }
+    if (options.height) {
+      style.height = `${options.height}px`;
+    }
+    const manual = options.style;
+    if (manual != null) {
+      Object.keys(manual).forEach((key) => {
+        style[key] = manual[key];
+      });
+    }
+    return node;
+  }
+
+  // node_modules/html-to-image/es/embed-webfonts.js
+  var cssFetchCache = {};
+  async function fetchCSS(url) {
+    let cache2 = cssFetchCache[url];
+    if (cache2 != null) {
+      return cache2;
+    }
+    const res = await fetch(url);
+    const cssText = await res.text();
+    cache2 = { url, cssText };
+    cssFetchCache[url] = cache2;
+    return cache2;
+  }
+  async function embedFonts(data, options) {
+    let cssText = data.cssText;
+    const regexUrl = /url\(["']?([^"')]+)["']?\)/g;
+    const fontLocs = cssText.match(/url\([^)]+\)/g) || [];
+    const loadFonts = fontLocs.map(async (loc) => {
+      let url = loc.replace(regexUrl, "$1");
+      if (!url.startsWith("https://")) {
+        url = new URL(url, data.url).href;
+      }
+      return fetchAsDataURL(url, options.fetchRequestInit, ({ result }) => {
+        cssText = cssText.replace(loc, `url(${result})`);
+        return [loc, result];
+      });
+    });
+    return Promise.all(loadFonts).then(() => cssText);
+  }
+  function parseCSS(source) {
+    if (source == null) {
+      return [];
+    }
+    const result = [];
+    const commentsRegex = /(\/\*[\s\S]*?\*\/)/gi;
+    let cssText = source.replace(commentsRegex, "");
+    const keyframesRegex = new RegExp("((@.*?keyframes [\\s\\S]*?){([\\s\\S]*?}\\s*?)})", "gi");
+    while (true) {
+      const matches = keyframesRegex.exec(cssText);
+      if (matches === null) {
+        break;
+      }
+      result.push(matches[0]);
+    }
+    cssText = cssText.replace(keyframesRegex, "");
+    const importRegex = /@import[\s\S]*?url\([^)]*\)[\s\S]*?;/gi;
+    const combinedCSSRegex = "((\\s*?(?:\\/\\*[\\s\\S]*?\\*\\/)?\\s*?@media[\\s\\S]*?){([\\s\\S]*?)}\\s*?})|(([\\s\\S]*?){([\\s\\S]*?)})";
+    const unifiedRegex = new RegExp(combinedCSSRegex, "gi");
+    while (true) {
+      let matches = importRegex.exec(cssText);
+      if (matches === null) {
+        matches = unifiedRegex.exec(cssText);
+        if (matches === null) {
+          break;
+        } else {
+          importRegex.lastIndex = unifiedRegex.lastIndex;
+        }
+      } else {
+        unifiedRegex.lastIndex = importRegex.lastIndex;
+      }
+      result.push(matches[0]);
+    }
+    return result;
+  }
+  async function getCSSRules(styleSheets, options) {
+    const ret = [];
+    const deferreds = [];
+    styleSheets.forEach((sheet) => {
+      if ("cssRules" in sheet) {
+        try {
+          toArray(sheet.cssRules || []).forEach((item, index) => {
+            if (item.type === CSSRule.IMPORT_RULE) {
+              let importIndex = index + 1;
+              const url = item.href;
+              const deferred = fetchCSS(url).then((metadata) => embedFonts(metadata, options)).then((cssText) => parseCSS(cssText).forEach((rule) => {
+                try {
+                  sheet.insertRule(rule, rule.startsWith("@import") ? importIndex += 1 : sheet.cssRules.length);
+                } catch (error) {
+                  console.error("Error inserting rule from remote css", {
+                    rule,
+                    error
+                  });
+                }
+              })).catch((e) => {
+                console.error("Error loading remote css", e.toString());
+              });
+              deferreds.push(deferred);
+            }
+          });
+        } catch (e) {
+          const inline = styleSheets.find((a) => a.href == null) || document.styleSheets[0];
+          if (sheet.href != null) {
+            deferreds.push(fetchCSS(sheet.href).then((metadata) => embedFonts(metadata, options)).then((cssText) => parseCSS(cssText).forEach((rule) => {
+              inline.insertRule(rule, inline.cssRules.length);
+            })).catch((err) => {
+              console.error("Error loading remote stylesheet", err);
+            }));
+          }
+          console.error("Error inlining remote css file", e);
+        }
+      }
+    });
+    return Promise.all(deferreds).then(() => {
+      styleSheets.forEach((sheet) => {
+        if ("cssRules" in sheet) {
+          try {
+            toArray(sheet.cssRules || []).forEach((item) => {
+              ret.push(item);
+            });
+          } catch (e) {
+            console.error(`Error while reading CSS rules from ${sheet.href}`, e);
+          }
+        }
+      });
+      return ret;
+    });
+  }
+  function getWebFontRules(cssRules) {
+    return cssRules.filter((rule) => rule.type === CSSRule.FONT_FACE_RULE).filter((rule) => shouldEmbed(rule.style.getPropertyValue("src")));
+  }
+  async function parseWebFontRules(node, options) {
+    if (node.ownerDocument == null) {
+      throw new Error("Provided element is not within a Document");
+    }
+    const styleSheets = toArray(node.ownerDocument.styleSheets);
+    const cssRules = await getCSSRules(styleSheets, options);
+    return getWebFontRules(cssRules);
+  }
+  function normalizeFontFamily(font) {
+    return font.trim().replace(/["']/g, "");
+  }
+  function getUsedFonts(node) {
+    const fonts = /* @__PURE__ */ new Set();
+    function traverse(node2) {
+      const fontFamily = node2.style.fontFamily || getComputedStyle(node2).fontFamily;
+      fontFamily.split(",").forEach((font) => {
+        fonts.add(normalizeFontFamily(font));
+      });
+      Array.from(node2.children).forEach((child) => {
+        if (child instanceof HTMLElement) {
+          traverse(child);
+        }
+      });
+    }
+    traverse(node);
+    return fonts;
+  }
+  async function getWebFontCSS(node, options) {
+    const rules = await parseWebFontRules(node, options);
+    const usedFonts = getUsedFonts(node);
+    const cssTexts = await Promise.all(rules.filter((rule) => usedFonts.has(normalizeFontFamily(rule.style.fontFamily))).map((rule) => {
+      const baseUrl = rule.parentStyleSheet ? rule.parentStyleSheet.href : null;
+      return embedResources(rule.cssText, baseUrl, options);
+    }));
+    return cssTexts.join("\n");
+  }
+  async function embedWebFonts(clonedNode, options) {
+    const cssText = options.fontEmbedCSS != null ? options.fontEmbedCSS : options.skipFonts ? null : await getWebFontCSS(clonedNode, options);
+    if (cssText) {
+      const styleNode = document.createElement("style");
+      const sytleContent = document.createTextNode(cssText);
+      styleNode.appendChild(sytleContent);
+      if (clonedNode.firstChild) {
+        clonedNode.insertBefore(styleNode, clonedNode.firstChild);
+      } else {
+        clonedNode.appendChild(styleNode);
+      }
+    }
+  }
+
+  // node_modules/html-to-image/es/index.js
+  async function toSvg(node, options = {}) {
+    const { width, height } = getImageSize(node, options);
+    const clonedNode = await cloneNode(node, options, true);
+    await embedWebFonts(clonedNode, options);
+    await embedImages(clonedNode, options);
+    applyStyle(clonedNode, options);
+    const datauri = await nodeToDataURL(clonedNode, width, height);
+    return datauri;
+  }
+  async function toCanvas(node, options = {}) {
+    const { width, height } = getImageSize(node, options);
+    const svg = await toSvg(node, options);
+    const img = await createImage(svg);
+    const canvas = document.createElement("canvas");
+    const context = canvas.getContext("2d");
+    const ratio = options.pixelRatio || getPixelRatio();
+    const canvasWidth = options.canvasWidth || width;
+    const canvasHeight = options.canvasHeight || height;
+    canvas.width = canvasWidth * ratio;
+    canvas.height = canvasHeight * ratio;
+    if (!options.skipAutoScale) {
+      checkCanvasDimensions(canvas);
+    }
+    canvas.style.width = `${canvasWidth}`;
+    canvas.style.height = `${canvasHeight}`;
+    if (options.backgroundColor) {
+      context.fillStyle = options.backgroundColor;
+      context.fillRect(0, 0, canvas.width, canvas.height);
+    }
+    context.drawImage(img, 0, 0, canvas.width, canvas.height);
+    return canvas;
+  }
+  async function toPng(node, options = {}) {
+    const canvas = await toCanvas(node, options);
+    return canvas.toDataURL();
+  }
+
   // js/site-origin.js
   var SITE_ORIGIN = "https://tech-ratte.github.io/tile-city";
 
   // js/play/share.js
+  var RANK_HEX = {
+    red: "#ff5d78",
+    blue: "#49c4ff",
+    green: "#3dff9a",
+    yellow: "#ffe14a",
+    orange: "#ff9a3d",
+    purple: "#7c3aed",
+    white: "#f4f7fb",
+    brown: "#a67c52"
+  };
+  var SHARE_W = 1200;
+  var SHARE_H = 675;
   function siteUrl() {
     if (SITE_ORIGIN) {
       return String(SITE_ORIGIN).replace(/\/$/, "") + "/";
@@ -3740,7 +4557,9 @@
       return {
         rank: rank + 1,
         name: nameOf(player),
-        score: game2.scores[index]
+        score: game2.scores[index],
+        color: player.id,
+        hex: RANK_HEX[player.id] || "#f4f7fb"
       };
     });
   }
@@ -3751,6 +4570,191 @@
       ["", labels.hashtag]
     );
     return lines.join("\n");
+  }
+  function waitFrame() {
+    return new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+  }
+  function measureFilledCrop(grid, pixelRatio, marginCss) {
+    const slots = grid.querySelectorAll(".slot.filled");
+    if (!slots.length) return null;
+    const gridRect = grid.getBoundingClientRect();
+    let minL = Infinity;
+    let minT = Infinity;
+    let maxR = -Infinity;
+    let maxB = -Infinity;
+    slots.forEach((el) => {
+      const r = el.getBoundingClientRect();
+      minL = Math.min(minL, r.left);
+      minT = Math.min(minT, r.top);
+      maxR = Math.max(maxR, r.right);
+      maxB = Math.max(maxB, r.bottom);
+    });
+    const margin = marginCss * pixelRatio;
+    const x = (minL - gridRect.left) * pixelRatio - margin;
+    const y = (minT - gridRect.top) * pixelRatio - margin;
+    const w = (maxR - minL) * pixelRatio + margin * 2;
+    const h = (maxB - minT) * pixelRatio + margin * 2;
+    return { x, y, w, h };
+  }
+  function clampCrop(crop, imgW, imgH) {
+    if (!crop) {
+      return { x: 0, y: 0, w: imgW, h: imgH };
+    }
+    const x = Math.max(0, Math.floor(crop.x));
+    const y = Math.max(0, Math.floor(crop.y));
+    const right = Math.min(imgW, Math.ceil(crop.x + crop.w));
+    const bottom = Math.min(imgH, Math.ceil(crop.y + crop.h));
+    return {
+      x,
+      y,
+      w: Math.max(1, right - x),
+      h: Math.max(1, bottom - y)
+    };
+  }
+  async function captureBoardPng() {
+    const grid = document.getElementById("grid");
+    const box = document.getElementById("scroller");
+    if (!grid || !box) throw new Error("board missing");
+    const prevPad = grid.style.padding;
+    const scrollLeft = box.scrollLeft;
+    const scrollTop = box.scrollTop;
+    grid.style.padding = "0";
+    void grid.offsetWidth;
+    const pixelRatio = Math.min(2, window.devicePixelRatio || 1);
+    const crop = measureFilledCrop(grid, pixelRatio, 10);
+    try {
+      await waitFrame();
+      const dataUrl = await toPng(grid, {
+        cacheBust: true,
+        pixelRatio,
+        style: {
+          overflow: "visible",
+          padding: "0"
+        }
+      });
+      return { dataUrl, crop };
+    } finally {
+      grid.style.padding = prevPad;
+      void grid.offsetWidth;
+      box.scrollLeft = scrollLeft;
+      box.scrollTop = scrollTop;
+    }
+  }
+  function loadImage(src) {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = () => reject(new Error("image load failed"));
+      img.src = src;
+    });
+  }
+  function roundRect(ctx, x, y, w, h, r) {
+    const radius = Math.min(r, w / 2, h / 2);
+    ctx.beginPath();
+    ctx.moveTo(x + radius, y);
+    ctx.arcTo(x + w, y, x + w, y + h, radius);
+    ctx.arcTo(x + w, y + h, x, y + h, radius);
+    ctx.arcTo(x, y + h, x, y, radius);
+    ctx.arcTo(x, y, x + w, y, radius);
+    ctx.closePath();
+  }
+  var SIDE_PAD = 24;
+  var SIDE_GAP = 16;
+  var RANK_WIDTH = 280;
+  var RANK_SCALE = 1.3;
+  function drawRankingCard(ctx, rows, labels, x, y) {
+    const pad = 18;
+    const rowH = 34;
+    const titleH = 36;
+    const width = RANK_WIDTH;
+    const height = pad * 2 + titleH + rows.length * rowH;
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.scale(RANK_SCALE, RANK_SCALE);
+    ctx.fillStyle = "rgba(10, 16, 28, 0.88)";
+    ctx.strokeStyle = "rgba(140, 220, 255, 0.35)";
+    ctx.lineWidth = 2;
+    roundRect(ctx, 0, 0, width, height, 16);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = "#f4f7fb";
+    ctx.font = "700 18px 'Segoe UI', 'Yu Gothic UI', sans-serif";
+    ctx.fillText(labels.ranking, pad, pad + 20);
+    rows.forEach((row, i) => {
+      const top = pad + titleH + i * rowH;
+      ctx.fillStyle = "rgba(255, 255, 255, 0.06)";
+      roundRect(ctx, 12, top, width - 24, rowH - 6, 8);
+      ctx.fill();
+      ctx.fillStyle = "#93a8be";
+      ctx.font = "700 13px 'Segoe UI', 'Yu Gothic UI', sans-serif";
+      ctx.fillText(String(row.rank), 22, top + 18);
+      ctx.fillStyle = row.hex;
+      ctx.font = "700 14px 'Segoe UI', 'Yu Gothic UI', sans-serif";
+      const name = row.name.length > 12 ? row.name.slice(0, 11) + "\u2026" : row.name;
+      ctx.fillText(name, 42, top + 18);
+      ctx.fillStyle = "#f4f7fb";
+      ctx.font = "700 15px 'Segoe UI', 'Yu Gothic UI', sans-serif";
+      const score = String(row.score);
+      const sw = ctx.measureText(score).width;
+      ctx.fillText(score, width - 22 - sw, top + 18);
+    });
+    ctx.restore();
+    return { x, y, w: width * RANK_SCALE, h: height * RANK_SCALE };
+  }
+  function drawBrandMark(ctx, x, y) {
+    const label = "TileCity";
+    const padX = 22;
+    const padY = 16;
+    ctx.save();
+    ctx.font = "700 44px Georgia, 'Times New Roman', serif";
+    const metrics = ctx.measureText(label);
+    const ascent = metrics.actualBoundingBoxAscent || 35;
+    const descent = metrics.actualBoundingBoxDescent || 10;
+    const tw = metrics.width;
+    const w = tw + padX * 2;
+    const h = ascent + descent + padY * 2;
+    ctx.fillStyle = "rgba(10, 16, 28, 0.55)";
+    roundRect(ctx, x, y, w, h, 14);
+    ctx.fill();
+    ctx.fillStyle = "#f3efe6";
+    ctx.fillText(label, x + padX, y + padY + ascent);
+    ctx.restore();
+    return { x, y, w, h };
+  }
+  async function composeShareImage(game2, nameOf, labels) {
+    const rows = rankingRows(game2, nameOf);
+    const captured = await captureBoardPng();
+    const board = await loadImage(captured.dataUrl);
+    const crop = clampCrop(captured.crop, board.width, board.height);
+    const canvas = document.createElement("canvas");
+    canvas.width = SHARE_W;
+    canvas.height = SHARE_H;
+    const ctx = canvas.getContext("2d");
+    ctx.fillStyle = "#b69256";
+    ctx.fillRect(0, 0, SHARE_W, SHARE_H);
+    const sideW = Math.max(RANK_WIDTH * RANK_SCALE, 220) + SIDE_PAD * 2;
+    const boardArea = {
+      x: sideW,
+      y: SIDE_PAD,
+      w: SHARE_W - sideW - SIDE_PAD,
+      h: SHARE_H - SIDE_PAD * 2
+    };
+    const scale = Math.min(boardArea.w / crop.w, boardArea.h / crop.h);
+    const dw = crop.w * scale;
+    const dh = crop.h * scale;
+    const dx = boardArea.x + boardArea.w - dw;
+    const dy = boardArea.y + (boardArea.h - dh) / 2;
+    ctx.drawImage(board, crop.x, crop.y, crop.w, crop.h, dx, dy, dw, dh);
+    const brand = drawBrandMark(ctx, SIDE_PAD, SIDE_PAD);
+    drawRankingCard(ctx, rows, labels, SIDE_PAD, brand.y + brand.h + SIDE_GAP);
+    const blob = await new Promise((resolve, reject) => {
+      canvas.toBlob(
+        (value) => value ? resolve(value) : reject(new Error("toBlob failed")),
+        "image/png"
+      );
+    });
+    const dataUrl = canvas.toDataURL("image/png");
+    return { blob, dataUrl, fileName: "tilecity-ranking.png" };
   }
   function snsLinks(text) {
     const url = siteUrl();
@@ -3766,10 +4770,20 @@
       text
     };
   }
-  async function nativeShare({ text, url }) {
-    if (!navigator.share) return null;
-    await navigator.share({ title: "TileCity", text, url });
-    return "text";
+  async function nativeShare({ blob, fileName, text, url }) {
+    const payload = { title: "TileCity", text, url };
+    if (blob) {
+      const file = new File([blob], fileName, { type: "image/png" });
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({ ...payload, files: [file] });
+        return "files";
+      }
+    }
+    if (navigator.share) {
+      await navigator.share(payload);
+      return "text";
+    }
+    return null;
   }
   async function copyText(text) {
     if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -3786,6 +4800,16 @@
     const ok = document.execCommand("copy");
     area.remove();
     return ok;
+  }
+  function downloadBlob(blob, fileName) {
+    const href = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = href;
+    a.download = fileName;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(href), 2e3);
   }
 
   // js/play/main.js
@@ -3941,10 +4965,10 @@
     const grid = document.getElementById("grid");
     syncBoardPadding();
     const rect = box.getBoundingClientRect();
-    const px = pivot ? pivot.x - rect.left : rect.width / 2;
+    const px2 = pivot ? pivot.x - rect.left : rect.width / 2;
     const py = pivot ? pivot.y - rect.top : rect.height / 2;
     const beforePad = gridPadBox(grid);
-    const contentX = box.scrollLeft + px;
+    const contentX = box.scrollLeft + px2;
     const contentY = box.scrollTop + py;
     boardZoom = clamped;
     applyBoardZoom();
@@ -3956,7 +4980,7 @@
       beforePad.innerW,
       afterPad.left,
       afterPad.innerW
-    ) - px;
+    ) - px2;
     box.scrollTop = mapZoomCoord(
       contentY,
       beforePad.top,
@@ -4112,9 +5136,11 @@
     return '<ul class="ranking-list">' + rows + "</ul>";
   }
   var sharePayload = null;
+  var shareBusy = false;
   function shareLabels() {
     return {
       title: t2("shareTextTitle"),
+      ranking: t2("gameOver"),
       hashtag: "#TileCity"
     };
   }
@@ -4146,20 +5172,46 @@
     });
     return links;
   }
-  function openShareSheet() {
-    if (!game.finished) return;
+  async function openShareSheet() {
+    if (!game.finished || shareBusy) return;
     const sheet = document.getElementById("share-sheet");
-    const preview = document.getElementById("share-preview-text");
+    const preview = document.getElementById("share-preview");
     const nativeBtn = document.getElementById("share-native");
     if (!sheet || !preview) return;
-    const labels = shareLabels();
-    const text = buildShareText(game, displayPlayerName, labels);
-    const links = bindShareLinks(text);
-    sharePayload = { text, links };
-    preview.textContent = text + "\n" + links.url;
-    setShareStatus("");
-    if (nativeBtn) nativeBtn.hidden = !navigator.share;
+    shareBusy = true;
+    sharePayload = null;
+    setShareStatus(t2("sharePreparing"));
     sheet.hidden = false;
+    preview.removeAttribute("src");
+    preview.alt = t2("shareTitle");
+    if (nativeBtn) nativeBtn.hidden = !navigator.share;
+    const wasOpen = game.rankingOpen;
+    game.rankingOpen = false;
+    paintSide();
+    try {
+      const labels = shareLabels();
+      const text = buildShareText(game, displayPlayerName, labels);
+      const image = await composeShareImage(game, displayPlayerName, labels);
+      sharePayload = { ...image, text, links: bindShareLinks(text) };
+      preview.src = image.dataUrl;
+      setShareStatus("");
+    } catch (err) {
+      console.error(err);
+      const labels = shareLabels();
+      const text = buildShareText(game, displayPlayerName, labels);
+      sharePayload = {
+        blob: null,
+        dataUrl: "",
+        fileName: "tilecity-ranking.png",
+        text,
+        links: bindShareLinks(text)
+      };
+      setShareStatus(t2("shareCaptureFail"), "error");
+    } finally {
+      game.rankingOpen = wasOpen;
+      paintSide();
+      shareBusy = false;
+    }
   }
   function closeShareSheet() {
     const sheet = document.getElementById("share-sheet");
@@ -4171,6 +5223,8 @@
     if (!sharePayload) return;
     try {
       const mode = await nativeShare({
+        blob: sharePayload.blob,
+        fileName: sharePayload.fileName,
         text: sharePayload.text,
         url: sharePayload.links.url
       });
@@ -4181,6 +5235,14 @@
       console.error(err);
       setShareStatus(t2("shareNativeUnavailable"), "error");
     }
+  }
+  function onShareDownload() {
+    if (!sharePayload || !sharePayload.blob) {
+      setShareStatus(t2("shareCaptureFail"), "error");
+      return;
+    }
+    downloadBlob(sharePayload.blob, sharePayload.fileName);
+    setShareStatus(t2("shareSaved"), "ok");
   }
   async function onShareCopyText() {
     if (!sharePayload) return;
@@ -4997,6 +6059,10 @@
     }
     if (button.id === "share-native") {
       void onShareNative();
+      return;
+    }
+    if (button.id === "share-download") {
+      onShareDownload();
       return;
     }
     if (button.id === "share-copy") {
