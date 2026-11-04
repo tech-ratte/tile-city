@@ -275,7 +275,6 @@ export function snsLinks(text) {
     x: "https://twitter.com/intent/tweet?text=" + withUrl,
     facebook: "https://www.facebook.com/sharer/sharer.php?u=" + encodedUrl,
     line: "https://social-plugins.line.me/lineit/share?url=" + encodedUrl,
-    bluesky: "https://bsky.app/intent/compose?text=" + withUrl,
     threads: "https://www.threads.net/intent/post?text=" + withUrl,
     text,
   };
@@ -314,7 +313,27 @@ export async function copyText(text) {
   return ok;
 }
 
-export function downloadBlob(blob, fileName) {
+function prefersShareSave() {
+  // Mobile browsers often ignore <a download> for blob URLs and open a
+  // file/preview viewer instead of writing to Photos/Downloads.
+  const ua = navigator.userAgent || "";
+  const iOS =
+    /iPad|iPhone|iPod/.test(ua) ||
+    (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  return iOS || /Android/i.test(ua);
+}
+
+export async function downloadBlob(blob, fileName) {
+  const file = new File([blob], fileName, { type: blob.type || "image/png" });
+  if (prefersShareSave() && navigator.canShare && navigator.canShare({ files: [file] })) {
+    try {
+      await navigator.share({ files: [file], title: fileName });
+      return "shared";
+    } catch (err) {
+      if (err && err.name === "AbortError") return "abort";
+    }
+  }
+
   const href = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = href;
@@ -323,6 +342,7 @@ export function downloadBlob(blob, fileName) {
   a.click();
   a.remove();
   setTimeout(() => URL.revokeObjectURL(href), 2000);
+  return "download";
 }
 
 export { siteUrl, rankingRows };

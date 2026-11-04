@@ -4765,7 +4765,6 @@
       x: "https://twitter.com/intent/tweet?text=" + withUrl,
       facebook: "https://www.facebook.com/sharer/sharer.php?u=" + encodedUrl,
       line: "https://social-plugins.line.me/lineit/share?url=" + encodedUrl,
-      bluesky: "https://bsky.app/intent/compose?text=" + withUrl,
       threads: "https://www.threads.net/intent/post?text=" + withUrl,
       text
     };
@@ -4801,7 +4800,21 @@
     area.remove();
     return ok;
   }
-  function downloadBlob(blob, fileName) {
+  function prefersShareSave() {
+    const ua = navigator.userAgent || "";
+    const iOS = /iPad|iPhone|iPod/.test(ua) || navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1;
+    return iOS || /Android/i.test(ua);
+  }
+  async function downloadBlob(blob, fileName) {
+    const file = new File([blob], fileName, { type: blob.type || "image/png" });
+    if (prefersShareSave() && navigator.canShare && navigator.canShare({ files: [file] })) {
+      try {
+        await navigator.share({ files: [file], title: fileName });
+        return "shared";
+      } catch (err) {
+        if (err && err.name === "AbortError") return "abort";
+      }
+    }
     const href = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = href;
@@ -4810,6 +4823,7 @@
     a.click();
     a.remove();
     setTimeout(() => URL.revokeObjectURL(href), 2e3);
+    return "download";
   }
 
   // js/play/main.js
@@ -5043,9 +5057,9 @@
   }
   function endActionsHTML(layout) {
     if (layout === "row") {
-      return '<button type="button" class="quit-chip js-quit">' + t2("home") + '</button><button type="button" class="ranking-chip js-open-ranking">' + t2("rank") + '</button><button type="button" class="share-chip js-share">' + t2("share") + '</button><button type="button" class="again-chip js-again">' + t2("again") + "</button>";
+      return '<button type="button" class="quit-chip js-quit">' + t2("home") + '</button><button type="button" class="ranking-chip js-open-ranking">' + t2("rank") + '</button><button type="button" class="again-chip js-again">' + t2("again") + "</button>";
     }
-    return '<button type="button" class="ranking-chip js-open-ranking">' + t2("rank") + '</button><button type="button" class="share-chip js-share">' + t2("share") + '</button><div class="end-actions"><button type="button" class="quit-chip js-quit">' + t2("home") + '</button><button type="button" class="again-chip js-again">' + t2("again") + "</button></div>";
+    return '<button type="button" class="ranking-chip js-open-ranking">' + t2("rank") + '</button><div class="end-actions"><button type="button" class="quit-chip js-quit">' + t2("home") + '</button><button type="button" class="again-chip js-again">' + t2("again") + "</button></div>";
   }
   function boardCap() {
     return Math.max(
@@ -5163,7 +5177,6 @@
       "share-x": links.x,
       "share-line": links.line,
       "share-facebook": links.facebook,
-      "share-bluesky": links.bluesky,
       "share-threads": links.threads
     };
     Object.entries(map).forEach(([id, href]) => {
@@ -5236,13 +5249,19 @@
       setShareStatus(t2("shareNativeUnavailable"), "error");
     }
   }
-  function onShareDownload() {
+  async function onShareDownload() {
     if (!sharePayload || !sharePayload.blob) {
       setShareStatus(t2("shareCaptureFail"), "error");
       return;
     }
-    downloadBlob(sharePayload.blob, sharePayload.fileName);
-    setShareStatus(t2("shareSaved"), "ok");
+    try {
+      const mode = await downloadBlob(sharePayload.blob, sharePayload.fileName);
+      if (mode === "abort") return;
+      setShareStatus(t2("shareSaved"), "ok");
+    } catch (err) {
+      console.error(err);
+      setShareStatus(t2("shareCaptureFail"), "error");
+    }
   }
   async function onShareCopyText() {
     if (!sharePayload) return;

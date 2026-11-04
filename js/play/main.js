@@ -303,11 +303,9 @@ function endActionsHTML(layout) {
   if (layout === "row") {
     return '<button type="button" class="quit-chip js-quit">' + t("home") + "</button>" +
       '<button type="button" class="ranking-chip js-open-ranking">' + t("rank") + "</button>" +
-      '<button type="button" class="share-chip js-share">' + t("share") + "</button>" +
       '<button type="button" class="again-chip js-again">' + t("again") + "</button>";
   }
   return '<button type="button" class="ranking-chip js-open-ranking">' + t("rank") + "</button>" +
-    '<button type="button" class="share-chip js-share">' + t("share") + "</button>" +
     '<div class="end-actions">' +
     '<button type="button" class="quit-chip js-quit">' + t("home") + "</button>" +
     '<button type="button" class="again-chip js-again">' + t("again") + "</button></div>";
@@ -490,7 +488,6 @@ function bindShareLinks(text) {
     "share-x": links.x,
     "share-line": links.line,
     "share-facebook": links.facebook,
-    "share-bluesky": links.bluesky,
     "share-threads": links.threads,
   };
   Object.entries(map).forEach(([id, href]) => {
@@ -570,13 +567,19 @@ async function onShareNative() {
   }
 }
 
-function onShareDownload() {
+async function onShareDownload() {
   if (!sharePayload || !sharePayload.blob) {
     setShareStatus(t("shareCaptureFail"), "error");
     return;
   }
-  downloadBlob(sharePayload.blob, sharePayload.fileName);
-  setShareStatus(t("shareSaved"), "ok");
+  try {
+    const mode = await downloadBlob(sharePayload.blob, sharePayload.fileName);
+    if (mode === "abort") return;
+    setShareStatus(t("shareSaved"), "ok");
+  } catch (err) {
+    console.error(err);
+    setShareStatus(t("shareCaptureFail"), "error");
+  }
 }
 
 async function onShareCopyText() {

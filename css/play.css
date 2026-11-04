@@ -1516,6 +1516,18 @@ html, body { height: 100%; overflow: hidden; }
         max-height: min(74dvh, 560px);
       }
 
+      html.is-overlay .discard-card.ranking-open .ranking-actions {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      html.is-overlay .discard-card.ranking-open .ranking-actions .again-chip,
+      html.is-overlay .discard-card.ranking-open .ranking-actions .quit-chip,
+      html.is-overlay .discard-card.ranking-open .ranking-actions .share-chip {
+        width: 100%;
+        box-sizing: border-box;
+      }
+
       html.is-overlay .board-panel {
         grid-area: 1 / 1;
         min-height: 0;
