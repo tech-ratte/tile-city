@@ -14,8 +14,6 @@ function run(args) {
 }
 
 const jobs = [
-  ["js/game/index.js", "--bundle", "--format=iife", "--global-name=Carcassonne", "--outfile=js/carcassonne.iife.js"],
-  ["js/i18n.js", "--bundle", "--format=iife", "--global-name=TileCityI18n", "--outfile=js/i18n.iife.js"],
   ["js/play/main.js", "--bundle", "--format=iife", "--outfile=js/play.bundle.js"],
   ["js/setup/main.js", "--bundle", "--format=iife", "--outfile=js/setup.bundle.js"],
   ["js/home.js", "--bundle", "--format=iife", "--outfile=js/home.bundle.js"],

@@ -1,5 +1,5 @@
 /**
- * Meeple-conflict claim scenes: shared by unit tests and claim-scenes.html.
+ * Meeple-conflict claim scenes: shared fixtures for unit tests.
  * Each scene lists board placements (id, rot, optional meeple color) and
  * expected claim modes/colors so layouts stay reviewable in one place.
  */

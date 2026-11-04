@@ -786,7 +786,7 @@ assert.strictEqual(MEEPLES_EACH, 7);
   assert.equal(claims.get("1,0:city-0").face, "green");
 }
 
-// Claim scenes catalog (layouts + expectations) — see also claim-scenes.html.
+// Claim scenes catalog (layouts + expectations).
 {
   for (const scene of CLAIM_SCENES) {
     const game = createGame(mulberry32(42));

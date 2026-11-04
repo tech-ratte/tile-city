@@ -744,7 +744,7 @@ html, body { height: 100%; overflow: hidden; }
          zoom-out clamped scroll and the bar/view drifted. */
       padding: 0;
       background-color: #b69256;
-      /* Dot-style sand from sand_base; scales with zoom */
+      /* Dot-style sand; scales with zoom */
       background-image: url("../assets/sand.jpg?v=21");
       image-rendering: pixelated;
       background-repeat: repeat;
