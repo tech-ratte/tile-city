@@ -1227,7 +1227,8 @@ html, body { height: 100%; overflow: hidden; }
 
     .slot.meeple-target {
       overflow: visible;
-      z-index: 12;
+      /* Above neighbor tiles/meeples so OK/← under the tile stay clickable. */
+      z-index: 40;
     }
 
     .meeple-layer {
@@ -1411,7 +1412,7 @@ html, body { height: 100%; overflow: hidden; }
       left: 50%;
       top: calc(100% + 8px);
       transform: translateX(-50%);
-      z-index: 22;
+      z-index: 50;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -1419,7 +1420,7 @@ html, body { height: 100%; overflow: hidden; }
       pointer-events: none;
     }
 
-    #skip-meeple,
+    #confirm-turn,
     #undo-place {
       position: static;
       transform: none;
@@ -1434,11 +1435,11 @@ html, body { height: 100%; overflow: hidden; }
       white-space: nowrap;
     }
 
-    #skip-meeple {
+    #confirm-turn {
       padding: 6px 18px;
     }
 
-    #skip-meeple:hover { border-color: #d6ff6a; color: #f4ffd2; }
+    #confirm-turn:hover { border-color: #d6ff6a; color: #f4ffd2; }
 
     #undo-place {
       display: inline-flex;
@@ -1768,7 +1769,7 @@ html, body { height: 100%; overflow: hidden; }
       gap: 10px;
     }
 
-    html.is-pad #skip-meeple {
+    html.is-pad #confirm-turn {
       padding: 10px 22px;
       font-size: 16px;
       font-weight: 700;

@@ -195,10 +195,13 @@ withMeeple.rotation = 1;
 assert.strictEqual(withMeeple.place(1, 0), true);
 const roadSlot = withMeeple.meepleSlots().find((slot) => slot.kind === "road");
 assert.ok(roadSlot);
-assert.strictEqual(withMeeple.placeMeeple(roadSlot.id), true);
-assert.strictEqual(withMeeple.board.get("1,0").meeple.slot, roadSlot.id);
-assert.strictEqual(withMeeple.meeples[withMeepleStart], 6);
-assert.strictEqual(withMeeple.pendingMeeple, null);
+  assert.strictEqual(withMeeple.placeMeeple(roadSlot.id), true);
+  assert.strictEqual(withMeeple.board.get("1,0").meeple.slot, roadSlot.id);
+  assert.strictEqual(withMeeple.meeples[withMeepleStart], 6);
+  assert.strictEqual(withMeeple.pendingMeeple, null);
+  assert.ok(withMeeple.pendingConfirm);
+  assert.strictEqual(withMeeple.confirmTurnEnd(), true);
+  assert.strictEqual(withMeeple.pendingConfirm, null);
 
 for (const type of TYPES) {
   assert.ok(MEEPLE_LAYOUTS[type.id], type.id + " has meeple layout");
@@ -247,6 +250,54 @@ assert.strictEqual(undoGame.current.id, "U");
 assert.strictEqual(undoGame.rotation, 1);
 assert.strictEqual(undoGame.player, undoStart);
 assert.ok(!undoGame.board.has("1,0"));
+
+// Humans: OK+← then OK. Bots still finish immediately via skipMeeple.
+{
+  const humanGame = createGame(mulberry32(5), [
+    { id: "red", name: "A", bot: false },
+    { id: "blue", name: "B", bot: false },
+  ]);
+  humanGame.player = 0;
+  humanGame.current = makeTile("U");
+  humanGame.rotation = 1;
+  assert.strictEqual(humanGame.place(1, 0), true);
+  assert.ok(humanGame.pendingMeeple);
+  assert.strictEqual(humanGame.pendingConfirm, null);
+  const slots = humanGame.meepleSlots();
+  assert.ok(slots.length);
+  assert.strictEqual(humanGame.placeMeeple(slots[0].id), true);
+  assert.strictEqual(humanGame.pendingMeeple, null);
+  assert.ok(humanGame.pendingConfirm);
+  assert.strictEqual(humanGame.pendingConfirm.placedMeeple, true);
+  assert.strictEqual(humanGame.player, 0);
+  assert.strictEqual(humanGame.undoPlace(), true);
+  assert.ok(humanGame.pendingMeeple);
+  assert.strictEqual(humanGame.pendingConfirm, null);
+  // OK without meeple ends the turn.
+  assert.strictEqual(humanGame.confirmTurnEnd(), true);
+  assert.strictEqual(humanGame.pendingMeeple, null);
+  assert.strictEqual(humanGame.pendingConfirm, null);
+  assert.strictEqual(humanGame.player, 1);
+
+  // Bot: placeMeeple / skipMeeple finish immediately (no OK step).
+  const botGame = createGame(mulberry32(6), [
+    { id: "red", name: "Rex", bot: true },
+    { id: "blue", name: "B", bot: false },
+  ]);
+  botGame.player = 0;
+  botGame.current = makeTile("U");
+  botGame.rotation = 1;
+  assert.strictEqual(botGame.place(1, 0), true);
+  assert.ok(botGame.pendingMeeple);
+  const botSlots = botGame.meepleSlots();
+  if (botSlots.length) {
+    assert.strictEqual(botGame.placeMeeple(botSlots[0].id), true);
+  } else {
+    assert.strictEqual(botGame.skipMeeple(), true);
+  }
+  assert.strictEqual(botGame.pendingConfirm, null);
+  assert.strictEqual(botGame.pendingMeeple, null);
+}
 
 // Two dead-end roads meeting are complete.
 {

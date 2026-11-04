@@ -31,10 +31,17 @@ export class Game {
     this.meeples = this.players.map(() => MEEPLES_EACH);
     this.lastPlacedBy = Object.fromEntries(this.players.map((player) => [player.id, null]));
     this.pendingMeeple = null;
+    this.pendingConfirm = null;
     this.pendingDiscard = false;
     this.standings = this.players.map((_, index) => index);
     this.finalScored = false;
     this.rankingOpen = false;
+  }
+
+  /** Humans confirm with OK; bots finish the turn immediately. */
+  seatNeedsConfirm(index) {
+    const player = this.players[index];
+    return !!(player && !player.bot);
   }
 
   placedEdges(rot) {
@@ -57,7 +64,7 @@ export class Game {
    * Returns true when state changed.
    */
   reconcileHand() {
-    if (this.finished || this.pendingMeeple) return false;
+    if (this.finished || this.pendingMeeple || this.pendingConfirm) return false;
     if (this.current) {
       if (!this.canPlaceAnywhere(this.current)) {
         if (this.pendingDiscard) return false;
@@ -98,6 +105,7 @@ export class Game {
   }
 
   finishGame() {
+    this.pendingConfirm = null;
     this.pendingDiscard = false;
     this.pendingMeeple = null;
     this.current = null;
@@ -171,17 +179,17 @@ export class Game {
   }
 
   rotate(delta) {
-    if (this.finished || this.pendingMeeple || this.pendingDiscard || !this.current) return;
+    if (this.finished || this.pendingMeeple || this.pendingConfirm || this.pendingDiscard || !this.current) return;
     this.rotation = (this.rotation + (delta % 4) + 4) % 4;
   }
 
   setRotation(rot) {
-    if (this.finished || this.pendingMeeple || this.pendingDiscard || !this.current) return;
+    if (this.finished || this.pendingMeeple || this.pendingConfirm || this.pendingDiscard || !this.current) return;
     this.rotation = ((rot % 4) + 4) % 4;
   }
 
   place(x, y) {
-    if (this.finished || this.pendingMeeple || this.pendingDiscard || !this.current) return false;
+    if (this.finished || this.pendingMeeple || this.pendingConfirm || this.pendingDiscard || !this.current) return false;
     const edges = rotateEdges(this.current.edges, this.rotation);
     if (!canPlace(this.board, x, y, edges)) return false;
     const key = keyOf(x, y);
@@ -210,7 +218,7 @@ export class Game {
   }
 
   placeMeeple(slotId) {
-    if (!this.pendingMeeple) return false;
+    if (!this.pendingMeeple || this.pendingConfirm) return false;
     const player = this.pendingMeeple.player;
     if (this.meeples[player] <= 0) return false;
     const x = this.pendingMeeple.x;
@@ -230,17 +238,49 @@ export class Game {
       y: slot.y,
     };
     this.meeples[player] -= 1;
+    if (this.seatNeedsConfirm(player)) {
+      this.beginConfirm(this.pendingMeeple, true);
+      return true;
+    }
     this.finishMeeplePhase();
     return true;
   }
 
   skipMeeple() {
-    if (!this.pendingMeeple) return false;
+    if (!this.pendingMeeple || this.pendingConfirm) return false;
+    // Engine / bot helper: end without a meeple. Human UI uses OK instead.
     this.finishMeeplePhase();
     return true;
   }
 
+  beginConfirm(pending, placedMeeple) {
+    this.pendingConfirm = {
+      x: pending.x,
+      y: pending.y,
+      player: pending.player,
+      prevLastPlaced: pending.prevLastPlaced,
+      placedMeeple: !!placedMeeple,
+    };
+    this.pendingMeeple = null;
+  }
+
+  /** Human OK: end turn after meeple, or end without meeple from the pick phase. */
+  confirmTurnEnd() {
+    if (this.pendingConfirm) {
+      this.finishFromConfirm();
+      return true;
+    }
+    if (this.pendingMeeple && this.seatNeedsConfirm(this.pendingMeeple.player)) {
+      this.finishMeeplePhase();
+      return true;
+    }
+    return false;
+  }
+
   undoPlace() {
+    if (this.pendingConfirm) {
+      return this.undoFromConfirm();
+    }
     if (!this.pendingMeeple) return false;
     const pending = this.pendingMeeple;
     const key = keyOf(pending.x, pending.y);
@@ -254,6 +294,45 @@ export class Game {
     this.pendingMeeple = null;
     this.finished = false;
     return true;
+  }
+
+  undoFromConfirm() {
+    if (!this.pendingConfirm) return false;
+    const pending = this.pendingConfirm;
+    const key = keyOf(pending.x, pending.y);
+    const tile = this.board.get(key);
+    if (!tile) return false;
+    if (pending.placedMeeple && tile.meeple) {
+      this.meeples[pending.player] += 1;
+      tile.meeple = null;
+      this.pendingConfirm = null;
+      this.pendingMeeple = {
+        x: pending.x,
+        y: pending.y,
+        player: pending.player,
+        prevLastPlaced: pending.prevLastPlaced,
+      };
+      return true;
+    }
+    this.board.delete(key);
+    this.current = makeTile(tile.id, tile.start);
+    this.rotation = tile.rot;
+    this.player = pending.player;
+    this.lastPlacedBy[this.players[pending.player].id] = pending.prevLastPlaced;
+    this.pendingConfirm = null;
+    this.pendingMeeple = null;
+    this.finished = false;
+    return true;
+  }
+
+  finishFromConfirm() {
+    if (!this.pendingConfirm) return;
+    const x = this.pendingConfirm.x;
+    const y = this.pendingConfirm.y;
+    this.pendingConfirm = null;
+    resolveCompletions(this, x, y);
+    this.player = (this.player + 1) % this.players.length;
+    this.pull();
   }
 
   finishMeeplePhase() {
@@ -298,6 +377,7 @@ export function simulateToLastTile(random) {
     const slots = game.meepleSlots();
     if (slots.length) game.placeMeeple(slots[0].id);
     else if (!game.skipMeeple()) break;
+    if (game.pendingConfirm && !game.confirmTurnEnd()) break;
   }
   return game;
 }

@@ -59,6 +59,7 @@ export function serializeGame(game) {
     meeples: game.meeples.slice(),
     lastPlacedBy: Object.assign({}, game.lastPlacedBy),
     pendingMeeple: game.pendingMeeple ? Object.assign({}, game.pendingMeeple) : null,
+    pendingConfirm: game.pendingConfirm ? Object.assign({}, game.pendingConfirm) : null,
     pendingDiscard: !!game.pendingDiscard,
     standings: game.standings.slice(),
     finalScored: !!game.finalScored,
@@ -97,6 +98,7 @@ export function restoreGame(data) {
     data.lastPlacedBy || {}
   );
   game.pendingMeeple = data.pendingMeeple ? Object.assign({}, data.pendingMeeple) : null;
+  game.pendingConfirm = data.pendingConfirm ? Object.assign({}, data.pendingConfirm) : null;
   game.pendingDiscard = !!data.pendingDiscard;
   game.standings = Array.isArray(data.standings)
     ? data.standings.slice()

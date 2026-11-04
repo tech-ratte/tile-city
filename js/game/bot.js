@@ -404,6 +404,11 @@ function considerOption(best, scored, place, slotId) {
   return betterScore(scored, place, best) ? candidate : best;
 }
 
+function finishIfConfirm(game) {
+  if (game.pendingConfirm && !game.confirmTurnEnd()) return false;
+  return true;
+}
+
 function applyMeepleChoice(game, slotId) {
   const after = cloneGame(game);
   if (slotId) {
@@ -411,6 +416,7 @@ function applyMeepleChoice(game, slotId) {
   } else if (!after.skipMeeple()) {
     return null;
   }
+  if (!finishIfConfirm(after)) return null;
   return after;
 }
 
@@ -423,6 +429,7 @@ function applyPlaceChoice(game, place, slotId) {
   } else if (!placed.skipMeeple()) {
     return null;
   }
+  if (!finishIfConfirm(placed)) return null;
   return placed;
 }
 
