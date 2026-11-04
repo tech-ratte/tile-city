@@ -12,8 +12,9 @@ const RANK_HEX = {
   brown: "#a67c52",
 };
 
-const SHARE_W = 1200;
-const SHARE_H = 675;
+/* Instagram Stories / Reels friendly 9:16 */
+const SHARE_W = 1080;
+const SHARE_H = 1920;
 
 function siteUrl() {
   if (SITE_ORIGIN) {
@@ -149,77 +150,105 @@ function roundRect(ctx, x, y, w, h, r) {
   ctx.closePath();
 }
 
-const SIDE_PAD = 24;
-const SIDE_GAP = 16;
-const RANK_WIDTH = 280;
-const RANK_SCALE = 1.3;
+const SIDE_PAD = 48;
+const SIDE_GAP = 28;
+/* Compact card — not full canvas width — so type can stay large. */
+const RANK_WIDTH = 720;
+
+function rankingCardSize(rows) {
+  const pad = 36;
+  const rowH = 72;
+  const titleH = 64;
+  return {
+    pad,
+    rowH,
+    titleH,
+    width: RANK_WIDTH,
+    height: pad * 2 + titleH + rows.length * rowH,
+  };
+}
 
 function drawRankingCard(ctx, rows, labels, x, y) {
-  const pad = 18;
-  const rowH = 34;
-  const titleH = 36;
-  const width = RANK_WIDTH;
-  const height = pad * 2 + titleH + rows.length * rowH;
-
-  ctx.save();
-  ctx.translate(x, y);
-  ctx.scale(RANK_SCALE, RANK_SCALE);
+  const { pad, rowH, titleH, width, height } = rankingCardSize(rows);
 
   ctx.fillStyle = "rgba(10, 16, 28, 0.88)";
   ctx.strokeStyle = "rgba(140, 220, 255, 0.35)";
-  ctx.lineWidth = 2;
-  roundRect(ctx, 0, 0, width, height, 16);
+  ctx.lineWidth = 4;
+  roundRect(ctx, x, y, width, height, 26);
   ctx.fill();
   ctx.stroke();
 
   ctx.fillStyle = "#f4f7fb";
-  ctx.font = "700 18px 'Segoe UI', 'Yu Gothic UI', sans-serif";
-  ctx.fillText(labels.ranking, pad, pad + 20);
+  ctx.font = "700 42px 'Segoe UI', 'Yu Gothic UI', sans-serif";
+  ctx.fillText(labels.ranking, x + pad, y + pad + 38);
 
   rows.forEach((row, i) => {
-    const top = pad + titleH + i * rowH;
+    const top = y + pad + titleH + i * rowH;
     ctx.fillStyle = "rgba(255, 255, 255, 0.06)";
-    roundRect(ctx, 12, top, width - 24, rowH - 6, 8);
+    roundRect(ctx, x + 22, top, width - 44, rowH - 12, 14);
     ctx.fill();
 
     ctx.fillStyle = "#93a8be";
-    ctx.font = "700 13px 'Segoe UI', 'Yu Gothic UI', sans-serif";
-    ctx.fillText(String(row.rank), 22, top + 18);
+    ctx.font = "700 32px 'Segoe UI', 'Yu Gothic UI', sans-serif";
+    ctx.fillText(String(row.rank), x + 44, top + 42);
 
     ctx.fillStyle = row.hex;
-    ctx.font = "700 14px 'Segoe UI', 'Yu Gothic UI', sans-serif";
+    ctx.font = "700 36px 'Segoe UI', 'Yu Gothic UI', sans-serif";
     const name = row.name.length > 12 ? row.name.slice(0, 11) + "…" : row.name;
-    ctx.fillText(name, 42, top + 18);
+    ctx.fillText(name, x + 88, top + 42);
 
     ctx.fillStyle = "#f4f7fb";
-    ctx.font = "700 15px 'Segoe UI', 'Yu Gothic UI', sans-serif";
+    ctx.font = "700 38px 'Segoe UI', 'Yu Gothic UI', sans-serif";
     const score = String(row.score);
     const sw = ctx.measureText(score).width;
-    ctx.fillText(score, width - 22 - sw, top + 18);
+    ctx.fillText(score, x + width - 44 - sw, top + 42);
   });
-  ctx.restore();
-  return { x, y, w: width * RANK_SCALE, h: height * RANK_SCALE };
+
+  return { x, y, w: width, h: height };
 }
 
-function drawBrandMark(ctx, x, y) {
+function drawBrandMark(ctx, x, y, url) {
   const label = "TileCity";
-  const padX = 22;
-  const padY = 16;
+  const link = String(url || "")
+    .replace(/^https?:\/\//i, "")
+    .replace(/\/$/, "");
+  const padX = 32;
+  const padY = 22;
+  const gap = 14;
 
   ctx.save();
-  ctx.font = "700 44px Georgia, 'Times New Roman', serif";
-  const metrics = ctx.measureText(label);
-  const ascent = metrics.actualBoundingBoxAscent || 35;
-  const descent = metrics.actualBoundingBoxDescent || 10;
-  const tw = metrics.width;
-  const w = tw + padX * 2;
-  const h = ascent + descent + padY * 2;
+  ctx.font = "700 64px Georgia, 'Times New Roman', serif";
+  const titleMetrics = ctx.measureText(label);
+  const titleAscent = titleMetrics.actualBoundingBoxAscent || 50;
+  const titleDescent = titleMetrics.actualBoundingBoxDescent || 14;
+  const titleW = titleMetrics.width;
+
+  ctx.font = "600 36px 'Segoe UI', 'Yu Gothic UI', sans-serif";
+  const linkMetrics = ctx.measureText(link);
+  const linkAscent = linkMetrics.actualBoundingBoxAscent || 28;
+  const linkDescent = linkMetrics.actualBoundingBoxDescent || 8;
+  const linkW = linkMetrics.width;
+
+  const innerW = Math.max(titleW, linkW);
+  const w = innerW + padX * 2;
+  const h =
+    padY + titleAscent + titleDescent + gap + linkAscent + linkDescent + padY;
 
   ctx.fillStyle = "rgba(10, 16, 28, 0.55)";
-  roundRect(ctx, x, y, w, h, 14);
+  roundRect(ctx, x, y, w, h, 18);
   ctx.fill();
+
   ctx.fillStyle = "#f3efe6";
-  ctx.fillText(label, x + padX, y + padY + ascent);
+  ctx.font = "700 64px Georgia, 'Times New Roman', serif";
+  ctx.fillText(label, x + padX, y + padY + titleAscent);
+
+  ctx.fillStyle = "rgba(243, 239, 230, 0.85)";
+  ctx.font = "600 36px 'Segoe UI', 'Yu Gothic UI', sans-serif";
+  ctx.fillText(
+    link,
+    x + padX,
+    y + padY + titleAscent + titleDescent + gap + linkAscent
+  );
   ctx.restore();
   return { x, y, w, h };
 }
@@ -238,23 +267,26 @@ export async function composeShareImage(game, nameOf, labels) {
   ctx.fillStyle = "#b69256";
   ctx.fillRect(0, 0, SHARE_W, SHARE_H);
 
-  // Left column for title + ranking; board fits the remaining right area.
-  const sideW = Math.max(RANK_WIDTH * RANK_SCALE, 220) + SIDE_PAD * 2;
+  // Portrait: title+link (top-left) → board → ranking (bottom).
+  const brand = drawBrandMark(ctx, SIDE_PAD, SIDE_PAD, siteUrl());
+  const rankSize = rankingCardSize(rows);
+  const rankY = SHARE_H - SIDE_PAD - rankSize.height;
+  const rankX = Math.round((SHARE_W - rankSize.width) / 2);
+
   const boardArea = {
-    x: sideW,
-    y: SIDE_PAD,
-    w: SHARE_W - sideW - SIDE_PAD,
-    h: SHARE_H - SIDE_PAD * 2,
+    x: SIDE_PAD,
+    y: brand.y + brand.h + SIDE_GAP,
+    w: SHARE_W - SIDE_PAD * 2,
+    h: Math.max(120, rankY - SIDE_GAP - (brand.y + brand.h + SIDE_GAP)),
   };
   const scale = Math.min(boardArea.w / crop.w, boardArea.h / crop.h);
   const dw = crop.w * scale;
   const dh = crop.h * scale;
-  const dx = boardArea.x + boardArea.w - dw;
+  const dx = boardArea.x + (boardArea.w - dw) / 2;
   const dy = boardArea.y + (boardArea.h - dh) / 2;
   ctx.drawImage(board, crop.x, crop.y, crop.w, crop.h, dx, dy, dw, dh);
 
-  const brand = drawBrandMark(ctx, SIDE_PAD, SIDE_PAD);
-  drawRankingCard(ctx, rows, labels, SIDE_PAD, brand.y + brand.h + SIDE_GAP);
+  drawRankingCard(ctx, rows, labels, rankX, rankY);
 
   const blob = await new Promise((resolve, reject) => {
     canvas.toBlob(
@@ -266,15 +298,32 @@ export async function composeShareImage(game, nameOf, labels) {
   return { blob, dataUrl, fileName: "tilecity-ranking.png" };
 }
 
+function isAppleTouch() {
+  const ua = navigator.userAgent || "";
+  return (
+    /iPad|iPhone|iPod/.test(ua) ||
+    (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1)
+  );
+}
+
 export function snsLinks(text) {
   const url = siteUrl();
   const encodedUrl = encodeURIComponent(url);
-  const withUrl = encodeURIComponent(text + "\n" + url);
+  const body = text + "\n" + url;
+  const withUrl = encodeURIComponent(body);
+  // social-plugins.line.me often loops LINE↔Safari on iOS (esp. private /
+  // ITP). The R/msg/text scheme opens the LINE compose screen directly.
+  const line = isAppleTouch()
+    ? "https://line.me/R/msg/text/?" + withUrl
+    : "https://social-plugins.line.me/lineit/share?url=" +
+      encodedUrl +
+      "&text=" +
+      encodeURIComponent(text);
   return {
     url,
     x: "https://twitter.com/intent/tweet?text=" + withUrl,
     facebook: "https://www.facebook.com/sharer/sharer.php?u=" + encodedUrl,
-    line: "https://social-plugins.line.me/lineit/share?url=" + encodedUrl,
+    line,
     threads: "https://www.threads.net/intent/post?text=" + withUrl,
     text,
   };
@@ -313,25 +362,12 @@ export async function copyText(text) {
   return ok;
 }
 
-function prefersShareSave() {
-  // Mobile browsers often ignore <a download> for blob URLs and open a
-  // file/preview viewer instead of writing to Photos/Downloads.
-  const ua = navigator.userAgent || "";
-  const iOS =
-    /iPad|iPhone|iPod/.test(ua) ||
-    (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
-  return iOS || /Android/i.test(ua);
-}
-
 export async function downloadBlob(blob, fileName) {
-  const file = new File([blob], fileName, { type: blob.type || "image/png" });
-  if (prefersShareSave() && navigator.canShare && navigator.canShare({ files: [file] })) {
-    try {
-      await navigator.share({ files: [file], title: fileName });
-      return "shared";
-    } catch (err) {
-      if (err && err.name === "AbortError") return "abort";
-    }
+  // iPhone/iPad: <a download> and Web Share both fail to feel like "save".
+  // Share… already opens the system sheet (with Save Image). For this button,
+  // point at the in-sheet preview so the user can long-press → Add to Photos.
+  if (isAppleTouch()) {
+    return "ios-hint";
   }
 
   const href = URL.createObjectURL(blob);

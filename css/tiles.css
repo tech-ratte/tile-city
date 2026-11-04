@@ -12,7 +12,10 @@
       --card: #fffdf8;
       --line: #e4d8c4;
       --s: 120px;
-      --road-w: 16px;
+      /* 16px art at --s:120; scales on home/rules when --s shrinks. */
+      --road-w: calc(var(--s) * 16 / 120);
+      --road-half: calc(var(--road-w) / 2);
+      --road-edge: calc(var(--s) * 2 / 120);
     }
 
     * { box-sizing: border-box; }
@@ -1138,18 +1141,18 @@
       position: absolute;
       z-index: 2;
       background: var(--road);
-      box-shadow: 0 0 0 2px var(--road-line);
+      box-shadow: 0 0 0 var(--road-edge) var(--road-line);
     }
 
-    .road.h { left: 0; right: 0; top: calc(50% - 8px); height: var(--road-w); }
-    .road.v { top: 0; bottom: 0; left: calc(50% - 8px); width: var(--road-w); }
-    .road.h-w { left: 0; width: 42%; top: calc(50% - 8px); height: var(--road-w); }
-    .road.h-e { right: 0; width: 42%; top: calc(50% - 8px); height: var(--road-w); }
-    .road.v-n { top: 0; height: 42%; left: calc(50% - 8px); width: var(--road-w); }
-    .road.v-s { bottom: 0; height: 42%; left: calc(50% - 8px); width: var(--road-w); }
+    .road.h { left: 0; right: 0; top: calc(50% - var(--road-half)); height: var(--road-w); }
+    .road.v { top: 0; bottom: 0; left: calc(50% - var(--road-half)); width: var(--road-w); }
+    .road.h-w { left: 0; width: 42%; top: calc(50% - var(--road-half)); height: var(--road-w); }
+    .road.h-e { right: 0; width: 42%; top: calc(50% - var(--road-half)); height: var(--road-w); }
+    .road.v-n { top: 0; height: 42%; left: calc(50% - var(--road-half)); width: var(--road-w); }
+    .road.v-s { bottom: 0; height: 42%; left: calc(50% - var(--road-half)); width: var(--road-w); }
     /* Ends at the monastery door (A); do not run up through the building. */
-    .road.to-s { top: 62%; bottom: 0; left: calc(50% - 8px); width: var(--road-w); }
-    .road.gate { bottom: 0; height: 38%; left: calc(50% - 8px); width: var(--road-w); }
+    .road.to-s { top: 62%; bottom: 0; left: calc(50% - var(--road-half)); width: var(--road-w); }
+    .road.gate { bottom: 0; height: 38%; left: calc(50% - var(--road-half)); width: var(--road-w); }
 
     .bend {
       position: absolute;
@@ -1159,10 +1162,26 @@
       background: transparent;
     }
 
-    .bend.se.edge { width: 140px; height: 140px; left: 50px; top: 50px; border: 20px solid var(--road-line); }
-    .bend.se.line { width: 136px; height: 136px; left: 52px; top: 52px; border: 16px solid var(--road); z-index: 2; }
-    .bend.sw.edge { width: 140px; height: 140px; left: -70px; top: 50px; border: 20px solid var(--road-line); }
-    .bend.sw.line { width: 136px; height: 136px; left: -68px; top: 52px; border: 16px solid var(--road); z-index: 2; }
+    .bend.se.edge {
+      width: calc(var(--s) * 140 / 120); height: calc(var(--s) * 140 / 120);
+      left: calc(var(--s) * 50 / 120); top: calc(var(--s) * 50 / 120);
+      border: calc(var(--s) * 20 / 120) solid var(--road-line);
+    }
+    .bend.se.line {
+      width: calc(var(--s) * 136 / 120); height: calc(var(--s) * 136 / 120);
+      left: calc(var(--s) * 52 / 120); top: calc(var(--s) * 52 / 120);
+      border: calc(var(--s) * 16 / 120) solid var(--road); z-index: 2;
+    }
+    .bend.sw.edge {
+      width: calc(var(--s) * 140 / 120); height: calc(var(--s) * 140 / 120);
+      left: calc(var(--s) * -70 / 120); top: calc(var(--s) * 50 / 120);
+      border: calc(var(--s) * 20 / 120) solid var(--road-line);
+    }
+    .bend.sw.line {
+      width: calc(var(--s) * 136 / 120); height: calc(var(--s) * 136 / 120);
+      left: calc(var(--s) * -68 / 120); top: calc(var(--s) * 52 / 120);
+      border: calc(var(--s) * 16 / 120) solid var(--road); z-index: 2;
+    }
 
     /* Vertical pennant: gold frame (outer), bright blue fill (inset), white ♦ */
     .pennant {
@@ -1214,15 +1233,20 @@
     /*
       Default roof/cross: mauve-slate (no green cast) — not near any meeple hue.
     */
+    /*
+      Art is authored at --s: 120px (1em = 1px). font-size scales with --s so
+      home/rules tiles stay proportional on iOS (length÷length scale() is flaky).
+    */
     .monastery {
       position: absolute;
       z-index: 5;
       left: 50%;
       top: 44%;
-      width: 58px;
-      height: 54px;
+      font-size: calc(var(--s) / 120);
+      width: 58em;
+      height: 54em;
       transform: translate(-50%, -50%);
-      filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.28));
+      filter: drop-shadow(0 2em 2em rgba(0, 0, 0, 0.28));
       --monastery-roof: #6a6474;
       --monastery-roof-dark: #4a4554;
       --monastery-cross: #b0a8b8;
@@ -1237,10 +1261,10 @@
       content: "";
       position: absolute;
       left: 50%;
-      top: 16px;
+      top: 16em;
       z-index: 0;
-      width: 36px;
-      height: 18px;
+      width: 36em;
+      height: 18em;
       transform: translateX(-50%);
       background: var(--monastery-stone);
     }
@@ -1250,13 +1274,13 @@
       bottom: 0;
       z-index: 0;
       display: block;
-      width: 16px;
-      height: 28px;
+      width: 16em;
+      height: 28em;
       background:
-        linear-gradient(90deg, rgba(0, 0, 0, 0.05) 0 1px, transparent 1px) 0 0 / 5px 100%,
+        linear-gradient(90deg, rgba(0, 0, 0, 0.05) 0 1em, transparent 1em) 0 0 / 5em 100%,
         linear-gradient(#efe8dc, #d8cfc0);
-      border: 2px solid #4a3a2c;
-      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.35);
+      border: 2em solid #4a3a2c;
+      box-shadow: inset 0 0 0 1em rgba(255, 255, 255, 0.35);
     }
 
     .monastery .wing.left { left: 0; }
@@ -1265,10 +1289,10 @@
     .monastery .wing::before {
       content: "";
       position: absolute;
-      left: -3px;
-      right: -3px;
-      top: -9px;
-      height: 9px;
+      left: -3em;
+      right: -3em;
+      top: -9em;
+      height: 9em;
       background: linear-gradient(180deg, var(--monastery-roof), var(--monastery-roof-dark));
       clip-path: polygon(0 100%, 50% 0, 100% 100%);
     }
@@ -1279,20 +1303,20 @@
       top: 0;
       z-index: 4;
       display: block;
-      width: 3px;
-      height: 13px;
+      width: 3em;
+      height: 13em;
       background: linear-gradient(var(--monastery-cross), var(--monastery-cross-dark));
-      transform: translate(-50%, -12px);
-      box-shadow: 0 0 0 0.6px rgba(30, 40, 55, 0.45);
+      transform: translate(-50%, -12em);
+      box-shadow: 0 0 0 0.6em rgba(30, 40, 55, 0.45);
     }
 
     .monastery .cross::after {
       content: "";
       position: absolute;
-      left: -4.5px;
-      top: 2px;
-      width: 12px;
-      height: 3px;
+      left: -4.5em;
+      top: 2em;
+      width: 12em;
+      height: 3em;
       background: linear-gradient(var(--monastery-cross), var(--monastery-cross-dark));
     }
 
@@ -1303,25 +1327,25 @@
     .monastery .roof {
       position: absolute;
       left: 50%;
-      top: 4px;
+      top: 4em;
       z-index: 2;
       display: block;
-      width: 44px;
-      height: 20px;
+      width: 44em;
+      height: 20em;
       margin: 0;
       transform: translateX(-50%);
       background: var(--monastery-roof);
       clip-path: polygon(0 100%, 50% 0, 100% 100%);
-      filter: drop-shadow(0 1px 0 rgba(0, 0, 0, 0.25));
+      filter: drop-shadow(0 1em 0 rgba(0, 0, 0, 0.25));
     }
 
     .monastery .roof::before {
       content: "";
       position: absolute;
-      left: 8px;
-      top: 13px;
-      width: 28px;
-      height: 7px;
+      left: 8em;
+      top: 13em;
+      width: 28em;
+      height: 7em;
       background: var(--monastery-roof-dark);
       clip-path: polygon(0 0, 100% 0, 86% 100%, 14% 100%);
     }
@@ -1329,12 +1353,12 @@
     .monastery .roof::after {
       content: "";
       position: absolute;
-      left: 20px;
-      top: 4px;
-      width: 4px;
-      height: 9px;
+      left: 20em;
+      top: 4em;
+      width: 4em;
+      height: 9em;
       background: var(--monastery-cross);
-      border-radius: 1px 1px 0 0;
+      border-radius: 1em 1em 0 0;
     }
 
     /* Tall enough to tuck under the roof — no green field strip in the gable. */
@@ -1344,49 +1368,49 @@
       bottom: 0;
       z-index: 1;
       display: block;
-      width: 34px;
-      height: 34px;
+      width: 34em;
+      height: 34em;
       margin: 0;
       transform: translateX(-50%);
       background:
-        linear-gradient(90deg, rgba(0, 0, 0, 0.06) 0 1px, transparent 1px) 0 0 / 6px 100%,
+        linear-gradient(90deg, rgba(0, 0, 0, 0.06) 0 1em, transparent 1em) 0 0 / 6em 100%,
         linear-gradient(#f8f3e9, #e2dacb);
-      border: 2px solid #4a3a2c;
-      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.45);
+      border: 2em solid #4a3a2c;
+      box-shadow: inset 0 0 0 1em rgba(255, 255, 255, 0.45);
     }
 
     /* All windows share one size (wings + body). */
     .monastery .win {
       position: absolute;
       display: block;
-      width: 6px;
-      height: 7px;
+      width: 6em;
+      height: 7em;
       box-sizing: border-box;
       background: var(--monastery-window);
-      border: 1px solid var(--monastery-window-border);
+      border: 1em solid var(--monastery-window-border);
     }
     .monastery .wing .win {
       left: 50%;
-      top: 6px;
+      top: 6em;
       transform: translateX(-50%);
     }
     .monastery .body .win {
-      top: 8px;
+      top: 8em;
     }
-    .monastery .body .win:first-child { left: 5px; }
-    .monastery .body .win:last-child { left: 19px; }
+    .monastery .body .win:first-child { left: 5em; }
+    .monastery .body .win:last-child { left: 19em; }
 
     .monastery .body::after {
       content: "";
       position: absolute;
       left: 50%;
       bottom: 0;
-      width: 8px;
-      height: 11px;
+      width: 8em;
+      height: 11em;
       transform: translateX(-50%);
       background: linear-gradient(#7a4330, #5a2e22);
-      border-radius: 4px 4px 0 0;
-      box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.2);
+      border-radius: 4em 4em 0 0;
+      box-shadow: inset 0 0 0 1em rgba(0, 0, 0, 0.2);
     }
 
     /* Square plaza; fountain drawn as CSS shapes (not emoji) */

@@ -584,6 +584,7 @@
       shareCaptureFail: "Could not capture the board. You can still copy the ranking text.",
       shareDone: "Shared.",
       shareSaved: "Image saved.",
+      shareSaveHint: "Long-press the preview above, then choose Add to Photos.",
       shareCopied: "Ranking text copied.",
       shareLinkCopied: "Link copied.",
       shareCopyFail: "Copy failed.",
@@ -836,6 +837,7 @@
       shareCaptureFail: "\u76E4\u9762\u3092\u30AD\u30E3\u30D7\u30C1\u30E3\u3067\u304D\u307E\u305B\u3093\u3067\u3057\u305F\u3002\u30C6\u30AD\u30B9\u30C8\u5171\u6709\u306F\u5229\u7528\u3067\u304D\u307E\u3059\u3002",
       shareDone: "\u5171\u6709\u3057\u307E\u3057\u305F\u3002",
       shareSaved: "\u753B\u50CF\u3092\u4FDD\u5B58\u3057\u307E\u3057\u305F\u3002",
+      shareSaveHint: "\u4E0A\u306E\u30D7\u30EC\u30D3\u30E5\u30FC\u3092\u9577\u62BC\u3057\u3057\u3066\u300C\u5199\u771F\u306B\u8FFD\u52A0\u300D\u3092\u9078\u3093\u3067\u304F\u3060\u3055\u3044\u3002",
       shareCopied: "\u30E9\u30F3\u30AD\u30F3\u30B0\u6587\u3092\u30B3\u30D4\u30FC\u3057\u307E\u3057\u305F\u3002",
       shareLinkCopied: "\u30EA\u30F3\u30AF\u3092\u30B3\u30D4\u30FC\u3057\u307E\u3057\u305F\u3002",
       shareCopyFail: "\u30B3\u30D4\u30FC\u306B\u5931\u6557\u3057\u307E\u3057\u305F\u3002",
@@ -933,13 +935,26 @@
     const id = btn.getAttribute("data-tile");
     if (!id) return;
     let rot = 0;
+    let suppressClickUntil = 0;
     function paint() {
       btn.innerHTML = tileHTML(id, rot);
     }
-    paint();
-    btn.addEventListener("click", () => {
+    function rotate() {
       rot = (rot + 1) % 4;
       paint();
+    }
+    paint();
+    btn.addEventListener("pointerdown", (event) => {
+      if (event.pointerType !== "touch" && event.pointerType !== "pen") return;
+      if (!event.isPrimary) return;
+      if (event.button !== 0 && event.button !== -1) return;
+      event.preventDefault();
+      rotate();
+      suppressClickUntil = Date.now() + 700;
+    });
+    btn.addEventListener("click", () => {
+      if (Date.now() < suppressClickUntil) return;
+      rotate();
     });
   });
 })();

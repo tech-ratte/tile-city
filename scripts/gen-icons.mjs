@@ -250,8 +250,9 @@ await resizeTile(tileABuf, 192, "icon-192.png");
 await resizeTile(tileABuf, 512, "icon-512.png");
 
 {
+  // Landscape OG for link cards (LINE etc.). Square surfaces use icon-512.
   const file = path.join(outDir, "_compose-og.html");
-  const side = 420;
+  const side = 380;
   fs.writeFileSync(
     file,
     `<!DOCTYPE html><html><head><style>
@@ -265,14 +266,14 @@ await resizeTile(tileABuf, 512, "icon-512.png");
       }
       .wrap {
         display: flex; align-items: center; height: 630px;
-        padding: 0 72px; gap: 56px; box-sizing: border-box;
+        padding: 0 56px; gap: 44px; box-sizing: border-box;
       }
       .tile { width: ${side}px; height: ${side}px; flex: none; }
       .tile img { width: 100%; height: 100%; object-fit: fill; display: block; }
-      h1 { margin: 0; font-size: 72px; font-weight: 700; }
+      h1 { margin: 0; font-size: 112px; font-weight: 700; letter-spacing: -0.02em; line-height: 1; }
       p {
-        margin: 18px 0 0; font-size: 28px;
-        font-family: "Segoe UI", sans-serif; opacity: 0.72; font-weight: 500;
+        margin: 24px 0 0; font-size: 38px;
+        font-family: "Segoe UI", sans-serif; opacity: 0.78; font-weight: 600;
       }
     </style></head><body>
       <div class="wrap">

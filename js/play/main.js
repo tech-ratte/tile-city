@@ -492,7 +492,15 @@ function bindShareLinks(text) {
   };
   Object.entries(map).forEach(([id, href]) => {
     const el = document.getElementById(id);
-    if (el) el.href = href;
+    if (!el) return;
+    el.href = href;
+    // LINE deep links should stay in this tab. A leftover _blank Safari page
+    // can bounce LINE↔browser in a loop after the handoff.
+    if (id === "share-line" && href.indexOf("line.me/R/msg/text") !== -1) {
+      el.removeAttribute("target");
+    } else {
+      el.target = "_blank";
+    }
   });
   return links;
 }
@@ -549,6 +557,15 @@ function closeShareSheet() {
   setShareStatus("");
 }
 
+function pulseSharePreview() {
+  const wrap = document.querySelector(".share-preview-wrap");
+  if (!wrap) return;
+  wrap.classList.remove("save-hint");
+  void wrap.offsetWidth;
+  wrap.classList.add("save-hint");
+  window.setTimeout(() => wrap.classList.remove("save-hint"), 1800);
+}
+
 async function onShareNative() {
   if (!sharePayload) return;
   try {
@@ -558,7 +575,9 @@ async function onShareNative() {
       text: sharePayload.text,
       url: sharePayload.links.url,
     });
-    if (mode) setShareStatus(t("shareDone"), "ok");
+    // Web Share does not report whether the user sent, copied, or saved —
+    // only that the sheet closed without abort. Avoid claiming a specific action.
+    if (mode) setShareStatus("");
     else setShareStatus(t("shareNativeUnavailable"), "error");
   } catch (err) {
     if (err && err.name === "AbortError") return;
@@ -575,6 +594,11 @@ async function onShareDownload() {
   try {
     const mode = await downloadBlob(sharePayload.blob, sharePayload.fileName);
     if (mode === "abort") return;
+    if (mode === "ios-hint") {
+      pulseSharePreview();
+      setShareStatus(t("shareSaveHint"), "ok");
+      return;
+    }
     setShareStatus(t("shareSaved"), "ok");
   } catch (err) {
     console.error(err);
