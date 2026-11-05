@@ -39,12 +39,18 @@ import {
   BOT_WEIGHTS,
   BOT_STRENGTH_IDS,
 } from "./game/index.js";
+import { turnsAfterThis } from "./game/bot.js";
 import {
   futureDrawsFor,
   binomAtLeast,
   closeChancePaths,
   deckSupply,
+  scoreLag,
+  masterExtraScore,
+  analyzeClosability,
+  listOpenSlots,
 } from "./game/botMaster.js";
+import { clonePlaced } from "./game/tiles.js";
 import { CLAIM_SCENES, applyClaimScene } from "./claim-scenes.js";
 
 function makePlaced(id, rot, meeple) {
@@ -1249,10 +1255,22 @@ assert.ok(!tileHTML("B", 0).includes("rot-"));
   assert.deepStrictEqual(boardErrors(auto.board), []);
 }
 
-// Master close-paths: future draws + self vs beneficiary opp.
+// Master v2: deck paths, lag, weights.
 {
   assert.ok(binomAtLeast(5, 0.5, 1) > 0.9);
   assert.strictEqual(binomAtLeast(2, 0.1, 3), 0);
+  assert.strictEqual(scoreLag([10, 10], 0, 10), 0);
+  assert.ok(scoreLag([0, 10], 0, 10) >= 0.99);
+  assert.ok(
+    closeChancePaths(
+      5,
+      "city",
+      { cityTiles: 20, remaining: 40 },
+      { player: 0, players: [{}, {}], deck: [], current: null },
+      0,
+      [0]
+    ).impossible
+  );
   const g = createGame(mulberry32(7), [
     { id: "red", name: "A", bot: true, botStrength: "master" },
     { id: "blue", name: "B", bot: true, botStrength: "master" },
@@ -1264,6 +1282,7 @@ assert.ok(!tileHTML("B", 0).includes("rot-"));
   assert.ok(myDraws + oppDraws === (g.deck.length + (g.current ? 1 : 0)));
   assert.ok(Math.abs(myDraws - oppDraws) <= 1);
   const supply = deckSupply(g);
+  assert.ok(supply.byId);
   const ownSole = closeChancePaths(1, "city", supply, g, me, [me]);
   assert.ok(ownSole.pOpp === 0, "own-sole: opp will not finish for you");
   assert.ok(ownSole.pSelf >= 0 && ownSole.combined === ownSole.pSelf);
@@ -1273,8 +1292,55 @@ assert.ok(!tileHTML("B", 0).includes("rot-"));
   const enemySole = closeChancePaths(1, "city", supply, g, me, [other]);
   assert.strictEqual(enemySole.pSelf, 0);
   assert.ok(enemySole.combined === enemySole.pOpp);
-  assert.ok(BOT_WEIGHTS.master.denialCapLoose > BOT_WEIGHTS.master.denialCap);
-  assert.ok(BOT_WEIGHTS.master.bigSelfFinishAt >= 8);
+  const empty = { cityTiles: 0, remaining: 10 };
+  assert.strictEqual(closeChancePaths(1, "city", empty, g, me, [other]).combined, 0);
+  assert.ok(BOT_WEIGHTS.master.evSelf > 0);
+  assert.ok(BOT_WEIGHTS.master.denyBlock > 0);
+  assert.ok(BOT_WEIGHTS.master.extraPosCap >= 3);
+  assert.ok(BOT_WEIGHTS.master.monasteryClaim > 0);
+  assert.ok(BOT_WEIGHTS.master.deadClaim < 0);
+  assert.ok(BOT_WEIGHTS.master.evSelf < 0.4);
+  assert.strictEqual(BOT_WEIGHTS.master.denialCap, undefined);
+  assert.strictEqual(BOT_WEIGHTS.master.supplySelf, undefined);
+  assert.strictEqual(typeof masterExtraScore, "function");
+}
+
+// Last-turn flexibility: with empty deck, turnsAfter is 0 while holding current.
+{
+  const g = createGame(mulberry32(99), [
+    { id: "red", name: "A", bot: true, botStrength: "master" },
+    { id: "blue", name: "B", bot: true, botStrength: "standard" },
+  ]);
+  g.deck = [];
+  assert.ok(g.current);
+  assert.strictEqual(turnsAfterThis(g, g.player), 0);
+}
+
+// L2: oriented slot / catalog — C,R,C,R hole has no base-set tile.
+{
+  const board = new Map();
+  // City north of hole: E tile city facing S (rot 2: N edge → S)
+  board.set("0,-1", clonePlaced(makeTile("E"), 2));
+  // City south of hole: E tile city facing N (rot 0)
+  board.set("0,1", clonePlaced(makeTile("E"), 0));
+  // West demands R on hole's W: U straight road vertical → edges N=R,S=R; rot 1 → E=R,W=R
+  board.set("-1,0", clonePlaced(makeTile("U"), 1));
+  // East same
+  board.set("1,0", clonePlaced(makeTile("U"), 1));
+  // Attach cities into one open component via... they're separate one-edge cities.
+  // Open slot analysis from north city parts:
+  const north = collectCityComponent(board, 0, -1, 0);
+  assert.strictEqual(north.complete, false);
+  const slots = listOpenSlots(board, "city", north.parts);
+  assert.strictEqual(slots.blocked, false);
+  assert.ok(slots.slots.some((s) => s.x === 0 && s.y === 0));
+  const analysis = analyzeClosability(board, "city", north.parts, {
+    byId: { E: 5, U: 8, C: 1 },
+    remaining: 20,
+    cityTiles: 10,
+  });
+  assert.strictEqual(analysis.impossible, true);
+  assert.ok(analysis.reason === "catalog" || analysis.deckUseful === 0);
 }
 
 // Master bot: weights exist, legal moves, short auto-play.

@@ -1,22 +1,28 @@
 /**
- * Master-bot extras: threat, close-hardness, denial net, share/contest, locks.
+ * Master-bot extras (v2): supply / join / deny via remaining deck (order ignored).
  * Spec: docs/bot-master.md
  */
+import { canPlace } from "./board.js";
 import {
+  absDir,
   collectCityComponent,
+  collectFieldComponent,
   collectRoadComponent,
+  findCityIndexByAbsEdge,
+  findRoadIndexByAbsEdge,
   monasteryComplete,
 } from "./features.js";
 import {
   cityPennantCount,
+  completedCitiesTouchingField,
   majorityPlayers,
   meepleCountsOnFeature,
   monasteryTileCount,
   uniqueTileCount,
 } from "./scoring.js";
-import { BY_ID } from "./catalog.js";
-import { keyOf } from "./tiles.js";
-import { MEEPLES_EACH } from "./constants.js";
+import { BY_ID, TYPES } from "./catalog.js";
+import { DIR_INDEX, NEI, OPP_DIR } from "./constants.js";
+import { keyOf, rotateEdges } from "./tiles.js";
 
 function clamp01(x) {
   if (x <= 0) return 0;
@@ -28,18 +34,38 @@ function featureMajority(board, kind, parts, playerCount) {
   return majorityPlayers(meepleCountsOnFeature(board, kind, parts, playerCount));
 }
 
-/** Open edge count for city/road parts (imported logic duplicated lightly via callers). */
+function componentKey(parts) {
+  return parts.map((p) => p.x + "," + p.y + "," + p.index).sort().join("|");
+}
+
+function partKeySet(parts) {
+  const set = new Set();
+  for (const p of parts) set.add(p.x + "," + p.y + "," + p.index);
+  return set;
+}
+
+function setsOverlap(a, b) {
+  for (const k of a) {
+    if (b.has(k)) return true;
+  }
+  return false;
+}
+
+/** Open edge count helper for callers. */
 export function countOpenings(board, kind, parts, countOpenEdges) {
   return countOpenEdges(board, kind, parts);
 }
 
+/** Remaining tile multiset + L1 useful counts (order ignored). */
 export function deckSupply(game) {
   let cityEdges = 0;
   let roadEdges = 0;
   let cityTiles = 0;
   let roadTiles = 0;
+  const byId = Object.create(null);
   const tiles = (game.deck || []).concat(game.current ? [game.current] : []);
   for (const tile of tiles) {
+    byId[tile.id] = (byId[tile.id] || 0) + 1;
     const type = BY_ID[tile.id];
     if (!type || !type.edges) continue;
     let hasC = false;
@@ -58,6 +84,7 @@ export function deckSupply(game) {
     if (hasR) roadTiles += 1;
   }
   return {
+    byId: byId,
     cityEdges: cityEdges,
     roadEdges: roadEdges,
     cityTiles: cityTiles,
@@ -68,8 +95,8 @@ export function deckSupply(game) {
 }
 
 /**
- * How many of the remaining tile placements (current + deck) each seat will take,
- * assuming `game.player` holds `game.current` and then deck order continues.
+ * How many remaining placements (current + deck) each seat will take.
+ * Assumes game.player holds game.current, then deck continues in seat order.
  */
 export function futureDrawsFor(game, targetPlayer) {
   const n = game.players.length;
@@ -101,16 +128,168 @@ export function binomAtLeast(draws, p, need) {
   return clamp01(prob);
 }
 
+function edgeWant(kind) {
+  return kind === "city" ? "C" : "R";
+}
+
+function connectsFeature(kind, edges, linkDirs) {
+  const want = edgeWant(kind);
+  for (const dir of linkDirs) {
+    if (edges[DIR_INDEX[dir]] !== want) return false;
+  }
+  return true;
+}
+
 /**
- * Closeability via two paths:
- * 1) self draws enough useful tiles on own remaining turns and places them
- * 2) a beneficiary opponent draws them and completes for their own score
+ * L2: empty cells that open this city/road, with required edge dirs on the new tile.
+ * `blocked` = an opening faces a placed non-matching edge (never closable).
  */
-export function closeChancePaths(openings, kind, supply, game, me, beneficiaries) {
-  const useful = kind === "city" ? supply.cityTiles || 0 : supply.roadTiles || 0;
+export function listOpenSlots(board, kind, parts) {
+  const slots = new Map();
+  for (const part of parts) {
+    const tile = board.get(keyOf(part.x, part.y));
+    if (!tile) continue;
+    const rot = tile.rot || 0;
+    if (kind === "city") {
+      const city = tile.cities && tile.cities[part.index];
+      if (!city) continue;
+      for (const catalogDir of city.edges) {
+        const dir = absDir(catalogDir, rot);
+        const step = NEI[DIR_INDEX[dir]];
+        const nx = part.x + step.dx;
+        const ny = part.y + step.dy;
+        const neighbor = board.get(keyOf(nx, ny));
+        if (neighbor) {
+          if (findCityIndexByAbsEdge(neighbor, OPP_DIR[dir]) >= 0) continue;
+          return { slots: [], blocked: true };
+        }
+        const key = keyOf(nx, ny);
+        const fromDir = OPP_DIR[dir];
+        let slot = slots.get(key);
+        if (!slot) {
+          slot = { x: nx, y: ny, linkDirs: [] };
+          slots.set(key, slot);
+        }
+        if (!slot.linkDirs.includes(fromDir)) slot.linkDirs.push(fromDir);
+      }
+    } else if (kind === "road") {
+      const road = tile.roads && tile.roads[part.index];
+      if (!road) continue;
+      for (const catalogDir of road) {
+        const dir = absDir(catalogDir, rot);
+        const step = NEI[DIR_INDEX[dir]];
+        const nx = part.x + step.dx;
+        const ny = part.y + step.dy;
+        const neighbor = board.get(keyOf(nx, ny));
+        if (neighbor) {
+          if (findRoadIndexByAbsEdge(neighbor, OPP_DIR[dir]) >= 0) continue;
+          return { slots: [], blocked: true };
+        }
+        const key = keyOf(nx, ny);
+        const fromDir = OPP_DIR[dir];
+        let slot = slots.get(key);
+        if (!slot) {
+          slot = { x: nx, y: ny, linkDirs: [] };
+          slots.set(key, slot);
+        }
+        if (!slot.linkDirs.includes(fromDir)) slot.linkDirs.push(fromDir);
+      }
+    }
+  }
+  return { slots: [...slots.values()], blocked: false };
+}
+
+function typeFitsSlot(board, kind, type, slot) {
+  for (let rot = 0; rot < 4; rot++) {
+    const edges = rotateEdges(type.edges, rot);
+    if (!canPlace(board, slot.x, slot.y, edges)) continue;
+    if (!connectsFeature(kind, edges, slot.linkDirs)) continue;
+    return true;
+  }
+  return false;
+}
+
+function catalogFitsSlot(board, kind, slot) {
+  for (const type of TYPES) {
+    if (typeFitsSlot(board, kind, type, slot)) return true;
+  }
+  return false;
+}
+
+/**
+ * L2 closability: oriented open slots vs full catalog and remaining deck multiset.
+ */
+export function analyzeClosability(board, kind, parts, supply) {
+  const { slots, blocked } = listOpenSlots(board, kind, parts);
+  if (blocked) {
+    return { impossible: true, reason: "blocked", deckUseful: 0, slotCount: 0 };
+  }
+  if (!slots.length) {
+    return { impossible: false, reason: "closed", deckUseful: 0, slotCount: 0 };
+  }
+  for (const slot of slots) {
+    if (!catalogFitsSlot(board, kind, slot)) {
+      return { impossible: true, reason: "catalog", deckUseful: 0, slotCount: slots.length };
+    }
+  }
+
+  let deckUseful = 0;
+  const byId = (supply && supply.byId) || Object.create(null);
+  for (const id of Object.keys(byId)) {
+    const count = byId[id] || 0;
+    if (count <= 0) continue;
+    const type = BY_ID[id];
+    if (!type) continue;
+    let fits = false;
+    for (const slot of slots) {
+      if (typeFitsSlot(board, kind, type, slot)) {
+        fits = true;
+        break;
+      }
+    }
+    if (fits) deckUseful += count;
+  }
+
+  if (deckUseful <= 0) {
+    return { impossible: true, reason: "deck", deckUseful: 0, slotCount: slots.length };
+  }
+  return { impossible: false, reason: "ok", deckUseful: deckUseful, slotCount: slots.length };
+}
+
+/**
+ * Closeability via two paths (order ignored):
+ * 1) self draws useful tiles on own remaining turns
+ * 2) beneficiary opp completes for their own score
+ *
+ * When board+parts are provided, useful count is L2 (oriented fit); otherwise L1 fallback.
+ */
+export function closeChancePaths(openings, kind, supply, game, me, beneficiaries, board, parts) {
+  const need = Math.max(1, Math.min(Math.max(0, openings), 3));
+  let useful;
+  let impossible = false;
+
+  if (board && parts && (kind === "city" || kind === "road")) {
+    const analysis = analyzeClosability(board, kind, parts, supply);
+    useful = analysis.deckUseful;
+    impossible = analysis.impossible || openings >= 5;
+  } else {
+    useful = kind === "city" ? supply.cityTiles || 0 : supply.roadTiles || 0;
+    impossible = openings >= 5 || (openings >= 1 && useful <= 0);
+  }
+
+  if (impossible || (openings >= 1 && useful <= 0)) {
+    return {
+      pSelf: 0,
+      pOpp: 0,
+      combined: 0,
+      useful: useful || 0,
+      need: need,
+      impossible: true,
+    };
+  }
+
   const pool = Math.max(1, supply.remaining || 0);
   const pTile = Math.min(1, useful / pool);
-  const need = Math.max(1, Math.min(Math.max(0, openings), 3));
   const benef = Array.isArray(beneficiaries) ? beneficiaries : [];
 
   const pSelf = benef.includes(me)
@@ -131,57 +310,19 @@ export function closeChancePaths(openings, kind, supply, game, me, beneficiaries
     combined: clamp01(combined),
     useful: useful,
     need: need,
+    impossible: false,
   };
 }
 
-/**
- * 0 = easy to close, 1 = nearly impossible (catalog / turn-aware deck paths).
- * opts: { game, me, beneficiaries, catalogFloor } — without game, falls back to edge scarcity.
- */
-export function closeHardness(openings, kind, supply, opts) {
-  const options = opts && typeof opts === "object" && !Array.isArray(opts) ? opts : null;
-  // Legacy 4th-arg catalogFloor number still accepted.
-  const catalogFloor =
-    options && options.catalogFloor != null
-      ? options.catalogFloor
-      : typeof opts === "number"
-        ? opts
-        : null;
-
-  let catalog = 0;
-  if (openings >= 5) catalog = 0.95;
-  else if (openings >= 4) catalog = 0.7;
-  else if (openings >= 3) catalog = 0.4;
-  else if (openings >= 2) catalog = 0.15;
-  else catalog = 0.05;
-  if (catalogFloor != null) catalog = Math.max(catalog, catalogFloor);
-
-  let deck = 0;
-  let paths = null;
-  if (options && options.game && Array.isArray(options.beneficiaries)) {
-    paths = closeChancePaths(
-      openings,
-      kind,
-      supply,
-      options.game,
-      options.me,
-      options.beneficiaries
-    );
-    deck = 1 - paths.combined;
-  } else {
-    const edges = kind === "city" ? supply.cityEdges : supply.roadEdges;
-    if (edges <= 0) deck = openings >= 1 ? 0.85 : 0;
-    else if (edges <= 2 && openings >= 2) deck = 0.55;
-    else if (edges <= 4 && openings >= 3) deck = 0.35;
-    else deck = Math.max(0, 0.25 - edges * 0.02);
+export function scoreLag(scores, me, lagRef) {
+  const ref = lagRef > 0 ? lagRef : 10;
+  const my = scores[me] || 0;
+  let lead = my;
+  for (let i = 0; i < scores.length; i++) {
+    if (i === me) continue;
+    if ((scores[i] || 0) > lead) lead = scores[i] || 0;
   }
-
-  return {
-    catalog: catalog,
-    deck: deck,
-    combined: Math.max(catalog, deck * 0.85),
-    paths: paths,
-  };
+  return clamp01((lead - my) / ref);
 }
 
 export function listIncompleteCities(board, playerCount, countOpenEdges) {
@@ -204,6 +345,7 @@ export function listIncompleteCities(board, playerCount, countOpenEdges) {
         id: componentKey(result.parts),
         kind: "city",
         parts: result.parts,
+        partSet: partKeySet(result.parts),
         winners: winners,
         tiles: tiles,
         pennants: pennants,
@@ -215,311 +357,278 @@ export function listIncompleteCities(board, playerCount, countOpenEdges) {
   return out;
 }
 
-function componentKey(parts) {
-  return parts.map((p) => p.x + "," + p.y + "," + p.index).sort().join("|");
-}
-
-export function lockedMeepleCounts(game, countOpenEdges) {
-  const n = game.players.length;
-  const locked = Array.from({ length: n }, () => 0);
-  const board = game.board;
+export function listIncompleteRoads(board, playerCount, countOpenEdges) {
+  const seen = new Set();
+  const out = [];
   for (const [pos, tile] of board) {
-    if (!tile.meeple) continue;
-    const p = tile.meeple.player;
-    if (p < 0 || p >= n) continue;
     const [x, y] = pos.split(",").map(Number);
-    if (tile.meeple.kind === "field") {
-      locked[p] += 1;
-      continue;
-    }
-    if (tile.meeple.kind === "monastery") {
-      if (!monasteryComplete(board, x, y)) locked[p] += 1;
-      continue;
-    }
-    if (tile.meeple.kind === "city") {
-      const result = collectCityComponent(board, x, y, tile.meeple.index);
-      if (!result.complete) {
-        const openings = countOpenEdges(board, "city", result.parts);
-        if (openings >= 2) locked[p] += 1;
-        else locked[p] += 0.5;
-      }
-      continue;
-    }
-    if (tile.meeple.kind === "road") {
-      const result = collectRoadComponent(board, x, y, tile.meeple.index);
-      if (!result.complete) locked[p] += 0.5;
-    }
+    (tile.roads || []).forEach((_, index) => {
+      const seed = x + "," + y + "," + index;
+      if (seen.has(seed)) return;
+      const result = collectRoadComponent(board, x, y, index);
+      for (const part of result.parts) seen.add(part.x + "," + part.y + "," + part.index);
+      if (result.complete) return;
+      const winners = featureMajority(board, "road", result.parts, playerCount);
+      if (!winners.length) return;
+      const tiles = uniqueTileCount(result.parts);
+      const openings = countOpenEdges(board, "road", result.parts);
+      out.push({
+        id: componentKey(result.parts),
+        kind: "road",
+        parts: result.parts,
+        partSet: partKeySet(result.parts),
+        winners: winners,
+        tiles: tiles,
+        pennants: 0,
+        size: tiles,
+        openings: openings,
+      });
+    });
   }
-  return locked;
+  return out;
 }
 
-export function buildThreats(game, me, countOpenEdges, phase) {
-  const n = game.players.length;
-  const locked = lockedMeepleCounts(game, countOpenEdges);
-  const scores = game.scores;
-  const myScore = scores[me] || 0;
-  let bestOther = 0;
-  for (let i = 0; i < n; i++) {
-    if (i === me) continue;
-    if (scores[i] > bestOther) bestOther = scores[i];
+export function listFields(board, playerCount) {
+  const seen = new Set();
+  const out = [];
+  for (const [pos, tile] of board) {
+    if (!tile.meeple || tile.meeple.kind !== "field") continue;
+    const [x, y] = pos.split(",").map(Number);
+    const index = tile.meeple.index;
+    const seed = x + "," + y + "," + index;
+    if (seen.has(seed)) continue;
+    const result = collectFieldComponent(board, x, y, index);
+    for (const part of result.parts) seen.add(part.x + "," + part.y + "," + part.index);
+    const winners = featureMajority(board, "field", result.parts, playerCount);
+    if (!winners.length) continue;
+    const cities = completedCitiesTouchingField(board, result.parts);
+    out.push({
+      id: componentKey(result.parts),
+      kind: "field",
+      parts: result.parts,
+      partSet: partKeySet(result.parts),
+      winners: winners,
+      tiles: uniqueTileCount(result.parts),
+      pennants: 0,
+      size: cities,
+      openings: 0,
+    });
   }
-  // Free meeples alone must not make everyone a threat on turn 1.
-  const phaseScale = phase === "early" ? 0.2 : phase === "mid" ? 0.65 : 1;
-  const threats = Array.from({ length: n }, () => 0);
-  for (let i = 0; i < n; i++) {
-    if (i === me) continue;
-    const scoreGap = (scores[i] - myScore) / 40;
-    // Only treat "leader circle" as pressure once real scores exist.
-    const leadPressure = bestOther >= 10 && scores[i] >= bestOther - 2 ? 0.35 : 0;
-    const free = Math.max(0, (game.meeples[i] || 0) / MEEPLES_EACH);
-    const bigUnfinished = listIncompleteCities(game.board, n, countOpenEdges).some(
-      (c) => c.winners.includes(i) && c.size >= 4
-    )
-      ? 0.2
-      : 0;
-    const lockPenalty = 0.15 * (locked[i] || 0);
-    const raw = 0.5 * scoreGap + 0.35 * leadPressure + 0.15 * free + bigUnfinished - lockPenalty;
-    threats[i] = clamp01(raw * phaseScale);
-  }
-  return { threats: threats, locked: locked };
+  return out;
 }
 
-function indexById(list) {
-  const map = new Map();
-  for (const item of list) map.set(item.id, item);
-  return map;
+function overlapping(list, feat) {
+  const out = [];
+  for (const other of list) {
+    if (other.kind !== feat.kind) continue;
+    if (setsOverlap(feat.partSet, other.partSet)) out.push(other);
+  }
+  return out;
+}
+
+function isBig(feat, weights) {
+  if (feat.kind === "city") return feat.size >= (weights.joinCityMin == null ? 4 : weights.joinCityMin);
+  if (feat.kind === "road") return feat.size >= (weights.joinRoadMin == null ? 4 : weights.joinRoadMin);
+  if (feat.kind === "field") return feat.size >= (weights.joinFieldMin == null ? 2 : weights.joinFieldMin);
+  return false;
+}
+
+function enemySoleOwner(feat, me) {
+  if (feat.winners.length === 1 && feat.winners[0] !== me) return feat.winners[0];
+  return null;
+}
+
+function pathsFor(feat, supply, game, me) {
+  if (feat.kind === "field") {
+    return { pSelf: 0, pOpp: 0, combined: 0, impossible: true };
+  }
+  return closeChancePaths(
+    feat.openings,
+    feat.kind,
+    supply,
+    game,
+    me,
+    feat.winners,
+    game.board,
+    feat.parts
+  );
+}
+
+function featureExpectedPoints(feat, pClose) {
+  // Rules: city complete = 2×size, end = 1×size; road complete = end = size.
+  const endPts = feat.size;
+  const completePts = feat.kind === "city" ? feat.size * 2 : feat.size;
+  const p = clamp01(pClose);
+  return p * completePts + (1 - p) * endPts;
 }
 
 /**
- * Master-only additive score given before/after states.
+ * Master-only additive score (v3): EV / join / lag-deny.
  */
 export function masterExtraScore(ctx) {
-  const {
-    before,
-    after,
-    me,
-    weights,
-    phase,
-    placed,
-    immSelf,
-    immOpp,
-    countOpenEdges,
-    softDenial,
-  } = ctx;
+  const { before, after, me, weights, placed, countOpenEdges, turnsAfter } = ctx;
   if (!weights || !weights.isMaster) return 0;
 
   const n = before.players.length;
-  const supplyBefore = deckSupply(before);
   const supplyAfter = deckSupply(after);
-  const { threats, locked } = buildThreats(before, me, countOpenEdges, phase);
-  let maxThreat = 0;
-  let maxThreatPlayer = -1;
-  for (let i = 0; i < n; i++) {
-    if (i === me) continue;
-    if (threats[i] > maxThreat) {
-      maxThreat = threats[i];
-      maxThreatPlayer = i;
-    }
-  }
-  // Soften denial only when a large exclusive one-move finish is available this turn.
-  const soften = !!softDenial;
-  const denialEnabled = soften ? phase !== "early" : true;
-  const runaway =
-    maxThreatPlayer >= 0 &&
-    (before.scores[maxThreatPlayer] || 0) >= (before.scores[me] || 0) + 12;
-
-  let value = 0;
-
-  // G2 free meeple differential vs top threat
-  if (maxThreatPlayer >= 0 && weights.freeMeepleDiff) {
-    value += weights.freeMeepleDiff * ((after.meeples[me] || 0) - (after.meeples[maxThreatPlayer] || 0));
-  }
-
-  // F4 own locks: prefer moves that free self (returned already in base); boost if still locked many
-  const lockedAfter = lockedMeepleCounts(after, countOpenEdges);
-  if (weights.selfLock && locked[me] > lockedAfter[me]) {
-    value += weights.selfLock * (locked[me] - lockedAfter[me]);
-  }
+  const supplyBefore = deckSupply(before);
+  const lag = scoreLag(before.scores, me, weights.lagRef == null ? 10 : weights.lagRef);
+  const lastTurn = (turnsAfter == null ? 1 : turnsAfter) <= 0;
 
   const citiesBefore = listIncompleteCities(before.board, n, countOpenEdges);
   const citiesAfter = listIncompleteCities(after.board, n, countOpenEdges);
-  const beforeMap = indexById(citiesBefore);
-  const afterMap = indexById(citiesAfter);
+  const roadsBefore = listIncompleteRoads(before.board, n, countOpenEdges);
+  const roadsAfter = listIncompleteRoads(after.board, n, countOpenEdges);
+  const fieldsBefore = listFields(before.board, n);
+  const fieldsAfter = listFields(after.board, n);
 
-  function hardOpts(gameState, winners) {
-    return { game: gameState, me: me, beneficiaries: winners };
-  }
+  let value = 0;
 
-  // B1 self close hope on own cities (self-draw turns ∪ beneficiary opp completes)
-  if (weights.selfCloseHope) {
-    for (const city of citiesAfter) {
-      if (!city.winners.includes(me)) continue;
-      const hard = closeHardness(city.openings, "city", supplyAfter, hardOpts(after, city.winners));
-      value += weights.selfCloseHope * (1 - hard.combined) * Math.min(city.size, 8);
-    }
-  }
-
-  let denialNet = 0;
-  let denialHit = false;
-  for (const city of citiesAfter) {
-    // Denial only against enemy-sole majority — never shared with self, never own-sole.
-    const enemySole =
-      city.winners.length === 1 && city.winners[0] !== me ? city.winners[0] : null;
-    const sharedWithSelf = city.winners.includes(me) && city.winners.some((w) => w !== me);
-    const prev = beforeMap.get(city.id);
-
-    // D1/D2: majority flips involving self (allowed on shared / merge paths)
-    if (prev) {
-      const ownerThreat = city.winners.find((w) => w !== me);
-      const threatFlip = ownerThreat != null ? threats[ownerThreat] || 0 : 0;
-      if (denialEnabled && prev.winners.includes(me) && enemySole != null) {
-        denialNet += (weights.mergeToEnemy || 0) * Math.max(threatFlip, 0.35) * city.size;
-      }
-      if (!prev.winners.includes(me) && city.winners.includes(me) && !sharedWithSelf) {
-        denialNet += (weights.mergeToSelf || 0) * Math.min(city.size, 10);
-      } else if (!prev.winners.includes(me) && city.winners.includes(me) && sharedWithSelf) {
-        // Joining into a share: mild self-merge credit only if low threat
-        const t = Math.min(...city.winners.filter((w) => w !== me).map((w) => threats[w] || 0));
-        if (t < 0.45) denialNet += (weights.mergeToSelf || 0) * 0.5 * Math.min(city.size, 10);
+  // --- V_ev (cities + roads): rule-faithful expected points ---
+  const evSelf = weights.evSelf || 0;
+  const supplyOpp = weights.supplyOpp || 0;
+  const deadClaim = weights.deadClaim || 0;
+  for (const feat of citiesAfter.concat(roadsAfter)) {
+    const paths = pathsFor(feat, supplyAfter, after, me);
+    if (feat.winners.includes(me)) {
+      if (paths.impossible) {
+        if (lastTurn) {
+          // Still scores at end — OK to dump a meeple when no turns remain.
+          if (evSelf) value += evSelf * feat.size;
+        } else if (deadClaim) {
+          value += deadClaim * feat.size;
+        }
+      } else if (evSelf) {
+        value += evSelf * featureExpectedPoints(feat, paths.combined);
       }
     }
+    const enemy = enemySoleOwner(feat, me);
+    if (enemy != null && isBig(feat, weights) && supplyOpp && !paths.impossible) {
+      value += supplyOpp * feat.size * paths.pOpp;
+    }
+  }
 
-    if (enemySole == null) continue;
-    const threat = threats[enemySole] || 0;
-    if (threat < 0.45) continue;
+  // --- V_join (cities, roads, fields) ---
+  const joinOk = weights.joinOk || 0;
+  const joinFail = weights.joinFail || 0;
+  const joinKinds = [
+    { before: citiesBefore, after: citiesAfter },
+    { before: roadsBefore, after: roadsAfter },
+    { before: fieldsBefore, after: fieldsAfter },
+  ];
+  for (const group of joinKinds) {
+    for (const feat of group.after) {
+      if (!isBig(feat, weights)) continue;
+      const prevs = overlapping(group.before, feat);
+      const meNow = feat.winners.includes(me);
+      const meBefore = prevs.some((p) => p.winners.includes(me));
+      const enemyNow = enemySoleOwner(feat, me);
+      const paths =
+        feat.kind === "field" ? { impossible: false } : pathsFor(feat, supplyAfter, after, me);
 
-    const hardAfter = closeHardness(
-      city.openings,
-      "city",
-      supplyAfter,
-      hardOpts(after, city.winners)
-    );
-    const hardBefore = prev
-      ? closeHardness(prev.openings, "city", supplyBefore, hardOpts(before, prev.winners))
-      : { catalog: 0, deck: 0 };
-
-    if (denialEnabled) {
-      const dCatalog = hardAfter.catalog - (hardBefore.catalog || 0);
-      const dDeck = hardAfter.deck - (hardBefore.deck || 0);
-      const dSize = city.size - (prev ? prev.size : 0);
-
-      const starve =
-        (weights.closeHardCatalog || 0) * Math.max(0, dCatalog) * Math.min(city.size, 10) +
-        (weights.closeHardDeck || 0) * Math.max(0, dDeck) * Math.min(city.size, 10);
-      const fatten = (weights.enlargeEnemy || 0) * Math.max(0, dSize);
-      const net = (starve + fatten) * threat;
-      if (net > 0) {
-        denialNet += net;
-        denialHit = true;
-      } else if (fatten < 0 && starve <= 0) {
-        denialNet += fatten * threat;
+      if (meNow && joinOk && !paths.impossible) {
+        const maxOwnBefore = prevs
+          .filter((p) => p.winners.includes(me))
+          .reduce((m, p) => Math.max(m, p.size), 0);
+        const newlyIn = !meBefore;
+        const grewMerge = meBefore && feat.size > maxOwnBefore;
+        if (newlyIn || grewMerge) {
+          value += joinOk * feat.size * 1; // completed join this move
+        }
       }
-    }
 
-    // E4: leave enemy-sole city at 1 opening with easy close (mid+)
-    if (
-      denialEnabled &&
-      weights.opponentSoleRisk &&
-      city.openings <= 1 &&
-      hardAfter.combined < 0.25 &&
-      city.size >= 3 &&
-      immSelf <= 0
-    ) {
-      value += weights.opponentSoleRisk * threat * city.size;
-    }
-  }
-
-  // Soften denial priority only when a big exclusive finish is on the table this turn.
-  const denialCap = soften
-    ? weights.denialCap == null
-      ? 4.5
-      : weights.denialCap
-    : weights.denialCapLoose == null
-      ? 11
-      : weights.denialCapLoose;
-  if (denialNet > 0) value += Math.min(denialNet, denialCap);
-  else value += denialNet;
-
-  // C5 / stronger enemy complete for high threat
-  if (immOpp > 0 && immSelf <= 0 && maxThreat >= 0.6 && weights.threatEnemyComplete) {
-    value += weights.threatEnemyComplete;
-  }
-
-  // E1 / E3 share vs refuse — refuse only when opponent is runaway ahead
-  if (immSelf > 0 && immOpp > 0) {
-    const shared = Math.min(immSelf, immOpp);
-    if (!runaway || shared <= 8) {
-      if (weights.shareOk) value += weights.shareOk * shared;
-    }
-    if (runaway && maxThreat >= 0.55 && shared >= 12 && weights.refuseSharedClose) {
-      value += weights.refuseSharedClose * immOpp;
-    }
-  }
-
-  // F3 release enemy locks
-  if (weights.releaseEnemy) {
-    for (let i = 0; i < n; i++) {
-      if (i === me) continue;
-      const freed = (locked[i] || 0) - (lockedAfter[i] || 0);
-      if (freed > 0) value += weights.releaseEnemy * (threats[i] || 0) * freed;
-      if (freed < 0 && weights.keepEnemyLocked) {
-        value += weights.keepEnemyLocked * (threats[i] || 0) * (-freed);
+      if (enemyNow != null && meBefore && !meNow && joinFail) {
+        value += joinFail * feat.size;
       }
     }
   }
 
-  // G3 small exclusive complete
-  if (weights.smallComplete && immSelf > 0 && immSelf <= 6 && immOpp <= 0) {
-    value += weights.smallComplete;
+  // --- V_deny (enemy-sole big city/road only; lag-gated) ---
+  if (lag > 0) {
+    const denyBlock = weights.denyBlock || 0;
+    const denyFatten = weights.denyFatten || 0;
+    const denyGroups = [
+      { before: citiesBefore, after: citiesAfter },
+      { before: roadsBefore, after: roadsAfter },
+    ];
+    for (const group of denyGroups) {
+      for (const feat of group.after) {
+        const enemy = enemySoleOwner(feat, me);
+        if (enemy == null) continue; // self-sole / shared: never deny-credit
+        if (!isBig(feat, weights)) continue;
+
+        const pathsAfter = pathsFor(feat, supplyAfter, after, me);
+        const pBlockAfter = 1 - pathsAfter.pOpp;
+        const prevs = overlapping(group.before, feat);
+        let pBlockBefore = 1;
+        let sizeBefore = 0;
+        if (prevs.length) {
+          // Closest prior enemy-sole overlap, else any overlap
+          const prior =
+            prevs.find((p) => enemySoleOwner(p, me) != null) || prevs[0];
+          sizeBefore = prior.size;
+          const pathsBefore = pathsFor(prior, supplyBefore, before, me);
+          pBlockBefore = 1 - pathsBefore.pOpp;
+        }
+
+        const dBlock = pBlockAfter - pBlockBefore;
+        const dSize = feat.size - sizeBefore;
+        if (denyBlock && dBlock > 0) {
+          value += lag * denyBlock * feat.size * dBlock;
+        }
+        if (denyFatten && dSize > 0) {
+          value += lag * denyFatten * dSize * pathsAfter.pOpp;
+        }
+      }
+    }
   }
 
-  // G4 monastery push
-  if (placed && weights.monasteryPush) {
+  // --- V_minor: monastery claim + fill ---
+  if (placed) {
     const board = after.board;
-    for (let dy = -1; dy <= 1; dy++) {
-      for (let dx = -1; dx <= 1; dx++) {
-        const spot = board.get(keyOf(placed.x + dx, placed.y + dy));
-        if (!spot || !spot.monastery || !spot.meeple || spot.meeple.kind !== "monastery") continue;
-        if (spot.meeple.player !== me) continue;
-        if (monasteryComplete(board, placed.x + dx, placed.y + dy)) continue;
-        const filled = monasteryTileCount(board, placed.x + dx, placed.y + dy);
-        value += weights.monasteryPush * Math.max(0, filled - 5);
+    const here = board.get(keyOf(placed.x, placed.y));
+    if (
+      weights.monasteryClaim &&
+      here &&
+      here.monastery &&
+      here.meeple &&
+      here.meeple.kind === "monastery" &&
+      here.meeple.player === me
+    ) {
+      value += weights.monasteryClaim;
+    }
+    if (weights.monasteryPush) {
+      for (let dy = -1; dy <= 1; dy++) {
+        for (let dx = -1; dx <= 1; dx++) {
+          const spot = board.get(keyOf(placed.x + dx, placed.y + dy));
+          if (!spot || !spot.monastery || !spot.meeple || spot.meeple.kind !== "monastery") continue;
+          if (spot.meeple.player !== me) continue;
+          if (monasteryComplete(board, placed.x + dx, placed.y + dy)) continue;
+          const filled = monasteryTileCount(board, placed.x + dx, placed.y + dy);
+          value += weights.monasteryPush * Math.max(0, filled - 5);
+        }
       }
     }
   }
 
-  // G5 dual purpose
-  if (weights.dualPurpose && immSelf > 0 && denialHit && denialNet > 0) {
-    value += weights.dualPurpose;
-  }
-
-  // G8 late new sprawl: openings increased on brand-new own city
-  if (placed && (phase === "late" || phase === "end") && weights.lateSprawl) {
-    for (const city of citiesAfter) {
-      if (!city.winners.includes(me)) continue;
-      if (beforeMap.has(city.id)) continue;
-      if (city.openings >= 2) value += weights.lateSprawl * city.openings;
-    }
-  }
-
-  // G9 pennants on own incomplete / completed this turn
-  if (weights.pennantBias && placed) {
-    for (const city of citiesAfter) {
-      if (!city.winners.includes(me)) continue;
-      value += weights.pennantBias * city.pennants;
-    }
-  }
-
-  // E2 contest: placing meeple on empty city near threat — hard; skip heavy
-
-  void afterMap;
+  // Cap so master extras cannot overturn ordinary scoring / monastery takes.
+  const posCap = weights.extraPosCap == null ? 4.5 : weights.extraPosCap;
+  const negCap = weights.extraNegCap == null ? -7 : weights.extraNegCap;
+  if (value > posCap) value = posCap;
+  if (value < negCap) value = negCap;
   return value;
 }
 
-/** Stricter field gate for master. */
-export function masterFieldAllowed(phase, completedCities, stock) {
+/**
+ * Field candidate filter for master — soft by phase / remaining turns.
+ * completedCities===0 is always rejected by caller (0 end points).
+ */
+export function masterFieldAllowed(phase, completedCities, stock, turnsAfter) {
+  if (completedCities <= 0) return false;
+  if (turnsAfter != null && turnsAfter <= 0) return true;
   if (phase === "early") return false;
-  if (completedCities < 2) return false;
-  if (phase === "mid") return stock >= 3;
-  return stock >= 2;
+  if (phase === "end" || phase === "late") return true;
+  // mid: prefer not spending the last meeple unless a decent field
+  if (stock <= 1) return completedCities >= 3;
+  return completedCities >= 2;
 }

@@ -2523,13 +2523,29 @@
   function featureMajority(board, kind, parts, playerCount) {
     return majorityPlayers(meepleCountsOnFeature(board, kind, parts, playerCount));
   }
+  function componentKey(parts) {
+    return parts.map((p) => p.x + "," + p.y + "," + p.index).sort().join("|");
+  }
+  function partKeySet(parts) {
+    const set = /* @__PURE__ */ new Set();
+    for (const p of parts) set.add(p.x + "," + p.y + "," + p.index);
+    return set;
+  }
+  function setsOverlap(a, b) {
+    for (const k of a) {
+      if (b.has(k)) return true;
+    }
+    return false;
+  }
   function deckSupply(game2) {
     let cityEdges = 0;
     let roadEdges = 0;
     let cityTiles = 0;
     let roadTiles = 0;
+    const byId = /* @__PURE__ */ Object.create(null);
     const tiles = (game2.deck || []).concat(game2.current ? [game2.current] : []);
     for (const tile of tiles) {
+      byId[tile.id] = (byId[tile.id] || 0) + 1;
       const type = BY_ID[tile.id];
       if (!type || !type.edges) continue;
       let hasC = false;
@@ -2548,6 +2564,7 @@
       if (hasR) roadTiles += 1;
     }
     return {
+      byId,
       cityEdges,
       roadEdges,
       cityTiles,
@@ -2583,11 +2600,143 @@
     }
     return clamp01(prob);
   }
-  function closeChancePaths(openings, kind, supply, game2, me, beneficiaries) {
-    const useful = kind === "city" ? supply.cityTiles || 0 : supply.roadTiles || 0;
+  function edgeWant(kind) {
+    return kind === "city" ? "C" : "R";
+  }
+  function connectsFeature(kind, edges, linkDirs) {
+    const want = edgeWant(kind);
+    for (const dir of linkDirs) {
+      if (edges[DIR_INDEX[dir]] !== want) return false;
+    }
+    return true;
+  }
+  function listOpenSlots(board, kind, parts) {
+    const slots = /* @__PURE__ */ new Map();
+    for (const part of parts) {
+      const tile = board.get(keyOf(part.x, part.y));
+      if (!tile) continue;
+      const rot = tile.rot || 0;
+      if (kind === "city") {
+        const city2 = tile.cities && tile.cities[part.index];
+        if (!city2) continue;
+        for (const catalogDir of city2.edges) {
+          const dir = absDir(catalogDir, rot);
+          const step = NEI[DIR_INDEX[dir]];
+          const nx = part.x + step.dx;
+          const ny = part.y + step.dy;
+          const neighbor = board.get(keyOf(nx, ny));
+          if (neighbor) {
+            if (findCityIndexByAbsEdge(neighbor, OPP_DIR[dir]) >= 0) continue;
+            return { slots: [], blocked: true };
+          }
+          const key = keyOf(nx, ny);
+          const fromDir = OPP_DIR[dir];
+          let slot = slots.get(key);
+          if (!slot) {
+            slot = { x: nx, y: ny, linkDirs: [] };
+            slots.set(key, slot);
+          }
+          if (!slot.linkDirs.includes(fromDir)) slot.linkDirs.push(fromDir);
+        }
+      } else if (kind === "road") {
+        const road2 = tile.roads && tile.roads[part.index];
+        if (!road2) continue;
+        for (const catalogDir of road2) {
+          const dir = absDir(catalogDir, rot);
+          const step = NEI[DIR_INDEX[dir]];
+          const nx = part.x + step.dx;
+          const ny = part.y + step.dy;
+          const neighbor = board.get(keyOf(nx, ny));
+          if (neighbor) {
+            if (findRoadIndexByAbsEdge(neighbor, OPP_DIR[dir]) >= 0) continue;
+            return { slots: [], blocked: true };
+          }
+          const key = keyOf(nx, ny);
+          const fromDir = OPP_DIR[dir];
+          let slot = slots.get(key);
+          if (!slot) {
+            slot = { x: nx, y: ny, linkDirs: [] };
+            slots.set(key, slot);
+          }
+          if (!slot.linkDirs.includes(fromDir)) slot.linkDirs.push(fromDir);
+        }
+      }
+    }
+    return { slots: [...slots.values()], blocked: false };
+  }
+  function typeFitsSlot(board, kind, type, slot) {
+    for (let rot = 0; rot < 4; rot++) {
+      const edges = rotateEdges(type.edges, rot);
+      if (!canPlace(board, slot.x, slot.y, edges)) continue;
+      if (!connectsFeature(kind, edges, slot.linkDirs)) continue;
+      return true;
+    }
+    return false;
+  }
+  function catalogFitsSlot(board, kind, slot) {
+    for (const type of TYPES) {
+      if (typeFitsSlot(board, kind, type, slot)) return true;
+    }
+    return false;
+  }
+  function analyzeClosability(board, kind, parts, supply) {
+    const { slots, blocked } = listOpenSlots(board, kind, parts);
+    if (blocked) {
+      return { impossible: true, reason: "blocked", deckUseful: 0, slotCount: 0 };
+    }
+    if (!slots.length) {
+      return { impossible: false, reason: "closed", deckUseful: 0, slotCount: 0 };
+    }
+    for (const slot of slots) {
+      if (!catalogFitsSlot(board, kind, slot)) {
+        return { impossible: true, reason: "catalog", deckUseful: 0, slotCount: slots.length };
+      }
+    }
+    let deckUseful = 0;
+    const byId = supply && supply.byId || /* @__PURE__ */ Object.create(null);
+    for (const id of Object.keys(byId)) {
+      const count = byId[id] || 0;
+      if (count <= 0) continue;
+      const type = BY_ID[id];
+      if (!type) continue;
+      let fits = false;
+      for (const slot of slots) {
+        if (typeFitsSlot(board, kind, type, slot)) {
+          fits = true;
+          break;
+        }
+      }
+      if (fits) deckUseful += count;
+    }
+    if (deckUseful <= 0) {
+      return { impossible: true, reason: "deck", deckUseful: 0, slotCount: slots.length };
+    }
+    return { impossible: false, reason: "ok", deckUseful, slotCount: slots.length };
+  }
+  function closeChancePaths(openings, kind, supply, game2, me, beneficiaries, board, parts) {
+    const need = Math.max(1, Math.min(Math.max(0, openings), 3));
+    let useful;
+    let impossible = false;
+    if (board && parts && (kind === "city" || kind === "road")) {
+      const analysis = analyzeClosability(board, kind, parts, supply);
+      useful = analysis.deckUseful;
+      impossible = analysis.impossible || openings >= 5;
+    } else {
+      useful = kind === "city" ? supply.cityTiles || 0 : supply.roadTiles || 0;
+      impossible = openings >= 5 || openings >= 1 && useful <= 0;
+    }
+    if (impossible || openings >= 1 && useful <= 0) {
+      return {
+        pSelf: 0,
+        pOpp: 0,
+        combined: 0,
+        useful: useful || 0,
+        need,
+        impossible: true
+      };
+    }
     const pool = Math.max(1, supply.remaining || 0);
     const pTile = Math.min(1, useful / pool);
-    const need = Math.max(1, Math.min(Math.max(0, openings), 3));
     const benef = Array.isArray(beneficiaries) ? beneficiaries : [];
     const pSelf = benef.includes(me) ? binomAtLeast(futureDrawsFor(game2, me), pTile, need) : 0;
     let pOpp = 0;
@@ -2602,44 +2751,19 @@
       pOpp,
       combined: clamp01(combined),
       useful,
-      need
+      need,
+      impossible: false
     };
   }
-  function closeHardness(openings, kind, supply, opts) {
-    const options = opts && typeof opts === "object" && !Array.isArray(opts) ? opts : null;
-    const catalogFloor = options && options.catalogFloor != null ? options.catalogFloor : typeof opts === "number" ? opts : null;
-    let catalog = 0;
-    if (openings >= 5) catalog = 0.95;
-    else if (openings >= 4) catalog = 0.7;
-    else if (openings >= 3) catalog = 0.4;
-    else if (openings >= 2) catalog = 0.15;
-    else catalog = 0.05;
-    if (catalogFloor != null) catalog = Math.max(catalog, catalogFloor);
-    let deck = 0;
-    let paths = null;
-    if (options && options.game && Array.isArray(options.beneficiaries)) {
-      paths = closeChancePaths(
-        openings,
-        kind,
-        supply,
-        options.game,
-        options.me,
-        options.beneficiaries
-      );
-      deck = 1 - paths.combined;
-    } else {
-      const edges = kind === "city" ? supply.cityEdges : supply.roadEdges;
-      if (edges <= 0) deck = openings >= 1 ? 0.85 : 0;
-      else if (edges <= 2 && openings >= 2) deck = 0.55;
-      else if (edges <= 4 && openings >= 3) deck = 0.35;
-      else deck = Math.max(0, 0.25 - edges * 0.02);
+  function scoreLag(scores, me, lagRef) {
+    const ref = lagRef > 0 ? lagRef : 10;
+    const my = scores[me] || 0;
+    let lead = my;
+    for (let i = 0; i < scores.length; i++) {
+      if (i === me) continue;
+      if ((scores[i] || 0) > lead) lead = scores[i] || 0;
     }
-    return {
-      catalog,
-      deck,
-      combined: Math.max(catalog, deck * 0.85),
-      paths
-    };
+    return clamp01((lead - my) / ref);
   }
   function listIncompleteCities(board, playerCount, countOpenEdges2) {
     const seen = /* @__PURE__ */ new Set();
@@ -2661,6 +2785,7 @@
           id: componentKey(result.parts),
           kind: "city",
           parts: result.parts,
+          partSet: partKeySet(result.parts),
           winners,
           tiles,
           pennants,
@@ -2671,237 +2796,233 @@
     }
     return out;
   }
-  function componentKey(parts) {
-    return parts.map((p) => p.x + "," + p.y + "," + p.index).sort().join("|");
-  }
-  function lockedMeepleCounts(game2, countOpenEdges2) {
-    const n = game2.players.length;
-    const locked = Array.from({ length: n }, () => 0);
-    const board = game2.board;
+  function listIncompleteRoads(board, playerCount, countOpenEdges2) {
+    const seen = /* @__PURE__ */ new Set();
+    const out = [];
     for (const [pos, tile] of board) {
-      if (!tile.meeple) continue;
-      const p = tile.meeple.player;
-      if (p < 0 || p >= n) continue;
       const [x, y] = pos.split(",").map(Number);
-      if (tile.meeple.kind === "field") {
-        locked[p] += 1;
-        continue;
-      }
-      if (tile.meeple.kind === "monastery") {
-        if (!monasteryComplete(board, x, y)) locked[p] += 1;
-        continue;
-      }
-      if (tile.meeple.kind === "city") {
-        const result = collectCityComponent(board, x, y, tile.meeple.index);
-        if (!result.complete) {
-          const openings = countOpenEdges2(board, "city", result.parts);
-          if (openings >= 2) locked[p] += 1;
-          else locked[p] += 0.5;
-        }
-        continue;
-      }
-      if (tile.meeple.kind === "road") {
-        const result = collectRoadComponent(board, x, y, tile.meeple.index);
-        if (!result.complete) locked[p] += 0.5;
-      }
+      (tile.roads || []).forEach((_, index) => {
+        const seed = x + "," + y + "," + index;
+        if (seen.has(seed)) return;
+        const result = collectRoadComponent(board, x, y, index);
+        for (const part of result.parts) seen.add(part.x + "," + part.y + "," + part.index);
+        if (result.complete) return;
+        const winners = featureMajority(board, "road", result.parts, playerCount);
+        if (!winners.length) return;
+        const tiles = uniqueTileCount(result.parts);
+        const openings = countOpenEdges2(board, "road", result.parts);
+        out.push({
+          id: componentKey(result.parts),
+          kind: "road",
+          parts: result.parts,
+          partSet: partKeySet(result.parts),
+          winners,
+          tiles,
+          pennants: 0,
+          size: tiles,
+          openings
+        });
+      });
     }
-    return locked;
+    return out;
   }
-  function buildThreats(game2, me, countOpenEdges2, phase) {
-    const n = game2.players.length;
-    const locked = lockedMeepleCounts(game2, countOpenEdges2);
-    const scores = game2.scores;
-    const myScore = scores[me] || 0;
-    let bestOther = 0;
-    for (let i = 0; i < n; i++) {
-      if (i === me) continue;
-      if (scores[i] > bestOther) bestOther = scores[i];
+  function listFields(board, playerCount) {
+    const seen = /* @__PURE__ */ new Set();
+    const out = [];
+    for (const [pos, tile] of board) {
+      if (!tile.meeple || tile.meeple.kind !== "field") continue;
+      const [x, y] = pos.split(",").map(Number);
+      const index = tile.meeple.index;
+      const seed = x + "," + y + "," + index;
+      if (seen.has(seed)) continue;
+      const result = collectFieldComponent(board, x, y, index);
+      for (const part of result.parts) seen.add(part.x + "," + part.y + "," + part.index);
+      const winners = featureMajority(board, "field", result.parts, playerCount);
+      if (!winners.length) continue;
+      const cities = completedCitiesTouchingField(board, result.parts);
+      out.push({
+        id: componentKey(result.parts),
+        kind: "field",
+        parts: result.parts,
+        partSet: partKeySet(result.parts),
+        winners,
+        tiles: uniqueTileCount(result.parts),
+        pennants: 0,
+        size: cities,
+        openings: 0
+      });
     }
-    const phaseScale = phase === "early" ? 0.2 : phase === "mid" ? 0.65 : 1;
-    const threats = Array.from({ length: n }, () => 0);
-    for (let i = 0; i < n; i++) {
-      if (i === me) continue;
-      const scoreGap = (scores[i] - myScore) / 40;
-      const leadPressure = bestOther >= 10 && scores[i] >= bestOther - 2 ? 0.35 : 0;
-      const free = Math.max(0, (game2.meeples[i] || 0) / MEEPLES_EACH);
-      const bigUnfinished = listIncompleteCities(game2.board, n, countOpenEdges2).some(
-        (c) => c.winners.includes(i) && c.size >= 4
-      ) ? 0.2 : 0;
-      const lockPenalty = 0.15 * (locked[i] || 0);
-      const raw = 0.5 * scoreGap + 0.35 * leadPressure + 0.15 * free + bigUnfinished - lockPenalty;
-      threats[i] = clamp01(raw * phaseScale);
-    }
-    return { threats, locked };
+    return out;
   }
-  function indexById(list) {
-    const map = /* @__PURE__ */ new Map();
-    for (const item of list) map.set(item.id, item);
-    return map;
+  function overlapping(list, feat) {
+    const out = [];
+    for (const other of list) {
+      if (other.kind !== feat.kind) continue;
+      if (setsOverlap(feat.partSet, other.partSet)) out.push(other);
+    }
+    return out;
+  }
+  function isBig(feat, weights) {
+    if (feat.kind === "city") return feat.size >= (weights.joinCityMin == null ? 4 : weights.joinCityMin);
+    if (feat.kind === "road") return feat.size >= (weights.joinRoadMin == null ? 4 : weights.joinRoadMin);
+    if (feat.kind === "field") return feat.size >= (weights.joinFieldMin == null ? 2 : weights.joinFieldMin);
+    return false;
+  }
+  function enemySoleOwner(feat, me) {
+    if (feat.winners.length === 1 && feat.winners[0] !== me) return feat.winners[0];
+    return null;
+  }
+  function pathsFor(feat, supply, game2, me) {
+    if (feat.kind === "field") {
+      return { pSelf: 0, pOpp: 0, combined: 0, impossible: true };
+    }
+    return closeChancePaths(
+      feat.openings,
+      feat.kind,
+      supply,
+      game2,
+      me,
+      feat.winners,
+      game2.board,
+      feat.parts
+    );
+  }
+  function featureExpectedPoints(feat, pClose) {
+    const endPts = feat.size;
+    const completePts = feat.kind === "city" ? feat.size * 2 : feat.size;
+    const p = clamp01(pClose);
+    return p * completePts + (1 - p) * endPts;
   }
   function masterExtraScore(ctx) {
-    const {
-      before,
-      after,
-      me,
-      weights,
-      phase,
-      placed,
-      immSelf,
-      immOpp,
-      countOpenEdges: countOpenEdges2,
-      softDenial
-    } = ctx;
+    const { before, after, me, weights, placed, countOpenEdges: countOpenEdges2, turnsAfter } = ctx;
     if (!weights || !weights.isMaster) return 0;
     const n = before.players.length;
-    const supplyBefore = deckSupply(before);
     const supplyAfter = deckSupply(after);
-    const { threats, locked } = buildThreats(before, me, countOpenEdges2, phase);
-    let maxThreat = 0;
-    let maxThreatPlayer = -1;
-    for (let i = 0; i < n; i++) {
-      if (i === me) continue;
-      if (threats[i] > maxThreat) {
-        maxThreat = threats[i];
-        maxThreatPlayer = i;
-      }
-    }
-    const soften = !!softDenial;
-    const denialEnabled = soften ? phase !== "early" : true;
-    const runaway = maxThreatPlayer >= 0 && (before.scores[maxThreatPlayer] || 0) >= (before.scores[me] || 0) + 12;
-    let value = 0;
-    if (maxThreatPlayer >= 0 && weights.freeMeepleDiff) {
-      value += weights.freeMeepleDiff * ((after.meeples[me] || 0) - (after.meeples[maxThreatPlayer] || 0));
-    }
-    const lockedAfter = lockedMeepleCounts(after, countOpenEdges2);
-    if (weights.selfLock && locked[me] > lockedAfter[me]) {
-      value += weights.selfLock * (locked[me] - lockedAfter[me]);
-    }
+    const supplyBefore = deckSupply(before);
+    const lag = scoreLag(before.scores, me, weights.lagRef == null ? 10 : weights.lagRef);
+    const lastTurn = (turnsAfter == null ? 1 : turnsAfter) <= 0;
     const citiesBefore = listIncompleteCities(before.board, n, countOpenEdges2);
     const citiesAfter = listIncompleteCities(after.board, n, countOpenEdges2);
-    const beforeMap = indexById(citiesBefore);
-    const afterMap = indexById(citiesAfter);
-    function hardOpts(gameState, winners) {
-      return { game: gameState, me, beneficiaries: winners };
-    }
-    if (weights.selfCloseHope) {
-      for (const city2 of citiesAfter) {
-        if (!city2.winners.includes(me)) continue;
-        const hard = closeHardness(city2.openings, "city", supplyAfter, hardOpts(after, city2.winners));
-        value += weights.selfCloseHope * (1 - hard.combined) * Math.min(city2.size, 8);
-      }
-    }
-    let denialNet = 0;
-    let denialHit = false;
-    for (const city2 of citiesAfter) {
-      const enemySole = city2.winners.length === 1 && city2.winners[0] !== me ? city2.winners[0] : null;
-      const sharedWithSelf = city2.winners.includes(me) && city2.winners.some((w) => w !== me);
-      const prev = beforeMap.get(city2.id);
-      if (prev) {
-        const ownerThreat = city2.winners.find((w) => w !== me);
-        const threatFlip = ownerThreat != null ? threats[ownerThreat] || 0 : 0;
-        if (denialEnabled && prev.winners.includes(me) && enemySole != null) {
-          denialNet += (weights.mergeToEnemy || 0) * Math.max(threatFlip, 0.35) * city2.size;
-        }
-        if (!prev.winners.includes(me) && city2.winners.includes(me) && !sharedWithSelf) {
-          denialNet += (weights.mergeToSelf || 0) * Math.min(city2.size, 10);
-        } else if (!prev.winners.includes(me) && city2.winners.includes(me) && sharedWithSelf) {
-          const t3 = Math.min(...city2.winners.filter((w) => w !== me).map((w) => threats[w] || 0));
-          if (t3 < 0.45) denialNet += (weights.mergeToSelf || 0) * 0.5 * Math.min(city2.size, 10);
+    const roadsBefore = listIncompleteRoads(before.board, n, countOpenEdges2);
+    const roadsAfter = listIncompleteRoads(after.board, n, countOpenEdges2);
+    const fieldsBefore = listFields(before.board, n);
+    const fieldsAfter = listFields(after.board, n);
+    let value = 0;
+    const evSelf = weights.evSelf || 0;
+    const supplyOpp = weights.supplyOpp || 0;
+    const deadClaim = weights.deadClaim || 0;
+    for (const feat of citiesAfter.concat(roadsAfter)) {
+      const paths = pathsFor(feat, supplyAfter, after, me);
+      if (feat.winners.includes(me)) {
+        if (paths.impossible) {
+          if (lastTurn) {
+            if (evSelf) value += evSelf * feat.size;
+          } else if (deadClaim) {
+            value += deadClaim * feat.size;
+          }
+        } else if (evSelf) {
+          value += evSelf * featureExpectedPoints(feat, paths.combined);
         }
       }
-      if (enemySole == null) continue;
-      const threat = threats[enemySole] || 0;
-      if (threat < 0.45) continue;
-      const hardAfter = closeHardness(
-        city2.openings,
-        "city",
-        supplyAfter,
-        hardOpts(after, city2.winners)
-      );
-      const hardBefore = prev ? closeHardness(prev.openings, "city", supplyBefore, hardOpts(before, prev.winners)) : { catalog: 0, deck: 0 };
-      if (denialEnabled) {
-        const dCatalog = hardAfter.catalog - (hardBefore.catalog || 0);
-        const dDeck = hardAfter.deck - (hardBefore.deck || 0);
-        const dSize = city2.size - (prev ? prev.size : 0);
-        const starve = (weights.closeHardCatalog || 0) * Math.max(0, dCatalog) * Math.min(city2.size, 10) + (weights.closeHardDeck || 0) * Math.max(0, dDeck) * Math.min(city2.size, 10);
-        const fatten = (weights.enlargeEnemy || 0) * Math.max(0, dSize);
-        const net = (starve + fatten) * threat;
-        if (net > 0) {
-          denialNet += net;
-          denialHit = true;
-        } else if (fatten < 0 && starve <= 0) {
-          denialNet += fatten * threat;
+      const enemy = enemySoleOwner(feat, me);
+      if (enemy != null && isBig(feat, weights) && supplyOpp && !paths.impossible) {
+        value += supplyOpp * feat.size * paths.pOpp;
+      }
+    }
+    const joinOk = weights.joinOk || 0;
+    const joinFail = weights.joinFail || 0;
+    const joinKinds = [
+      { before: citiesBefore, after: citiesAfter },
+      { before: roadsBefore, after: roadsAfter },
+      { before: fieldsBefore, after: fieldsAfter }
+    ];
+    for (const group of joinKinds) {
+      for (const feat of group.after) {
+        if (!isBig(feat, weights)) continue;
+        const prevs = overlapping(group.before, feat);
+        const meNow = feat.winners.includes(me);
+        const meBefore = prevs.some((p) => p.winners.includes(me));
+        const enemyNow = enemySoleOwner(feat, me);
+        const paths = feat.kind === "field" ? { impossible: false } : pathsFor(feat, supplyAfter, after, me);
+        if (meNow && joinOk && !paths.impossible) {
+          const maxOwnBefore = prevs.filter((p) => p.winners.includes(me)).reduce((m, p) => Math.max(m, p.size), 0);
+          const newlyIn = !meBefore;
+          const grewMerge = meBefore && feat.size > maxOwnBefore;
+          if (newlyIn || grewMerge) {
+            value += joinOk * feat.size * 1;
+          }
         }
-      }
-      if (denialEnabled && weights.opponentSoleRisk && city2.openings <= 1 && hardAfter.combined < 0.25 && city2.size >= 3 && immSelf <= 0) {
-        value += weights.opponentSoleRisk * threat * city2.size;
-      }
-    }
-    const denialCap = soften ? weights.denialCap == null ? 4.5 : weights.denialCap : weights.denialCapLoose == null ? 11 : weights.denialCapLoose;
-    if (denialNet > 0) value += Math.min(denialNet, denialCap);
-    else value += denialNet;
-    if (immOpp > 0 && immSelf <= 0 && maxThreat >= 0.6 && weights.threatEnemyComplete) {
-      value += weights.threatEnemyComplete;
-    }
-    if (immSelf > 0 && immOpp > 0) {
-      const shared = Math.min(immSelf, immOpp);
-      if (!runaway || shared <= 8) {
-        if (weights.shareOk) value += weights.shareOk * shared;
-      }
-      if (runaway && maxThreat >= 0.55 && shared >= 12 && weights.refuseSharedClose) {
-        value += weights.refuseSharedClose * immOpp;
-      }
-    }
-    if (weights.releaseEnemy) {
-      for (let i = 0; i < n; i++) {
-        if (i === me) continue;
-        const freed = (locked[i] || 0) - (lockedAfter[i] || 0);
-        if (freed > 0) value += weights.releaseEnemy * (threats[i] || 0) * freed;
-        if (freed < 0 && weights.keepEnemyLocked) {
-          value += weights.keepEnemyLocked * (threats[i] || 0) * -freed;
+        if (enemyNow != null && meBefore && !meNow && joinFail) {
+          value += joinFail * feat.size;
         }
       }
     }
-    if (weights.smallComplete && immSelf > 0 && immSelf <= 6 && immOpp <= 0) {
-      value += weights.smallComplete;
+    if (lag > 0) {
+      const denyBlock = weights.denyBlock || 0;
+      const denyFatten = weights.denyFatten || 0;
+      const denyGroups = [
+        { before: citiesBefore, after: citiesAfter },
+        { before: roadsBefore, after: roadsAfter }
+      ];
+      for (const group of denyGroups) {
+        for (const feat of group.after) {
+          const enemy = enemySoleOwner(feat, me);
+          if (enemy == null) continue;
+          if (!isBig(feat, weights)) continue;
+          const pathsAfter = pathsFor(feat, supplyAfter, after, me);
+          const pBlockAfter = 1 - pathsAfter.pOpp;
+          const prevs = overlapping(group.before, feat);
+          let pBlockBefore = 1;
+          let sizeBefore = 0;
+          if (prevs.length) {
+            const prior = prevs.find((p) => enemySoleOwner(p, me) != null) || prevs[0];
+            sizeBefore = prior.size;
+            const pathsBefore = pathsFor(prior, supplyBefore, before, me);
+            pBlockBefore = 1 - pathsBefore.pOpp;
+          }
+          const dBlock = pBlockAfter - pBlockBefore;
+          const dSize = feat.size - sizeBefore;
+          if (denyBlock && dBlock > 0) {
+            value += lag * denyBlock * feat.size * dBlock;
+          }
+          if (denyFatten && dSize > 0) {
+            value += lag * denyFatten * dSize * pathsAfter.pOpp;
+          }
+        }
+      }
     }
-    if (placed && weights.monasteryPush) {
+    if (placed) {
       const board = after.board;
-      for (let dy = -1; dy <= 1; dy++) {
-        for (let dx = -1; dx <= 1; dx++) {
-          const spot = board.get(keyOf(placed.x + dx, placed.y + dy));
-          if (!spot || !spot.monastery || !spot.meeple || spot.meeple.kind !== "monastery") continue;
-          if (spot.meeple.player !== me) continue;
-          if (monasteryComplete(board, placed.x + dx, placed.y + dy)) continue;
-          const filled = monasteryTileCount(board, placed.x + dx, placed.y + dy);
-          value += weights.monasteryPush * Math.max(0, filled - 5);
+      const here = board.get(keyOf(placed.x, placed.y));
+      if (weights.monasteryClaim && here && here.monastery && here.meeple && here.meeple.kind === "monastery" && here.meeple.player === me) {
+        value += weights.monasteryClaim;
+      }
+      if (weights.monasteryPush) {
+        for (let dy = -1; dy <= 1; dy++) {
+          for (let dx = -1; dx <= 1; dx++) {
+            const spot = board.get(keyOf(placed.x + dx, placed.y + dy));
+            if (!spot || !spot.monastery || !spot.meeple || spot.meeple.kind !== "monastery") continue;
+            if (spot.meeple.player !== me) continue;
+            if (monasteryComplete(board, placed.x + dx, placed.y + dy)) continue;
+            const filled = monasteryTileCount(board, placed.x + dx, placed.y + dy);
+            value += weights.monasteryPush * Math.max(0, filled - 5);
+          }
         }
       }
     }
-    if (weights.dualPurpose && immSelf > 0 && denialHit && denialNet > 0) {
-      value += weights.dualPurpose;
-    }
-    if (placed && (phase === "late" || phase === "end") && weights.lateSprawl) {
-      for (const city2 of citiesAfter) {
-        if (!city2.winners.includes(me)) continue;
-        if (beforeMap.has(city2.id)) continue;
-        if (city2.openings >= 2) value += weights.lateSprawl * city2.openings;
-      }
-    }
-    if (weights.pennantBias && placed) {
-      for (const city2 of citiesAfter) {
-        if (!city2.winners.includes(me)) continue;
-        value += weights.pennantBias * city2.pennants;
-      }
-    }
-    void afterMap;
+    const posCap = weights.extraPosCap == null ? 4.5 : weights.extraPosCap;
+    const negCap = weights.extraNegCap == null ? -7 : weights.extraNegCap;
+    if (value > posCap) value = posCap;
+    if (value < negCap) value = negCap;
     return value;
   }
-  function masterFieldAllowed(phase, completedCities, stock) {
+  function masterFieldAllowed(phase, completedCities, stock, turnsAfter) {
+    if (completedCities <= 0) return false;
+    if (turnsAfter != null && turnsAfter <= 0) return true;
     if (phase === "early") return false;
-    if (completedCities < 2) return false;
-    if (phase === "mid") return stock >= 3;
-    return stock >= 2;
+    if (phase === "end" || phase === "late") return true;
+    if (stock <= 1) return completedCities >= 3;
+    return completedCities >= 2;
   }
 
   // js/game/bot.js
@@ -2927,37 +3048,33 @@
     standard: STANDARD_WEIGHTS,
     master: Object.assign({}, STANDARD_WEIGHTS, {
       isMaster: true,
-      enemyCompleteGift: -8,
-      // B–G (see docs/bot-master.md) — tuned so scoring beats early denial
-      selfCloseHope: 0.25,
-      closeHardCatalog: 1.35,
-      closeHardDeck: 0.55,
-      enlargeEnemy: -1.8,
-      threatEnemyComplete: -8,
-      mergeToEnemy: -1.6,
-      mergeToSelf: 1.6,
-      shareOk: 0.55,
-      /** Only when opponent is runaway ahead; keep weaker than immediateSelf. */
-      refuseSharedClose: -0.35,
-      contestBias: 1.2,
-      opponentSoleRisk: -0.7,
-      keepEnemyLocked: 0.55,
-      releaseEnemy: -0.9,
-      selfLock: 0.6,
-      freeMeepleDiff: 0.5,
-      smallComplete: 0.45,
-      monasteryPush: 0.4,
-      dualPurpose: 0.5,
-      lateSprawl: -2,
-      pennantBias: 0.3,
-      /** Soft denial cap only when a big exclusive one-move finish is available. */
-      denialCap: 4.5,
-      /** Normal denial ceiling when no big self-finish competes this turn. */
-      denialCapLoose: 11,
-      /** Exclusive immSelf at/above this triggers softDenial for the turn. */
-      bigSelfFinishAt: 8
+      // Keep base scoring close to standard so extras cannot overturn free points.
+      equity: 0.35,
+      gift: -0.35,
+      enemyCompleteGift: -7,
+      // Master extras — small deltas only (see extraPosCap / extraNegCap).
+      evSelf: 0.18,
+      supplyOpp: -0.2,
+      joinOk: 0.25,
+      joinFail: -0.5,
+      joinCityMin: 3,
+      joinRoadMin: 3,
+      joinFieldMin: 2,
+      lagRef: 12,
+      denyBlock: 0.45,
+      denyFatten: -0.35,
+      deadClaim: -2.5,
+      monasteryPush: 0.85,
+      monasteryClaim: 2.2,
+      extraPosCap: 4.5,
+      extraNegCap: -7
     })
   };
+  function turnsAfterThis(game2, me) {
+    const draws = futureDrawsFor(game2, me);
+    if (game2.current && game2.player === me) return Math.max(0, draws - 1);
+    return draws;
+  }
   var FIELD_PHASE = { early: 0.15, mid: 0.45, late: 1, end: 1.2 };
   var DECK_CUT = { early: 48, late: 24, end: 8 };
   var EQUITY_TUNING = {
@@ -3047,21 +3164,25 @@
   function featureMajority2(board, kind, parts, playerCount) {
     return majorityPlayers(meepleCountsOnFeature(board, kind, parts, playerCount));
   }
-  function stockPenalty(stock, immediateSelf) {
+  function stockPenalty(stock, immediateSelf, turnsAfter) {
     if (immediateSelf >= 4) return 0;
-    if (stock >= 4) return 0;
-    if (stock === 3) return 0.4;
-    if (stock === 2) return 1;
-    if (stock === 1) return 2.5;
-    return 0;
+    if (turnsAfter <= 0) return 0;
+    let raw = 0;
+    if (stock >= 4) raw = 0;
+    else if (stock === 3) raw = 0.4;
+    else if (stock === 2) raw = 1;
+    else if (stock === 1) raw = 2.5;
+    return raw * Math.min(1, turnsAfter / 3);
   }
-  function fieldAllowed(phase, completedCities, stock, master) {
-    if (master) return masterFieldAllowed(phase, completedCities, stock);
+  function fieldAllowed(phase, completedCities, stock, master, turnsAfter) {
+    if (completedCities <= 0) return false;
+    if (turnsAfter <= 0) return true;
+    if (master) return masterFieldAllowed(phase, completedCities, stock, turnsAfter);
     if (phase === "early") return false;
-    if (phase === "mid") return completedCities >= 2 && stock >= 3;
-    return completedCities >= 1 || stock >= 2;
+    if (phase === "mid") return completedCities >= 2 && stock >= 2;
+    return true;
   }
-  function meepleOptions(game2, phase, master) {
+  function meepleOptions(game2, phase, master, turnsAfter) {
     const options = [{ slotId: null, kind: null }];
     if (!game2.pendingMeeple) return options;
     const stock = game2.meeples[game2.pendingMeeple.player];
@@ -3072,7 +3193,7 @@
       if (slot.kind === "field") {
         const field = collectFieldComponent(game2.board, x, y, slot.index);
         const cities = completedCitiesTouchingField(game2.board, field.parts);
-        if (!fieldAllowed(phase, cities, stock, master)) continue;
+        if (!fieldAllowed(phase, cities, stock, master, turnsAfter)) continue;
         options.push({ slotId: slot.id, kind: slot.kind, cities });
         continue;
       }
@@ -3169,22 +3290,25 @@
     const close = weights.openClose || 0;
     return weights.openWaste * openingsIncreased + close * openingsReduced;
   }
-  function betterScore(scored, place, best) {
+  function betterScore(scored, place, best, lastTurn) {
     if (!best) return true;
     if (scored.value !== best.scored.value) return scored.value > best.scored.value;
     if (scored.immSelf !== best.scored.immSelf) return scored.immSelf > best.scored.immSelf;
     if (scored.returned !== best.scored.returned) return scored.returned > best.scored.returned;
-    if (scored.stock !== best.scored.stock) return scored.stock > best.scored.stock;
+    if (scored.stock !== best.scored.stock) {
+      return lastTurn ? scored.stock < best.scored.stock : scored.stock > best.scored.stock;
+    }
     if (!place || !best.place) return false;
     return place.y < best.place.y || place.y === best.place.y && place.x < best.place.x;
   }
-  function evaluateApplied(before, after, me, weights, phase, placed, meepleUsed, stockBefore, optionKind, endBefore, deep, softDenial) {
+  function evaluateApplied(before, after, me, weights, phase, placed, meepleUsed, stockBefore, optionKind, endBefore, deep, turnsAfter) {
     const n = before.players.length;
     const immSelf = scoreDelta(before.scores, after.scores, me);
     const immOpp = bestOppDelta(before.scores, after.scores, me, n);
     const returned = Math.max(0, after.meeples[me] - (stockBefore - (meepleUsed ? 1 : 0)));
     const eg = equityAndGift(after, me, weights, phase);
     const sharedScale = weights.sharedOppScale == null ? 1 : weights.sharedOppScale;
+    const lastTurn = turnsAfter <= 0;
     let value = weights.immediateSelf * immSelf + scaledOppTerm(immSelf, immOpp, weights.immediateOpp, sharedScale) + weights.meepleReturn * returned + eg.equity + eg.gift;
     if (deep && endBefore) {
       const endAfter = projectedScores(after);
@@ -3201,15 +3325,16 @@
       value += weights.oppLeadGift * (immOpp - immSelf);
     }
     if (immOpp > 0 && immSelf <= 0) value += weights.enemyCompleteGift;
-    if (meepleUsed) value -= stockPenalty(stockBefore, immSelf);
+    if (meepleUsed) value -= stockPenalty(stockBefore, immSelf, turnsAfter);
     if (placed) {
       value += cityOpeningDeltaScore(before.board, after.board, placed.x, placed.y, me, weights);
       const tile = after.board.get(keyOf(placed.x, placed.y));
       if (tile && tile.monastery && meepleUsed && optionKind && optionKind !== "monastery") {
         value += weights.skipMonastery;
       }
-      if (optionKind === "field" && (phase === "early" || phase === "mid" && stockBefore <= 2)) {
-        value += weights.earlyFieldBan;
+      if (optionKind === "field" && !lastTurn) {
+        if (phase === "early") value += weights.earlyFieldBan;
+        else if (phase === "mid" && stockBefore <= 2) value += weights.earlyFieldBan * 0.5;
       }
     }
     if (weights.isMaster) {
@@ -3218,12 +3343,9 @@
         after,
         me,
         weights,
-        phase,
         placed,
-        immSelf,
-        immOpp,
         countOpenEdges,
-        softDenial: !!softDenial
+        turnsAfter
       });
     }
     return {
@@ -3233,33 +3355,6 @@
       returned,
       stock: after.meeples[me]
     };
-  }
-  function findBestExclusiveFinish(game2, me, phase, master, placements) {
-    let best = 0;
-    const n = game2.players.length;
-    if (placements) {
-      for (const place of placements) {
-        const placedOnly = cloneGame(game2);
-        placedOnly.setRotation(place.rot);
-        if (!placedOnly.place(place.x, place.y)) continue;
-        for (const option of meepleOptions(placedOnly, phase, master)) {
-          const after = applyMeepleChoice(placedOnly, option.slotId);
-          if (!after) continue;
-          const immSelf = scoreDelta(game2.scores, after.scores, me);
-          const immOpp = bestOppDelta(game2.scores, after.scores, me, n);
-          if (immOpp <= 0 && immSelf > best) best = immSelf;
-        }
-      }
-      return best;
-    }
-    for (const option of meepleOptions(game2, phase, master)) {
-      const after = applyMeepleChoice(game2, option.slotId);
-      if (!after) continue;
-      const immSelf = scoreDelta(game2.scores, after.scores, me);
-      const immOpp = bestOppDelta(game2.scores, after.scores, me, n);
-      if (immOpp <= 0 && immSelf > best) best = immSelf;
-    }
-    return best;
   }
   var DEEP_CANDIDATE_LIMIT = 10;
   function listPlacements(game2) {
@@ -3274,9 +3369,9 @@
     }
     return out;
   }
-  function considerOption(best, scored, place, slotId) {
+  function considerOption(best, scored, place, slotId, lastTurn) {
     const candidate = { place, slotId, scored };
-    return betterScore(scored, place, best) ? candidate : best;
+    return betterScore(scored, place, best, lastTurn) ? candidate : best;
   }
   function finishIfConfirm(game2) {
     if (game2.pendingConfirm && !game2.confirmTurnEnd()) return false;
@@ -3311,27 +3406,28 @@
     if (game2.pendingDiscard) return { type: "discard" };
     const phase = deckPhase(game2.deck.length);
     const endMul = phase === "end" ? 1.15 : 1;
-    const tuned = Object.assign({}, weights, {
-      endSelf: weights.endSelf * endMul,
-      endOpp: weights.endOpp * endMul
-    });
     const endBefore = projectedScores(game2);
-    const master = !!tuned.isMaster;
+    const master = !!weights.isMaster;
     if (game2.pendingMeeple) {
       const me2 = game2.pendingMeeple.player;
+      const turnsAfter2 = turnsAfterThis(game2, me2);
+      const lastTurn2 = turnsAfter2 <= 0;
+      const tuned2 = Object.assign({}, weights, {
+        endSelf: weights.endSelf * endMul * (lastTurn2 ? 1.5 : 1),
+        endOpp: weights.endOpp * endMul,
+        equity: weights.equity * (lastTurn2 ? 1.25 : 1)
+      });
       const place = { x: game2.pendingMeeple.x, y: game2.pendingMeeple.y, rot: 0 };
       const stockBefore2 = game2.meeples[me2];
-      const finishAt2 = tuned.bigSelfFinishAt == null ? 8 : tuned.bigSelfFinishAt;
-      const softDenial2 = master && findBestExclusiveFinish(game2, me2, phase, master, null) >= finishAt2;
       const shortlist2 = [];
-      for (const option of meepleOptions(game2, phase, master)) {
+      for (const option of meepleOptions(game2, phase, master, turnsAfter2)) {
         const after = applyMeepleChoice(game2, option.slotId);
         if (!after) continue;
         const scored = evaluateApplied(
           game2,
           after,
           me2,
-          tuned,
+          tuned2,
           phase,
           place,
           !!option.slotId,
@@ -3339,7 +3435,7 @@
           option.kind,
           endBefore,
           false,
-          softDenial2
+          turnsAfter2
         );
         shortlist2.push({ slotId: option.slotId, kind: option.kind, scored });
       }
@@ -3352,7 +3448,7 @@
           game2,
           after,
           me2,
-          tuned,
+          tuned2,
           phase,
           place,
           !!item.slotId,
@@ -3360,24 +3456,29 @@
           item.kind,
           endBefore,
           true,
-          softDenial2
+          turnsAfter2
         );
-        best2 = considerOption(best2, scored, place, item.slotId);
+        best2 = considerOption(best2, scored, place, item.slotId, lastTurn2);
       }
       return { type: "meeple", slotId: best2 ? best2.slotId : null };
     }
     if (!game2.current) return null;
     const me = game2.player;
+    const turnsAfter = turnsAfterThis(game2, me);
+    const lastTurn = turnsAfter <= 0;
+    const tuned = Object.assign({}, weights, {
+      endSelf: weights.endSelf * endMul * (lastTurn ? 1.5 : 1),
+      endOpp: weights.endOpp * endMul,
+      equity: weights.equity * (lastTurn ? 1.25 : 1)
+    });
     const stockBefore = game2.meeples[me];
     const placements = listPlacements(game2);
-    const finishAt = tuned.bigSelfFinishAt == null ? 8 : tuned.bigSelfFinishAt;
-    const softDenial = master && findBestExclusiveFinish(game2, me, phase, master, placements) >= finishAt;
     const shortlist = [];
     for (const place of placements) {
       const placedOnly = cloneGame(game2);
       placedOnly.setRotation(place.rot);
       if (!placedOnly.place(place.x, place.y)) continue;
-      for (const option of meepleOptions(placedOnly, phase, master)) {
+      for (const option of meepleOptions(placedOnly, phase, master, turnsAfter)) {
         const after = applyMeepleChoice(placedOnly, option.slotId);
         if (!after) continue;
         const scored = evaluateApplied(
@@ -3392,7 +3493,7 @@
           option.kind,
           endBefore,
           false,
-          softDenial
+          turnsAfter
         );
         shortlist.push({
           place,
@@ -3419,9 +3520,9 @@
         item.kind,
         endBefore,
         true,
-        softDenial
+        turnsAfter
       );
-      best = considerOption(best, scored, item.place, item.slotId);
+      best = considerOption(best, scored, item.place, item.slotId, lastTurn);
     }
     if (!best) {
       const fallback = placements[0];
