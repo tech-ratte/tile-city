@@ -345,31 +345,24 @@
       transform: scale(1.2);
     }
 
-    .notes {
+    #score,
+    #tiles {
       margin: 4px 0 36px;
       padding: 20px 0 4px;
       border-top: 1px solid var(--line);
     }
 
-    .notes > h2 {
-      margin: 0 0 6px;
-      font-size: 1.25rem;
-      letter-spacing: 0.04em;
-    }
-
-    .notes > .notes-lead {
-      margin: 0 0 18px;
-      max-width: 40rem;
-      color: #5a4a38;
-      font-size: 14px;
-    }
-
-    .notes section { margin: 0 0 22px; }
-
-    .notes h3 {
-      margin: 0 0 8px;
-      font-size: 1.05rem;
+    #score h2,
+    #tiles h2 {
+      margin: 0 0 10px;
+      font-size: 1.15rem;
       letter-spacing: 0.03em;
+    }
+
+    .page-bottom-play {
+      display: flex;
+      justify-content: center;
+      margin: 8px 0 8px;
     }
 
     .rules-grid {
@@ -394,10 +387,16 @@
 
     .score-table {
       width: 100%;
-      max-width: 36rem;
+      max-width: 48rem;
       border-collapse: collapse;
       margin-top: 8px;
       font-size: 14px;
+    }
+
+    .score-table th:first-child,
+    .score-table td:first-child {
+      white-space: nowrap;
+      width: 5.5rem;
     }
 
     .score-table th,
@@ -564,12 +563,11 @@
         height: 8px;
       }
 
-      .notes > h2 { font-size: 1rem; }
-      .notes > .notes-lead,
+      #score h2,
+      #tiles h2 { font-size: 1rem; }
       .note,
       .rules-grid li,
       .score-table { font-size: 11.5px; }
-      .notes h3 { font-size: 0.88rem; }
       .page-foot { font-size: 11.5px; }
     }
 
@@ -674,118 +672,43 @@
       </div>
     </section>
 
-    <div id="details" class="notes">
-      <h2 data-i18n="detailsTitle">Notes</h2>
-      <p class="notes-lead" data-i18n="notesLead">Extras the tutorial doesn’t cover — placement limits, controls, and a scoring cheat sheet.</p>
-
-      <section id="place">
-        <h3 data-i18n="placeTitle">How to place tiles</h3>
-        <ul class="rules-grid">
-          <li><strong data-i18n="placeTouch">Share a full side</strong> <span data-i18n="placeTouchBody">The new tile must touch an existing tile along at least one full side. Touching only at a corner does not count.</span></li>
-          <li><strong data-i18n="placeEdges">Matching edges</strong> <span data-i18n="placeEdgesBody">Where tiles touch, the terrain must continue: city to city, road to road, field to field.</span></li>
-          <li><strong data-i18n="placeNoFlip">Rotate only</strong> <span data-i18n="placeNoFlipBody">You may rotate the tile, but you cannot flip or mirror it.</span></li>
-        </ul>
-        <div class="demos">
-          <article class="demo">
-            <h3 class="ok" data-i18n="legalTitle">OK example</h3>
-            <p data-i18n="legalBody">Center is start tile D. North city matches E rotated 180°. East road matches U rotated 90°. South field matches V’s north field.</p>
-            <div class="board fit">
-              <div class="tile rot-180" style="grid-column: 2; grid-row: 1" aria-label="E rotated 180°">
-                <i class="city cap n"></i>
-              </div>
-              <div class="tile" style="grid-column: 2; grid-row: 2" aria-label="D">
-                <i class="city cap n shallow"></i>
-                <i class="road h"></i>
-              </div>
-              <div class="tile rot-90" style="grid-column: 3; grid-row: 2" aria-label="U rotated 90°">
-                <i class="road v"></i>
-              </div>
-              <div class="tile" style="grid-column: 2; grid-row: 3" aria-label="V">
-                <i class="bend sw edge"></i>
-                <i class="bend sw line"></i>
-              </div>
-            </div>
-          </article>
-          <article class="demo">
-            <h3 class="bad" data-i18n="illegalEdgesTitle">Not allowed — edges clash</h3>
-            <p data-i18n="illegalEdgesBody">D’s east edge is a road, but unrotated E’s west edge is a field. Even one mismatched side means you cannot place it there.</p>
-            <div class="board badfit">
-              <div class="tile" aria-label="D">
-                <i class="city cap n shallow"></i>
-                <i class="road h"></i>
-              </div>
-              <div class="tile" aria-label="E">
-                <i class="city cap n"></i>
-              </div>
-            </div>
-          </article>
-          <article class="demo">
-            <h3 class="bad" data-i18n="illegalCornerTitle">Not allowed — corner only</h3>
-            <p data-i18n="illegalCornerBody">Tiles that only meet at a corner do not share a side, so you cannot place them that way.</p>
-            <div class="corner-box">
-              <div class="tile" aria-label="D">
-                <i class="city cap n shallow"></i>
-                <i class="road h"></i>
-              </div>
-              <div class="tile" aria-label="E">
-                <i class="city cap n"></i>
-              </div>
-            </div>
-          </article>
-        </div>
-      </section>
-
-      <section id="meeple">
-        <h3 data-i18n="meepleTitle">Meeples</h3>
-        <ul class="rules-grid">
-          <li><strong data-i18n="meepleWhere">Where you can place</strong> <span data-i18n="meepleWhereBody">Only on the tile you just placed — on a free road, city, monastery, or field mark.</span></li>
-          <li><strong data-i18n="meepleOne">No joining occupied areas</strong> <span data-i18n="meepleOneBody">You cannot place a meeple on a road, city, or field that already has any meeple somewhere in its connected area.</span></li>
-          <li><strong data-i18n="meepleStock">Running out</strong> <span data-i18n="meepleStockBody">If you have no meeples left, place the tile only. Completing a road, city, or monastery returns those meeples (except during final scoring).</span></li>
-        </ul>
-      </section>
-
-      <section id="score">
-        <h3 data-i18n="scoreTitle">Scoring during the game</h3>
-        <p class="note" data-i18n="scoreIntro">When a road, city, or monastery is completed, the player with the most meeples on it scores. If tied for most, each tied player scores the full points. Those meeples then return to their owners.</p>
-        <table class="score-table">
-          <thead>
-            <tr><th data-i18n="scoreFeature">Area</th><th data-i18n="scoreComplete">When completed</th></tr>
-          </thead>
-          <tbody>
-            <tr><td data-i18n="scoreRoad">Road</td><td data-i18n="scoreRoadBody">1 point per tile in the road</td></tr>
-            <tr><td data-i18n="scoreCity">City</td><td data-i18n="scoreCityBody">2 points per tile + 2 per pennant (banner)</td></tr>
-            <tr><td data-i18n="scoreMonastery">Monastery</td><td data-i18n="scoreMonasteryBody">9 points when all 8 surrounding spaces are filled</td></tr>
-            <tr><td data-i18n="scoreField">Field</td><td data-i18n="scoreFieldBody">Not scored during the game</td></tr>
-          </tbody>
-        </table>
-        <p class="note" style="margin-top:12px" data-i18n="endWhenBody">After the last tile is placed (or you Exit early), final scoring runs.</p>
-        <ul class="rules-grid">
-          <li><strong data-i18n="endRoads">Incomplete roads</strong> <span data-i18n="endRoadsBody">1 point per tile.</span></li>
-          <li><strong data-i18n="endCities">Incomplete cities</strong> <span data-i18n="endCitiesBody">1 point per tile + 1 per pennant.</span></li>
-          <li><strong data-i18n="endMonasteries">Incomplete monasteries</strong> <span data-i18n="endMonasteriesBody">1 point per filled space in the 3×3 area (including the monastery tile).</span></li>
-          <li><strong data-i18n="endFields">Fields</strong> <span data-i18n="endFieldsBody">Farmers stay on the board. Each field scores 3 points for every completed city it touches. Majority works the same as above.</span></li>
-        </ul>
-      </section>
-
-      <section id="controls">
-        <h3 data-i18n="controlsTitle">Controls</h3>
-        <ul class="rules-grid">
-          <li><strong data-i18n="controlsRotate">Rotate</strong> <span data-i18n="controlsRotateBody">Right-click the board, press R while the pointer is over the board, or tap the hand preview / angle thumbs.</span></li>
-          <li><strong data-i18n="controlsZoom">Zoom</strong> <span data-i18n="controlsZoomBody">Mouse wheel or pinch. Buttons on desktop legend.</span></li>
-          <li><strong data-i18n="controlsPan">Pan</strong> <span data-i18n="controlsPanBody">Drag the board.</span></li>
-          <li><strong data-i18n="controlsHints">Hints</strong> <span data-i18n="controlsHintsBody">Green = can place now. Gray = needs a different rotation.</span></li>
-        </ul>
-      </section>
-
-      <section>
-        <h3 data-i18n="tileITitle">Separate cities on tile I</h3>
-        <p class="note" data-i18n="tileIIntro">Tile I has two cities that only meet at a corner. They stay separate unless each connects to other tiles along a full city edge.</p>
-      </section>
-    </div>
+    <section id="score">
+      <h2 data-i18n="scoreTitle">Scoring chart</h2>
+      <table class="score-table">
+        <thead>
+          <tr>
+            <th data-i18n="scoreFeature">Terrain</th>
+            <th data-i18n="scoreComplete">When completed</th>
+            <th data-i18n="scoreIncomplete">Incomplete at game end</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td data-i18n="scoreCity">City</td>
+            <td data-i18n="scoreCityBody">2 points per tile / 2 per pennant</td>
+            <td data-i18n="scoreCityEndBody">1 point per tile / 1 per pennant</td>
+          </tr>
+          <tr>
+            <td data-i18n="scoreRoad">Road</td>
+            <td data-i18n="scoreRoadBody">1 point per tile</td>
+            <td data-i18n="scoreRoadEndBody">1 point per tile</td>
+          </tr>
+          <tr>
+            <td data-i18n="scoreMonastery">Monastery</td>
+            <td data-i18n="scoreMonasteryBody">9 points (monastery + all 8 neighbors)</td>
+            <td data-i18n="scoreMonasteryEndBody">1 for the monastery + 1 per neighboring tile</td>
+          </tr>
+          <tr>
+            <td data-i18n="scoreField">Grassland</td>
+            <td data-i18n="scoreFieldBody">-</td>
+            <td data-i18n="scoreFieldEndBody">3 points per completed city it touches</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
 
     <section id="tiles">
-      <h2 data-i18n="tilesTitle">Tiles A–X</h2>
-      <p class="note" data-i18n="tilesIntro">Same letter codes and counts as the classic base set. North is up in the catalog. J and K are mirrors — rotation never turns one into the other. Pennants (banners) are listed separately from plain twins.</p>
+      <h2 data-i18n="tilesTitle">Tile list</h2>
       <ul class="legend">
         <li><i class="swatch swatch-field" aria-hidden="true"></i><span data-i18n="legendField">Field</span></li>
         <li><i class="swatch swatch-road" aria-hidden="true"></i><span data-i18n="legendRoad">Road</span></li>
@@ -1026,6 +949,10 @@
     </section>
 
     <p class="page-foot" data-i18n="rulesFoot">Tile City · base-set rules adapted for this browser version.</p>
+
+    <div class="page-bottom-play">
+      <a class="page-play" href="setup.html" data-i18n="play">Play</a>
+    </div>
   </div>
   <script src="js/rules.bundle.js"></script>
 </body>

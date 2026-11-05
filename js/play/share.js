@@ -37,6 +37,8 @@ function rankingRows(game, nameOf) {
       score: game.scores[index],
       color: player.id,
       hex: RANK_HEX[player.id] || "#f4f7fb",
+      bot: !!player.bot,
+      botMaster: !!(player.bot && player.botStrength === "master"),
     };
   });
 }
@@ -104,6 +106,12 @@ async function captureBoardPng() {
   const prevPad = grid.style.padding;
   const scrollLeft = box.scrollLeft;
   const scrollTop = box.scrollTop;
+  // Hide end-game +N chips and the last-place owner ring for a clean share board.
+  const hidden = [];
+  grid.querySelectorAll(".meeple-earned, .recent-ring").forEach((el) => {
+    hidden.push([el, el.style.visibility]);
+    el.style.visibility = "hidden";
+  });
   grid.style.padding = "0";
   void grid.offsetWidth;
 
@@ -123,6 +131,9 @@ async function captureBoardPng() {
     });
     return { dataUrl, crop };
   } finally {
+    hidden.forEach(([el, value]) => {
+      el.style.visibility = value;
+    });
     grid.style.padding = prevPad;
     void grid.offsetWidth;
     box.scrollLeft = scrollLeft;
@@ -168,6 +179,38 @@ function rankingCardSize(rows) {
   };
 }
 
+/** Same robot mark as HUD `.bot-badge` (viewBox 0 0 24 24). */
+const BOT_ICO_PATH =
+  "M9 3h6v2h3a2 2 0 0 1 2 2v5h-2V7H6v5H4V7a2 2 0 0 1 2-2h3V3zm-3 9h12a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2zm2.5 3a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3zm7 0a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3zM11 2h2v2h-2V2z";
+
+function drawBotBadge(ctx, cx, cy, master) {
+  const size = 34;
+  const x = cx - size / 2;
+  const y = cy - size / 2;
+  ctx.save();
+  if (master) {
+    ctx.fillStyle = "rgba(140, 60, 20, 0.55)";
+    ctx.strokeStyle = "rgba(255, 196, 72, 0.9)";
+  } else {
+    ctx.fillStyle = "rgba(255, 255, 255, 0.1)";
+    ctx.strokeStyle = "rgba(255, 255, 255, 0.32)";
+  }
+  ctx.lineWidth = 2;
+  roundRect(ctx, x, y, size, size, 6);
+  ctx.fill();
+  ctx.stroke();
+  if (master) {
+    ctx.shadowColor = "rgba(255, 160, 40, 0.55)";
+    ctx.shadowBlur = 8;
+  }
+  ctx.fillStyle = master ? "#ffe7a8" : "#d7e6f5";
+  ctx.translate(x + 4, y + 4);
+  ctx.scale((size - 8) / 24, (size - 8) / 24);
+  ctx.fill(new Path2D(BOT_ICO_PATH));
+  ctx.restore();
+  return size;
+}
+
 function drawRankingCard(ctx, rows, labels, x, y) {
   const { pad, rowH, titleH, width, height } = rankingCardSize(rows);
 
@@ -192,16 +235,23 @@ function drawRankingCard(ctx, rows, labels, x, y) {
     ctx.font = "700 32px 'Segoe UI', 'Yu Gothic UI', sans-serif";
     ctx.fillText(String(row.rank), x + 44, top + 42);
 
-    ctx.fillStyle = row.hex;
-    ctx.font = "700 36px 'Segoe UI', 'Yu Gothic UI', sans-serif";
-    const name = row.name.length > 12 ? row.name.slice(0, 11) + "…" : row.name;
-    ctx.fillText(name, x + 88, top + 42);
-
     ctx.fillStyle = "#f4f7fb";
     ctx.font = "700 38px 'Segoe UI', 'Yu Gothic UI', sans-serif";
     const score = String(row.score);
     const sw = ctx.measureText(score).width;
-    ctx.fillText(score, x + width - 44 - sw, top + 42);
+    const scoreX = x + width - 44 - sw;
+    ctx.fillText(score, scoreX, top + 42);
+
+    const nameMax = row.bot ? 10 : 12;
+    const name = row.name.length > nameMax ? row.name.slice(0, nameMax - 1) + "…" : row.name;
+    ctx.fillStyle = row.hex;
+    ctx.font = "700 36px 'Segoe UI', 'Yu Gothic UI', sans-serif";
+    const nameX = x + 88;
+    ctx.fillText(name, nameX, top + 42);
+    if (row.bot) {
+      const nameW = ctx.measureText(name).width;
+      drawBotBadge(ctx, nameX + nameW + 22, top + 30, row.botMaster);
+    }
   });
 
   return { x, y, w: width, h: height };
