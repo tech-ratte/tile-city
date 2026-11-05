@@ -273,8 +273,12 @@ function displayPlayerName(player) {
   return player.name;
 }
 
-function botBadgeHTML() {
-  return '<span class="bot-badge" title="' + t("botThinking") + '" aria-label="' + t("playerKindBot") + '">' +
+function botBadgeHTML(player) {
+  const master = player && player.botStrength === "master";
+  const title = master ? t("botStrengthMaster") : t("botThinking");
+  const cls = "bot-badge" + (master ? " bot-badge--master" : "");
+  return '<span class="' + cls + '" title="' + title + '" aria-label="' + t("playerKindBot") +
+    (master ? " " + t("botStrengthMaster") : "") + '">' +
     '<svg class="bot-ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false">' +
     '<path fill="currentColor" d="M9 3h6v2h3a2 2 0 0 1 2 2v5h-2V7H6v5H4V7a2 2 0 0 1 2-2h3V3zm-3 9h12a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2zm2.5 3a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3zm7 0a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3zM11 2h2v2h-2V2z"/>' +
     "</svg></span>";
@@ -288,8 +292,9 @@ function playersHTML() {
     const player = game.players[index];
     const on = !game.finished && index === game.player ? " on" : "";
     const rank = game.finished ? '<span class="rank">' + (order.indexOf(index) + 1) + "</span>" : "";
-    const bot = player.bot ? botBadgeHTML() : "";
-    return '<li class="' + player.id + on + (player.bot ? " bot" : "") + '">' +
+    const bot = player.bot ? botBadgeHTML(player) : "";
+    const master = player.bot && player.botStrength === "master" ? " bot-master" : "";
+    return '<li class="' + player.id + on + (player.bot ? " bot" : "") + master + '">' +
       rank +
       '<span class="pname">' + displayPlayerName(player) + bot + "</span>" +
       '<span class="meeple-count"><i class="meeple ' + player.id + '" aria-hidden="true"></i>×' +
@@ -449,9 +454,10 @@ function rankingHTML() {
   const order = game.standings || game.players.map((_, index) => index);
   const rows = order.map((index, rank) => {
     const player = game.players[index];
-    return '<li>' +
+    const bot = player.bot ? botBadgeHTML(player) : "";
+    return '<li' + (player.bot && player.botStrength === "master" ? ' class="bot-master"' : "") + ">" +
       '<span class="rank-num">' + (rank + 1) + "</span>" +
-      '<span class="rank-name ' + player.id + '">' + displayPlayerName(player) + "</span>" +
+      '<span class="rank-name ' + player.id + '">' + displayPlayerName(player) + bot + "</span>" +
       '<b class="rank-score">' + game.scores[index] + "</b></li>";
   }).join("");
   return '<ul class="ranking-list">' + rows + "</ul>";

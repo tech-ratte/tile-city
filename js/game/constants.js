@@ -60,9 +60,10 @@ export const PLAYERS_MAX = 8;
 
 export const NAME_MAX = 10;
 
-/** Bot difficulty ids shown in setup. Only standard is implemented for now. */
+/** Bot difficulty ids shown in setup. */
 export const BOT_STRENGTHS = [
   { id: "standard", label: "Standard" },
+  { id: "master", label: "Master" },
 ];
 
 export const BOT_STRENGTH_IDS = BOT_STRENGTHS.map((item) => item.id);

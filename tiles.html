@@ -81,44 +81,48 @@
       filter: brightness(1.04);
     }
 
-    .rules-header .header-play {
-      position: absolute;
-      left: 50%;
-      top: 50%;
-      transform: translate(-50%, -50%);
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      min-width: 5.5rem;
-      padding: 9px 20px;
-      border-radius: 999px;
-      border: 1px solid #9e3422;
-      background: var(--clay);
-      color: #fffdf8;
-      font: inherit;
-      font-size: 15px;
-      font-weight: 700;
-      letter-spacing: 0.04em;
-      text-decoration: none;
-      box-shadow: 0 8px 20px rgba(196, 71, 50, 0.26);
-      z-index: 1;
-    }
-
-    .rules-header .header-play:hover {
-      filter: brightness(1.06);
-    }
-
     .rules-header .chrome-controls {
       flex: none;
       margin-left: auto;
     }
 
-    .page-title {
+    .page-title-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
       margin: 0 0 14px;
+    }
+
+    .page-title {
+      margin: 0;
       font-size: clamp(28px, 4.5vw, 36px);
       font-weight: 700;
       letter-spacing: 0.02em;
       line-height: 1.15;
+    }
+
+    .page-play {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex: none;
+      min-width: 5.2rem;
+      padding: 8px 18px;
+      border-radius: 999px;
+      border: 1px solid #9e3422;
+      background: var(--clay);
+      color: #fffdf8;
+      font: inherit;
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-decoration: none;
+      box-shadow: 0 8px 20px rgba(196, 71, 50, 0.26);
+    }
+
+    .page-play:hover {
+      filter: brightness(1.06);
     }
 
     .basics {
@@ -424,34 +428,169 @@
     }
 
     @media (max-width: 860px) {
+      .wrap {
+        width: min(1120px, calc(100% - 20px));
+        padding: 12px 0 48px;
+      }
+
+      .page-title-row {
+        margin-bottom: 10px;
+        gap: 10px;
+      }
+
+      .page-title {
+        font-size: clamp(18px, 5.6vw, 24px);
+      }
+
+      .page-play {
+        min-width: 4.2rem;
+        padding: 6px 12px;
+        font-size: 12px;
+        box-shadow: 0 4px 12px rgba(196, 71, 50, 0.22);
+      }
+
+      .basics {
+        padding: 10px;
+        margin-bottom: 14px;
+        border-radius: 14px;
+      }
+
+      .basics h2 {
+        font-size: 0.92rem;
+        margin-bottom: 8px;
+      }
+
+      .basics-list {
+        gap: 6px;
+      }
+
+      .basics-list li {
+        font-size: 11.5px;
+        line-height: 1.45;
+        padding: 5px 7px 5px 10px;
+      }
+
+      .basics-refs {
+        gap: 8px 10px;
+        margin-top: 8px;
+        padding-top: 8px;
+      }
+
+      .basics-refs .ref-tile { --s: 40px; }
+      .basics-refs .ref-meeple { width: 20px; height: 28px; margin: 4px 0; }
+      .basics-refs figcaption { font-size: 10px; }
+
       .tutorial {
         grid-template-columns: 1fr;
+        gap: 10px;
+        padding: 8px;
+        margin-bottom: 16px;
+        border-radius: 14px;
+        overflow: hidden;
       }
+
       .tutorial-board-col {
-        align-items: center;
+        align-items: stretch;
+        width: 100%;
+        min-width: 0;
       }
+
+      .tutorial-board-col h2 {
+        font-size: 0.92rem;
+      }
+
       .rules-board {
         width: 100%;
+        min-width: 0;
       }
+
       .tutorial-copy-col {
         order: 2;
         justify-content: center;
         align-items: center;
         text-align: center;
-        padding: 8px 0 4px;
+        padding: 4px 0 2px;
+        gap: 6px;
+        width: 100%;
+        min-width: 0;
       }
-      .tut-controls { justify-content: center; }
-      .tut-score { align-self: center; }
+
+      .tutorial-copy-col h3 {
+        font-size: clamp(13px, 3.8vw, 16px);
+        min-height: 2.2em;
+      }
+
+      .tut-step { font-size: 10px; }
+
+      .tut-body {
+        font-size: 11.5px;
+        line-height: 1.45;
+        min-height: calc(1.45em * 5);
+        max-width: 100%;
+        padding: 0 2px;
+        box-sizing: border-box;
+      }
+
+      .tut-score {
+        font-size: 11px;
+        padding: 4px 9px;
+        max-width: 100%;
+        justify-content: center;
+      }
+
+      .tut-controls {
+        justify-content: center;
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
+        gap: 6px;
+      }
+
+      .tut-nav {
+        width: 2rem;
+        height: 2rem;
+        font-size: 1rem;
+        flex: none;
+      }
+
+      .tut-dots {
+        flex: 1 1 auto;
+        justify-content: center;
+        min-width: 0;
+      }
+
+      .tut-dots button {
+        width: 8px;
+        height: 8px;
+      }
+
+      .notes > h2 { font-size: 1rem; }
+      .notes > .notes-lead,
+      .note,
+      .rules-grid li,
+      .score-table { font-size: 11.5px; }
+      .notes h3 { font-size: 0.88rem; }
+      .page-foot { font-size: 11.5px; }
     }
 
     @media (max-width: 520px) {
       .rules-header-inner {
-        min-height: 52px;
+        min-height: 44px;
+        gap: 8px;
+        padding: 10px 0;
       }
       .rules-header .brand {
-        font-size: 24px;
-        -webkit-text-stroke-width: 4px;
+        font-size: 20px;
+        -webkit-text-stroke-width: 3px;
       }
+      .page-title { font-size: 17px; }
+      .page-play {
+        min-width: 3.8rem;
+        padding: 5px 11px;
+        font-size: 11.5px;
+      }
+      .basics-list li { font-size: 11px; }
+      .tut-body { font-size: 11px; }
     }
   </style>
 </head>
@@ -459,7 +598,6 @@
   <header class="rules-header">
     <div class="rules-header-inner">
       <a class="brand" href="index.html" data-i18n="homeTitle">TileCity</a>
-      <a class="header-play" href="setup.html" data-i18n="play">Play</a>
       <div class="chrome-controls">
         <label class="volume-bar" data-i18n-aria="volumeLabel" aria-label="Volume">
           <svg class="volume-ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
@@ -476,7 +614,10 @@
   </header>
 
   <div class="wrap">
-    <h1 class="page-title" data-i18n="rules">Rules</h1>
+    <div class="page-title-row">
+      <h1 class="page-title" data-i18n="rules">Rules</h1>
+      <a class="page-play" href="setup.html" data-i18n="play">Play</a>
+    </div>
 
     <section class="basics" aria-labelledby="basics-title">
       <h2 id="basics-title" data-i18n="basicsTitle">Your turn</h2>

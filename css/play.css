@@ -102,7 +102,8 @@ html, body { height: 100%; overflow: hidden; }
       min-width: 0;
     }
 
-    .players .bot-badge {
+    .players .bot-badge,
+    .ranking-list .bot-badge {
       display: inline-flex;
       align-items: center;
       justify-content: center;
@@ -114,12 +115,41 @@ html, body { height: 100%; overflow: hidden; }
       color: #d7e6f5;
       background: rgba(255, 255, 255, 0.08);
       flex: none;
+      vertical-align: middle;
     }
 
-    .players .bot-badge .bot-ico {
+    .players .bot-badge .bot-ico,
+    .ranking-list .bot-badge .bot-ico {
       width: 0.85em;
       height: 0.85em;
       display: block;
+    }
+
+    /* Master: same robot mark, heavier metal / ember framing */
+    .players .bot-badge--master,
+    .ranking-list .bot-badge--master {
+      color: #ffe7a8;
+      border-color: rgba(255, 196, 72, 0.85);
+      background:
+        linear-gradient(160deg, rgba(255, 214, 120, 0.28), rgba(140, 60, 20, 0.45) 55%, rgba(40, 18, 8, 0.7));
+      box-shadow:
+        0 0 0 1px rgba(255, 220, 140, 0.35),
+        0 0 10px rgba(255, 160, 40, 0.45),
+        inset 0 1px 0 rgba(255, 240, 200, 0.35);
+    }
+
+    .players li.bot-master.on .bot-badge--master {
+      box-shadow:
+        0 0 0 1px rgba(255, 230, 160, 0.55),
+        0 0 14px rgba(255, 170, 50, 0.65),
+        inset 0 1px 0 rgba(255, 245, 210, 0.45);
+    }
+
+    .ranking-list .rank-name {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      min-width: 0;
     }
 
     .hand.bot-hand {

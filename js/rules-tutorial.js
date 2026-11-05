@@ -338,10 +338,28 @@ function pinHTML(meeple, leaving) {
   );
 }
 
-function centerFixedBoard(host) {
+function fitAndCenterBoard(host) {
   const scroller = host.closest(".scroller");
+  const board = host.closest(".rules-board");
   const grid = host.querySelector(".board-grid");
-  if (!scroller || !grid) return;
+  if (!scroller || !board || !grid) return;
+
+  // Restore stylesheet zoom, then shrink only if the fixed footprint overflows.
+  board.style.removeProperty("--board-zoom");
+  const base =
+    parseFloat(getComputedStyle(board).getPropertyValue("--board-zoom")) || 0.48;
+  const availW = Math.max(0, scroller.clientWidth - 4);
+  const availH = Math.max(0, scroller.clientHeight - 4);
+  const needW = grid.offsetWidth;
+  const needH = grid.offsetHeight;
+  let zoom = base;
+  if (needW > availW && needW > 0) zoom = Math.min(zoom, base * (availW / needW));
+  if (needH > availH && needH > 0) zoom = Math.min(zoom, base * (availH / needH));
+  zoom = Math.max(0.2, Math.min(base, zoom * 0.98));
+  if (Math.abs(zoom - base) > 0.001) {
+    board.style.setProperty("--board-zoom", String(zoom));
+  }
+
   scroller.scrollLeft = Math.max(0, (grid.offsetWidth - scroller.clientWidth) / 2);
   scroller.scrollTop = Math.max(0, (grid.offsetHeight - scroller.clientHeight) / 2);
 }
@@ -447,7 +465,7 @@ function renderGrid(host, tiles, opts) {
   host.innerHTML = "";
   host.appendChild(grid);
   if (options.claims) applyClaims(host, options.claims);
-  centerFixedBoard(host);
+  fitAndCenterBoard(host);
 }
 
 function mergeTiles(base, extra) {
@@ -664,6 +682,15 @@ export function bindTutorial(root) {
     else playStep(true);
   });
 
+  let resizeTimer = 0;
+  function onResize() {
+    window.clearTimeout(resizeTimer);
+    resizeTimer = window.setTimeout(() => {
+      if (boardHost.isConnected) fitAndCenterBoard(boardHost);
+    }, 120);
+  }
+  window.addEventListener("resize", onResize);
+
   go(0, true);
 
   return {
@@ -672,6 +699,8 @@ export function bindTutorial(root) {
     },
     destroy() {
       clearTimers();
+      window.clearTimeout(resizeTimer);
+      window.removeEventListener("resize", onResize);
     },
   };
 }

@@ -496,6 +496,7 @@
       playerKindBot: "Bot",
       botStrength: "Strength",
       botStrengthStandard: "Standard",
+      botStrengthMaster: "Master",
       botBadge: "BOT",
       botThinking: "Bot is playing\u2026",
       colorRed: "Red",
@@ -758,6 +759,7 @@
       playerKindBot: "bot",
       botStrength: "\u5F37\u3055",
       botStrengthStandard: "\u6A19\u6E96",
+      botStrengthMaster: "\u9054\u4EBA",
       botBadge: "BOT",
       botThinking: "Bot\u306E\u624B\u756A\u2026",
       colorRed: "\u8D64",
@@ -1383,10 +1385,24 @@
     }
     return '<span class="meeple-pin' + (leaving ? " leaving" : "") + '" style="left:' + meeple.x * 100 + "%;top:" + meeple.y * 100 + '%"><i class="meeple on-tile ' + meeple.color + fieldClass + '" aria-hidden="true"></i>' + earned + "</span>";
   }
-  function centerFixedBoard(host) {
+  function fitAndCenterBoard(host) {
     const scroller = host.closest(".scroller");
+    const board = host.closest(".rules-board");
     const grid = host.querySelector(".board-grid");
-    if (!scroller || !grid) return;
+    if (!scroller || !board || !grid) return;
+    board.style.removeProperty("--board-zoom");
+    const base = parseFloat(getComputedStyle(board).getPropertyValue("--board-zoom")) || 0.48;
+    const availW = Math.max(0, scroller.clientWidth - 4);
+    const availH = Math.max(0, scroller.clientHeight - 4);
+    const needW = grid.offsetWidth;
+    const needH = grid.offsetHeight;
+    let zoom = base;
+    if (needW > availW && needW > 0) zoom = Math.min(zoom, base * (availW / needW));
+    if (needH > availH && needH > 0) zoom = Math.min(zoom, base * (availH / needH));
+    zoom = Math.max(0.2, Math.min(base, zoom * 0.98));
+    if (Math.abs(zoom - base) > 1e-3) {
+      board.style.setProperty("--board-zoom", String(zoom));
+    }
     scroller.scrollLeft = Math.max(0, (grid.offsetWidth - scroller.clientWidth) / 2);
     scroller.scrollTop = Math.max(0, (grid.offsetHeight - scroller.clientHeight) / 2);
   }
@@ -1471,7 +1487,7 @@
     host.innerHTML = "";
     host.appendChild(grid);
     if (options.claims) applyClaims(host, options.claims);
-    centerFixedBoard(host);
+    fitAndCenterBoard(host);
   }
   function mergeTiles(base, extra) {
     const map = boardMap(base);
@@ -1655,6 +1671,14 @@
       if (document.hidden) clearTimers();
       else playStep(true);
     });
+    let resizeTimer = 0;
+    function onResize() {
+      window.clearTimeout(resizeTimer);
+      resizeTimer = window.setTimeout(() => {
+        if (boardHost.isConnected) fitAndCenterBoard(boardHost);
+      }, 120);
+    }
+    window.addEventListener("resize", onResize);
     go(0, true);
     return {
       refresh() {
@@ -1662,6 +1686,8 @@
       },
       destroy() {
         clearTimers();
+        window.clearTimeout(resizeTimer);
+        window.removeEventListener("resize", onResize);
       }
     };
   }

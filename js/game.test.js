@@ -36,7 +36,15 @@ import {
   nextPlayerName,
   botNameForColor,
   chooseBotAction,
+  BOT_WEIGHTS,
+  BOT_STRENGTH_IDS,
 } from "./game/index.js";
+import {
+  futureDrawsFor,
+  binomAtLeast,
+  closeChancePaths,
+  deckSupply,
+} from "./game/botMaster.js";
 import { CLAIM_SCENES, applyClaimScene } from "./claim-scenes.js";
 
 function makePlaced(id, rot, meeple) {
@@ -1239,6 +1247,78 @@ assert.ok(!tileHTML("B", 0).includes("rot-"));
   }
   assert.ok(auto.board.size >= 10, "bot should place multiple tiles");
   assert.deepStrictEqual(boardErrors(auto.board), []);
+}
+
+// Master close-paths: future draws + self vs beneficiary opp.
+{
+  assert.ok(binomAtLeast(5, 0.5, 1) > 0.9);
+  assert.strictEqual(binomAtLeast(2, 0.1, 3), 0);
+  const g = createGame(mulberry32(7), [
+    { id: "red", name: "A", bot: true, botStrength: "master" },
+    { id: "blue", name: "B", bot: true, botStrength: "master" },
+  ]);
+  const me = g.player;
+  const other = (me + 1) % 2;
+  const myDraws = futureDrawsFor(g, me);
+  const oppDraws = futureDrawsFor(g, other);
+  assert.ok(myDraws + oppDraws === (g.deck.length + (g.current ? 1 : 0)));
+  assert.ok(Math.abs(myDraws - oppDraws) <= 1);
+  const supply = deckSupply(g);
+  const ownSole = closeChancePaths(1, "city", supply, g, me, [me]);
+  assert.ok(ownSole.pOpp === 0, "own-sole: opp will not finish for you");
+  assert.ok(ownSole.pSelf >= 0 && ownSole.combined === ownSole.pSelf);
+  const shared = closeChancePaths(1, "city", supply, g, me, [me, other]);
+  assert.ok(shared.combined >= shared.pSelf);
+  assert.ok(shared.combined >= shared.pOpp);
+  const enemySole = closeChancePaths(1, "city", supply, g, me, [other]);
+  assert.strictEqual(enemySole.pSelf, 0);
+  assert.ok(enemySole.combined === enemySole.pOpp);
+  assert.ok(BOT_WEIGHTS.master.denialCapLoose > BOT_WEIGHTS.master.denialCap);
+  assert.ok(BOT_WEIGHTS.master.bigSelfFinishAt >= 8);
+}
+
+// Master bot: weights exist, legal moves, short auto-play.
+{
+  assert.ok(BOT_WEIGHTS.master && BOT_WEIGHTS.master.isMaster);
+  assert.ok(BOT_STRENGTH_IDS.includes("master"));
+  const masterGame = createGame(mulberry32(11), [
+    { id: "red", name: "Hum", bot: false },
+    { id: "blue", name: "Ken", bot: true, botStrength: "master" },
+  ]);
+  assert.strictEqual(masterGame.players[1].botStrength, "master");
+  drainDiscards(masterGame);
+  const masterAction = chooseBotAction(masterGame, "master");
+  assert.ok(masterAction);
+  if (masterAction.type === "place") {
+    const edges = rotateEdges(masterGame.current.edges, masterAction.rot);
+    assert.strictEqual(canPlace(masterGame.board, masterAction.x, masterAction.y, edges), true);
+  }
+
+  const duo = createGame(mulberry32(33), [
+    { id: "red", name: "A", bot: true, botStrength: "master" },
+    { id: "blue", name: "B", bot: true, botStrength: "master" },
+  ]);
+  let guard = 0;
+  while (!duo.finished && ++guard < 20) {
+    while (duo.pendingDiscard) assert.ok(duo.acknowledgeDiscard());
+    if (duo.finished) break;
+    if (duo.pendingMeeple) {
+      const action = chooseBotAction(duo, "master");
+      assert.ok(action && action.type === "meeple");
+      if (action.slotId) assert.ok(duo.placeMeeple(action.slotId));
+      else assert.ok(duo.skipMeeple());
+      continue;
+    }
+    if (!duo.current) break;
+    const action = chooseBotAction(duo, "master");
+    assert.ok(action && action.type === "place");
+    duo.setRotation(action.rot);
+    assert.ok(duo.place(action.x, action.y));
+    if (action.slotId) assert.ok(duo.placeMeeple(action.slotId));
+    else assert.ok(duo.skipMeeple());
+  }
+  assert.ok(duo.board.size >= 8);
+  assert.deepStrictEqual(boardErrors(duo.board), []);
 }
 
 console.log("placement checks passed");

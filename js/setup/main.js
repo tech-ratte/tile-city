@@ -92,6 +92,7 @@ function setErr(msg) {
 
 function strengthLabel(id, lang) {
   if (id === "standard") return TileCityI18n.t("botStrengthStandard", lang);
+  if (id === "master") return TileCityI18n.t("botStrengthMaster", lang);
   return id;
 }
 

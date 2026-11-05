@@ -20,62 +20,69 @@ import {
 import { DIR_INDEX, NEI, OPP_DIR } from "./constants.js";
 import { keyOf, rotateEdges } from "./tiles.js";
 import { serializeGame, restoreGame } from "./persist.js";
+import { masterExtraScore, masterFieldAllowed } from "./botMaster.js";
 
 /**
- * Bot evaluation weights (standard).
+ * Bot evaluation weights.
  * Convention: every term is added as `weight * amount`.
  * Positive = reward, negative = penalty. Do not abs() these in scoring.
  *
- * Standard scope (intentionally NOT modeled):
- * - opponent denial / starvation plays
- * - meeple majority fights (contesting shared features)
+ * standard — scoring / economy (no denial / majority contest)
+ * master   — docs/bot-master.md (threat-gated denial, share/contest, locks)
  */
-export const BOT_WEIGHTS = {
-  standard: {
-    // --- 加点（正） ---
-    /** 自分の即時得点 */
-    immediateSelf: 1.0,
-    /** 終了見積もりに対する自分の潜在増分 */
-    endSelf: 0.70,
-    /** この手で回収できたミープル数 */
-    meepleReturn: 0.45,
-    /** 自分多数の未完成フィーチャー見込み */
-    equity: 0.40,
-    /** 自都市の開口が減った回数ぶん（閉じに近づける） */
-    openClose: 1.25,
-    /**
-     * 自分だけが即時得点した完成への上乗せ（×即時点）。
-     * 独占完成を修道院の小前進などより優先しやすくする。
-     */
-    exclusiveComplete: 0.22,
+const STANDARD_WEIGHTS = {
+  immediateSelf: 1.0,
+  endSelf: 0.70,
+  meepleReturn: 0.45,
+  equity: 0.40,
+  openClose: 1.25,
+  exclusiveComplete: 0.22,
+  immediateOpp: -0.85,
+  endOpp: -0.45,
+  sharedOppScale: 0.3,
+  gift: -0.4,
+  enemyCompleteGift: -6.0,
+  openWaste: -1.5,
+  earlyFieldBan: -3.0,
+  skipMonastery: -2.5,
+  oppLeadGift: -0.35,
+  isMaster: false,
+};
 
-    // --- 減点（負）: 値を見れば減点と分かる ---
-    /** 敵の即時得点（自分0のときフル適用） */
-    immediateOpp: -0.85,
-    /** 終了見積もりに対する敵の潜在増分（自分潜在0のときフル適用） */
-    endOpp: -0.45,
-    /**
-     * 自分も得点しているときの「共有分」の敵点に掛ける割合 (0–1)。
-     * 同点完成 40/40 を実質ほぼ無視しないための緩和。
-     * 敵だけ多い超過分には immediateOpp/endOpp をフル適用。
-     */
-    sharedOppScale: 0.3,
-    /** 敵多数フィーチャーを残す／太らせる量（妨害ではなく事故抑制） */
-    gift: -0.4,
-    /** 自分0点なのに敵だけ完成させたときの平坦ペナ */
-    enemyCompleteGift: -6.0,
-    /** 自都市の開口が増えた回数ぶん */
-    openWaste: -1.5,
-    /** 序盤（やミープル不足）での畑ミープル */
-    earlyFieldBan: -3.0,
-    /** 修道院タイルなのに修道院以外へミープル */
-    skipMonastery: -2.5,
-    /**
-     * 自分の即時得点が小さいのに敵にまとまった点を渡す手の追加減点
-     * （自分も得点しているが敵の方が多いケース）。
-     */
-    oppLeadGift: -0.35,
-  },
+export const BOT_WEIGHTS = {
+  standard: STANDARD_WEIGHTS,
+  master: Object.assign({}, STANDARD_WEIGHTS, {
+    isMaster: true,
+    enemyCompleteGift: -8.0,
+    // B–G (see docs/bot-master.md) — tuned so scoring beats early denial
+    selfCloseHope: 0.25,
+    closeHardCatalog: 1.35,
+    closeHardDeck: 0.55,
+    enlargeEnemy: -1.8,
+    threatEnemyComplete: -8.0,
+    mergeToEnemy: -1.6,
+    mergeToSelf: 1.6,
+    shareOk: 0.55,
+    /** Only when opponent is runaway ahead; keep weaker than immediateSelf. */
+    refuseSharedClose: -0.35,
+    contestBias: 1.2,
+    opponentSoleRisk: -0.7,
+    keepEnemyLocked: 0.55,
+    releaseEnemy: -0.9,
+    selfLock: 0.6,
+    freeMeepleDiff: 0.5,
+    smallComplete: 0.45,
+    monasteryPush: 0.4,
+    dualPurpose: 0.5,
+    lateSprawl: -2.0,
+    pennantBias: 0.3,
+    /** Soft denial cap only when a big exclusive one-move finish is available. */
+    denialCap: 4.5,
+    /** Normal denial ceiling when no big self-finish competes this turn. */
+    denialCapLoose: 11,
+    /** Exclusive immSelf at/above this triggers softDenial for the turn. */
+    bigSelfFinishAt: 8,
+  }),
 };
 
 const FIELD_PHASE = { early: 0.15, mid: 0.45, late: 1.0, end: 1.2 };
@@ -192,13 +199,14 @@ function stockPenalty(stock, immediateSelf) {
   return 0;
 }
 
-function fieldAllowed(phase, completedCities, stock) {
+function fieldAllowed(phase, completedCities, stock, master) {
+  if (master) return masterFieldAllowed(phase, completedCities, stock);
   if (phase === "early") return false;
   if (phase === "mid") return completedCities >= 2 && stock >= 3;
   return completedCities >= 1 || stock >= 2;
 }
 
-function meepleOptions(game, phase) {
+function meepleOptions(game, phase, master) {
   const options = [{ slotId: null, kind: null }];
   if (!game.pendingMeeple) return options;
   const stock = game.meeples[game.pendingMeeple.player];
@@ -209,7 +217,7 @@ function meepleOptions(game, phase) {
     if (slot.kind === "field") {
       const field = collectFieldComponent(game.board, x, y, slot.index);
       const cities = completedCitiesTouchingField(game.board, field.parts);
-      if (!fieldAllowed(phase, cities, stock)) continue;
+      if (!fieldAllowed(phase, cities, stock, master)) continue;
       options.push({ slotId: slot.id, kind: slot.kind, cities: cities });
       continue;
     }
@@ -326,7 +334,20 @@ function betterScore(scored, place, best) {
   return place.y < best.place.y || (place.y === best.place.y && place.x < best.place.x);
 }
 
-function evaluateApplied(before, after, me, weights, phase, placed, meepleUsed, stockBefore, optionKind, endBefore, deep) {
+function evaluateApplied(
+  before,
+  after,
+  me,
+  weights,
+  phase,
+  placed,
+  meepleUsed,
+  stockBefore,
+  optionKind,
+  endBefore,
+  deep,
+  softDenial
+) {
   const n = before.players.length;
   const immSelf = scoreDelta(before.scores, after.scores, me);
   const immOpp = bestOppDelta(before.scores, after.scores, me, n);
@@ -376,12 +397,57 @@ function evaluateApplied(before, after, me, weights, phase, placed, meepleUsed, 
     }
   }
 
+  if (weights.isMaster) {
+    value += masterExtraScore({
+      before: before,
+      after: after,
+      me: me,
+      weights: weights,
+      phase: phase,
+      placed: placed,
+      immSelf: immSelf,
+      immOpp: immOpp,
+      countOpenEdges: countOpenEdges,
+      softDenial: !!softDenial,
+    });
+  }
+
   return {
     value: value,
     immSelf: immSelf,
+    immOpp: immOpp,
     returned: returned,
     stock: after.meeples[me],
   };
+}
+
+/** Scan legal outcomes for a large exclusive completion this turn (master softDenial gate). */
+function findBestExclusiveFinish(game, me, phase, master, placements) {
+  let best = 0;
+  const n = game.players.length;
+  if (placements) {
+    for (const place of placements) {
+      const placedOnly = cloneGame(game);
+      placedOnly.setRotation(place.rot);
+      if (!placedOnly.place(place.x, place.y)) continue;
+      for (const option of meepleOptions(placedOnly, phase, master)) {
+        const after = applyMeepleChoice(placedOnly, option.slotId);
+        if (!after) continue;
+        const immSelf = scoreDelta(game.scores, after.scores, me);
+        const immOpp = bestOppDelta(game.scores, after.scores, me, n);
+        if (immOpp <= 0 && immSelf > best) best = immSelf;
+      }
+    }
+    return best;
+  }
+  for (const option of meepleOptions(game, phase, master)) {
+    const after = applyMeepleChoice(game, option.slotId);
+    if (!after) continue;
+    const immSelf = scoreDelta(game.scores, after.scores, me);
+    const immOpp = bestOppDelta(game.scores, after.scores, me, n);
+    if (immOpp <= 0 && immSelf > best) best = immSelf;
+  }
+  return best;
 }
 
 const DEEP_CANDIDATE_LIMIT = 10;
@@ -451,16 +517,21 @@ export function chooseBotAction(game, strength) {
   });
   const endBefore = projectedScores(game);
 
+  const master = !!tuned.isMaster;
+
   if (game.pendingMeeple) {
     const me = game.pendingMeeple.player;
     const place = { x: game.pendingMeeple.x, y: game.pendingMeeple.y, rot: 0 };
     const stockBefore = game.meeples[me];
+    const finishAt = tuned.bigSelfFinishAt == null ? 8 : tuned.bigSelfFinishAt;
+    const softDenial =
+      master && findBestExclusiveFinish(game, me, phase, master, null) >= finishAt;
     const shortlist = [];
-    for (const option of meepleOptions(game, phase)) {
+    for (const option of meepleOptions(game, phase, master)) {
       const after = applyMeepleChoice(game, option.slotId);
       if (!after) continue;
       const scored = evaluateApplied(
-        game, after, me, tuned, phase, place, !!option.slotId, stockBefore, option.kind, endBefore, false
+        game, after, me, tuned, phase, place, !!option.slotId, stockBefore, option.kind, endBefore, false, softDenial
       );
       shortlist.push({ slotId: option.slotId, kind: option.kind, scored: scored });
     }
@@ -470,7 +541,7 @@ export function chooseBotAction(game, strength) {
       const after = applyMeepleChoice(game, item.slotId);
       if (!after) continue;
       const scored = evaluateApplied(
-        game, after, me, tuned, phase, place, !!item.slotId, stockBefore, item.kind, endBefore, true
+        game, after, me, tuned, phase, place, !!item.slotId, stockBefore, item.kind, endBefore, true, softDenial
       );
       best = considerOption(best, scored, place, item.slotId);
     }
@@ -481,17 +552,20 @@ export function chooseBotAction(game, strength) {
   const me = game.player;
   const stockBefore = game.meeples[me];
   const placements = listPlacements(game);
+  const finishAt = tuned.bigSelfFinishAt == null ? 8 : tuned.bigSelfFinishAt;
+  const softDenial =
+    master && findBestExclusiveFinish(game, me, phase, master, placements) >= finishAt;
   const shortlist = [];
 
   for (const place of placements) {
     const placedOnly = cloneGame(game);
     placedOnly.setRotation(place.rot);
     if (!placedOnly.place(place.x, place.y)) continue;
-    for (const option of meepleOptions(placedOnly, phase)) {
+    for (const option of meepleOptions(placedOnly, phase, master)) {
       const after = applyMeepleChoice(placedOnly, option.slotId);
       if (!after) continue;
       const scored = evaluateApplied(
-        game, after, me, tuned, phase, place, !!option.slotId, stockBefore, option.kind, endBefore, false
+        game, after, me, tuned, phase, place, !!option.slotId, stockBefore, option.kind, endBefore, false, softDenial
       );
       shortlist.push({
         place: place,
@@ -508,7 +582,7 @@ export function chooseBotAction(game, strength) {
     const after = applyPlaceChoice(game, item.place, item.slotId);
     if (!after) continue;
     const scored = evaluateApplied(
-      game, after, me, tuned, phase, item.place, !!item.slotId, stockBefore, item.kind, endBefore, true
+      game, after, me, tuned, phase, item.place, !!item.slotId, stockBefore, item.kind, endBefore, true, softDenial
     );
     best = considerOption(best, scored, item.place, item.slotId);
   }

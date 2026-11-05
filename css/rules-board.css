@@ -280,13 +280,33 @@
   }
 }
 
-@media (max-width: 640px) {
+@media (max-width: 860px) {
   .rules-board {
-    --board-zoom: 0.4;
+    --board-zoom: 0.34;
   }
   .rules-board .scroller {
-    min-height: 240px;
-    max-height: 48vh;
+    min-height: 220px;
+    max-height: min(46vh, 340px);
+    /* Avoid clipping action tiles on narrow screens. */
+    overflow-x: auto;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .rules-board .board-grid {
+    padding: 10px;
+  }
+}
+
+@media (max-width: 520px) {
+  .rules-board {
+    --board-zoom: 0.28;
+  }
+  .rules-board .scroller {
+    min-height: 200px;
+    max-height: min(42vh, 300px);
+  }
+  .rules-board .board-grid {
+    padding: 8px;
   }
 }
 
