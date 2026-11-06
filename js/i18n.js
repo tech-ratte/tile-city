@@ -224,7 +224,7 @@ const dict = {
     edgesB: "All sides grassland",
     edgesD: "N city · E road · S grassland · W road",
     edgesE: "N city · else grassland",
-    rulesFoot: "TileCity · base-set rules adapted for this browser version.",
+    rulesFoot: "TileCity · fan-made browser game with base-set style rules. Unofficial; not connected to Carcassonne®, Hans im Glück, or Asmodee.",
 
     canPlace: "Can place",
     needsRotate: "Needs rotate",
@@ -495,7 +495,7 @@ const dict = {
     edgesB: "全辺草原",
     edgesD: "北都市 · 東道 · 南草原 · 西道",
     edgesE: "北都市 · ほか草原",
-    rulesFoot: "TileCity · ブラウザ版向けに基本セットルールを再構成。",
+    rulesFoot: "TileCity · 基本セット風ルールのファンメイドブラウザゲーム。非公式であり、Carcassonne® / Hans im Glück / Asmodee とは関係ありません。",
 
     canPlace: "置ける",
     needsRotate: "要回転",
