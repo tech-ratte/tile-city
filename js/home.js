@@ -38,3 +38,59 @@ document.querySelectorAll(".tile-spin").forEach((btn) => {
     rotate();
   });
 });
+
+(function bindAddHome() {
+  const home = document.querySelector(".home");
+  const openBtn = document.querySelector(".add-home");
+  const dialog = document.getElementById("add-home-dialog");
+  if (!openBtn || !dialog || typeof dialog.showModal !== "function") return;
+
+  const tabs = Array.from(dialog.querySelectorAll(".add-home-tabs [role='tab']"));
+  const panes = Array.from(dialog.querySelectorAll(".add-home-pane"));
+
+  const standalone =
+    window.matchMedia("(display-mode: standalone)").matches ||
+    window.navigator.standalone === true;
+  if (home && standalone) home.classList.add("is-standalone");
+
+  function detectPlatform() {
+    const ua = navigator.userAgent || "";
+    const iPadOs =
+      navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1;
+    if (/Android/i.test(ua)) return "android";
+    if (/iPhone|iPad|iPod/i.test(ua) || iPadOs) return "ios";
+    return "ios";
+  }
+
+  function setPlatform(platform) {
+    const next = platform === "android" ? "android" : "ios";
+    tabs.forEach((tab) => {
+      const selected = tab.getAttribute("data-platform") === next;
+      tab.setAttribute("aria-selected", selected ? "true" : "false");
+      tab.tabIndex = selected ? 0 : -1;
+    });
+    panes.forEach((pane) => {
+      pane.hidden = pane.getAttribute("data-platform") !== next;
+    });
+  }
+
+  tabs.forEach((tab) => {
+    tab.addEventListener("click", () => {
+      setPlatform(tab.getAttribute("data-platform"));
+    });
+  });
+
+  openBtn.addEventListener("click", () => {
+    if (dialog.open) return;
+    setPlatform(detectPlatform());
+    dialog.showModal();
+  });
+
+  dialog.querySelectorAll("[data-close-dialog]").forEach((btn) => {
+    btn.addEventListener("click", () => dialog.close());
+  });
+
+  dialog.addEventListener("click", (event) => {
+    if (event.target === dialog) dialog.close();
+  });
+})();

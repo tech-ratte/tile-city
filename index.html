@@ -253,6 +253,229 @@
       background: rgba(243, 239, 230, 0.14);
     }
 
+    .add-home {
+      appearance: none;
+      display: inline-flex;
+      margin: 18px auto 0;
+      padding: 0;
+      border: 0;
+      background: none;
+      color: rgba(243, 239, 230, 0.62);
+      font: inherit;
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.03em;
+      text-decoration: underline;
+      text-underline-offset: 3px;
+      cursor: pointer;
+      transition: color 0.15s ease;
+    }
+
+    .add-home:hover {
+      color: var(--home-ink);
+    }
+
+    .add-home:focus-visible {
+      outline: 2px solid rgba(243, 239, 230, 0.85);
+      outline-offset: 4px;
+      border-radius: 4px;
+    }
+
+    .home:is(.is-standalone) .add-home {
+      display: none;
+    }
+
+    .add-home-dialog {
+      width: min(22rem, calc(100vw - 32px));
+      margin: auto;
+      padding: 0;
+      border: 1px solid rgba(243, 239, 230, 0.18);
+      border-radius: 18px;
+      background: #1c2a20;
+      color: var(--home-ink);
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
+    }
+
+    .add-home-dialog::backdrop {
+      background: rgba(8, 14, 10, 0.62);
+      backdrop-filter: blur(4px);
+    }
+
+    .add-home-panel {
+      padding: 22px 22px 18px;
+    }
+
+    .add-home-panel h2 {
+      margin: 0;
+      font-family: "Fraunces", Georgia, serif;
+      font-size: 1.35rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      line-height: 1.2;
+    }
+
+    .add-home-tabs {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+      margin-top: 16px;
+      padding: 4px;
+      border-radius: 999px;
+      background: rgba(10, 18, 14, 0.45);
+      border: 1px solid rgba(243, 239, 230, 0.12);
+    }
+
+    .add-home-tabs button {
+      appearance: none;
+      margin: 0;
+      padding: 8px 10px;
+      border: 0;
+      border-radius: 999px;
+      background: transparent;
+      color: var(--home-muted);
+      font: inherit;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.03em;
+      cursor: pointer;
+    }
+
+    .add-home-tabs button[aria-selected="true"] {
+      background: rgba(243, 239, 230, 0.14);
+      color: var(--home-ink);
+    }
+
+    .add-home-tabs button:focus-visible {
+      outline: 2px solid rgba(243, 239, 230, 0.85);
+      outline-offset: 2px;
+    }
+
+    .add-home-pane[hidden] {
+      display: none;
+    }
+
+    .add-home-panel .intro {
+      margin: 14px 0 0;
+      color: var(--home-muted);
+      font-size: 14px;
+      font-weight: 500;
+      line-height: 1.45;
+    }
+
+    .add-home-panel ol {
+      margin: 16px 0 0;
+      padding-left: 1.25rem;
+      color: var(--home-ink);
+      font-size: 14px;
+      font-weight: 500;
+      line-height: 1.5;
+    }
+
+    .add-home-panel li + li {
+      margin-top: 8px;
+    }
+
+    .add-home-panel li.add-home-flow {
+      display: flex;
+      flex-wrap: nowrap;
+      align-items: center;
+      justify-content: flex-start;
+      gap: 8px;
+      margin-top: 10px;
+      margin-bottom: 2px;
+      margin-left: -1.25rem;
+      padding-left: 0;
+      width: calc(100% + 1.25rem);
+      list-style: none;
+      counter-increment: none;
+    }
+
+    .add-home-flow .glyph {
+      display: block;
+      flex: 0 0 auto;
+      line-height: 0;
+    }
+
+    .add-home-flow .glyph img {
+      display: block;
+      width: 36px;
+      height: 36px;
+      border-radius: 9px;
+      box-shadow: 0 5px 12px rgba(0, 0, 0, 0.24);
+    }
+
+    .add-home-flow .arrow {
+      flex: 0 0 auto;
+      color: rgba(243, 239, 230, 0.55);
+      font-size: 16px;
+      font-weight: 700;
+      line-height: 1;
+    }
+
+    .add-home-menu-row {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      min-width: 0;
+      flex: 1 1 auto;
+      max-width: 11.5rem;
+      padding: 7px 9px;
+      border-radius: 10px;
+      background: #e8e4dc;
+      color: #1c1c1e;
+      box-shadow: 0 5px 12px rgba(0, 0, 0, 0.2);
+    }
+
+    .add-home-menu-row img {
+      display: block;
+      width: 24px;
+      height: 24px;
+      border-radius: 6px;
+      flex: 0 0 auto;
+    }
+
+    .add-home-menu-row span {
+      font-size: 11.5px;
+      font-weight: 700;
+      letter-spacing: 0.01em;
+      line-height: 1.2;
+      text-align: left;
+    }
+
+    .add-home-panel .note {
+      margin: 14px 0 0;
+      color: rgba(243, 239, 230, 0.52);
+      font-size: 12.5px;
+      font-weight: 500;
+      line-height: 1.4;
+    }
+
+    .add-home-panel .ok {
+      appearance: none;
+      display: block;
+      width: 100%;
+      margin-top: 18px;
+      padding: 11px 16px;
+      border: 1px solid rgba(243, 239, 230, 0.28);
+      border-radius: 999px;
+      background: rgba(243, 239, 230, 0.1);
+      color: var(--home-ink);
+      font: inherit;
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      cursor: pointer;
+    }
+
+    .add-home-panel .ok:hover {
+      background: rgba(243, 239, 230, 0.16);
+    }
+
+    .add-home-panel .ok:focus-visible {
+      outline: 2px solid rgba(243, 239, 230, 0.85);
+      outline-offset: 3px;
+    }
+
     @media (prefers-reduced-motion: reduce) {
       .home::before,
       .tile-spin,
@@ -291,8 +514,61 @@
         <a class="play" href="setup.html" data-i18n="play">Play</a>
         <a class="rules" href="tiles.html" data-i18n="rules">Rules</a>
       </div>
+      <button type="button" class="add-home" data-i18n="addHome" aria-haspopup="dialog" aria-controls="add-home-dialog">Add to Home Screen</button>
     </main>
   </div>
+
+  <dialog id="add-home-dialog" class="add-home-dialog" aria-labelledby="add-home-title">
+    <div class="add-home-panel">
+      <h2 id="add-home-title" data-i18n="addHomeTitle">Add to Home Screen</h2>
+      <div class="add-home-tabs" role="tablist" data-i18n-aria="addHomePlatformLabel" aria-label="Platform">
+        <button type="button" role="tab" id="add-home-tab-ios" aria-controls="add-home-pane-ios" aria-selected="true" data-platform="ios" data-i18n="addHomeTabIos">iPhone</button>
+        <button type="button" role="tab" id="add-home-tab-android" aria-controls="add-home-pane-android" aria-selected="false" data-platform="android" data-i18n="addHomeTabAndroid" tabindex="-1">Android</button>
+      </div>
+
+      <div class="add-home-pane" id="add-home-pane-ios" role="tabpanel" aria-labelledby="add-home-tab-ios" data-platform="ios">
+        <p class="intro" data-i18n="addHomeIosIntro">Add TileCity to your Home Screen from Safari’s Share menu and play it like an app!</p>
+        <ol>
+          <li data-i18n="addHomeIosStep1">Open this site in Safari.</li>
+          <li data-i18n="addHomeIosStep2">Tap the Share button at the bottom (or in the toolbar).</li>
+          <li value="3" data-i18n="addHomeIosStep3">Scroll and choose “Add to Home Screen”, then tap Add.</li>
+          <li class="add-home-flow" aria-hidden="true">
+            <div class="glyph">
+              <img src="assets/icons/ios-share.svg" width="36" height="36" alt="">
+            </div>
+            <span class="arrow" aria-hidden="true">→</span>
+            <div class="add-home-menu-row">
+              <img src="assets/icons/ios-add-home.svg" width="24" height="24" alt="">
+              <span data-i18n="addHomeIosActionLabel">Add to Home Screen</span>
+            </div>
+          </li>
+        </ol>
+      </div>
+
+      <div class="add-home-pane" id="add-home-pane-android" role="tabpanel" aria-labelledby="add-home-tab-android" data-platform="android" hidden>
+        <p class="intro" data-i18n="addHomeAndroidIntro">Add TileCity from Chrome’s browser menu!</p>
+        <ol>
+          <li data-i18n="addHomeAndroidStep1">Open this site in Chrome.</li>
+          <li data-i18n="addHomeAndroidStep2">Tap the ⋮ menu at the top right.</li>
+          <li value="3" data-i18n="addHomeAndroidStep3">Choose “Add to Home screen” or “Install app”, then confirm.</li>
+          <li class="add-home-flow" aria-hidden="true">
+            <div class="glyph">
+              <img src="assets/icons/android-menu.svg" width="36" height="36" alt="">
+            </div>
+            <span class="arrow" aria-hidden="true">→</span>
+            <div class="add-home-menu-row">
+              <img src="assets/icons/android-install.svg" width="24" height="24" alt="">
+              <span data-i18n="addHomeAndroidAddLabel">Add to Home screen</span>
+            </div>
+          </li>
+        </ol>
+        <p class="note" data-i18n="addHomeAndroidNote">Menu names vary by browser and phone maker.</p>
+      </div>
+
+      <button type="button" class="ok" data-i18n="ok" data-close-dialog>OK</button>
+    </div>
+  </dialog>
+
   <script src="js/home.bundle.js"></script>
 </body>
 </html>
