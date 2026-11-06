@@ -5157,7 +5157,7 @@
   var SHARE_H = 1920;
   function siteUrl() {
     if (SITE_ORIGIN) {
-      return String(SITE_ORIGIN).replace(/\/$/, "") + "/";
+      return String(SITE_ORIGIN).replace(/\/$/, "") + "/index.html";
     }
     try {
       return new URL("index.html", location.href).href;
@@ -5366,7 +5366,7 @@
   }
   function drawBrandMark(ctx, x, y, url) {
     const label = "TileCity";
-    const link = String(url || "").replace(/^https?:\/\//i, "").replace(/\/$/, "");
+    const link = String(url || "").replace(/^https?:\/\//i, "").replace(/\/index\.html$/i, "").replace(/\/$/, "");
     const padX = 32;
     const padY = 22;
     const gap = 14;

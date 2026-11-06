@@ -17,8 +17,9 @@ const SHARE_W = 1080;
 const SHARE_H = 1920;
 
 function siteUrl() {
+  // Prefer .../index.html so X/Twitter can fetch OG tags (directory URLs often fail).
   if (SITE_ORIGIN) {
-    return String(SITE_ORIGIN).replace(/\/$/, "") + "/";
+    return String(SITE_ORIGIN).replace(/\/$/, "") + "/index.html";
   }
   try {
     return new URL("index.html", location.href).href;
@@ -261,6 +262,7 @@ function drawBrandMark(ctx, x, y, url) {
   const label = "TileCity";
   const link = String(url || "")
     .replace(/^https?:\/\//i, "")
+    .replace(/\/index\.html$/i, "")
     .replace(/\/$/, "");
   const padX = 32;
   const padY = 22;
