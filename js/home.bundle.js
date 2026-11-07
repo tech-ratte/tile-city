@@ -4,7 +4,10 @@
   var SOUNDS = {
     tile: "assets/sound/tile.mp3",
     point: "assets/sound/point.mp3",
-    clear: "assets/sound/clear.mp3"
+    clear: "assets/sound/clear.mp3",
+    rouletteStart: "assets/sound/roulette/start.mp3",
+    rouletteSlow: "assets/sound/roulette/slow.mp3",
+    rouletteStop: "assets/sound/roulette/stop.mp3"
   };
   var MEEPLE_COLORS = [
     "red",
@@ -103,20 +106,34 @@
       }
     });
   }
-  function playHtmlFallback(src) {
+  function playHtmlFallback(src, onStarted, maxPlaySec) {
     return new Promise((resolve) => {
       let settled = false;
+      let cutTimer = null;
       const finish = (result) => {
         if (settled) return;
         settled = true;
+        if (cutTimer != null) clearTimeout(cutTimer);
         resolve(result);
       };
       try {
         const audio = new Audio(src);
         audio.volume = volume;
         audio.addEventListener("error", () => finish({ ok: false, mode: "html-fallback", reason: "element-error" }), { once: true });
+        audio.addEventListener("ended", () => finish({ ok: true, mode: "html-fallback", ended: true }), { once: true });
         void audio.play().then(
-          () => finish({ ok: true, mode: "html-fallback", started: true }),
+          () => {
+            if (typeof onStarted === "function") onStarted();
+            if (maxPlaySec != null && maxPlaySec > 0) {
+              cutTimer = setTimeout(() => {
+                try {
+                  audio.pause();
+                } catch (err) {
+                }
+                finish({ ok: true, mode: "html-fallback", cut: true });
+              }, maxPlaySec * 1e3);
+            }
+          },
           (err) => finish({
             ok: false,
             mode: "html-fallback",
@@ -151,13 +168,150 @@
     void loadBuffer(SOUNDS.point);
     void loadBuffer(SOUNDS.clear);
   }
-  function unlockAudio() {
-    if (unlocked) {
-      void resumeCtx();
-      return;
+  function mixMono(buf) {
+    const n = buf.length;
+    const out = new Float32Array(n);
+    const ch0 = buf.getChannelData(0);
+    if (buf.numberOfChannels < 2) {
+      out.set(ch0);
+      return out;
     }
+    const ch1 = buf.getChannelData(1);
+    for (let i = 0; i < n; i++) out[i] = (ch0[i] + ch1[i]) * 0.5;
+    return out;
+  }
+  function detectTicks(buf, opts) {
+    if (!buf) return [];
+    const thr = opts && opts.thr != null ? opts.thr : 0.05;
+    const minGap = opts && opts.minGap != null ? opts.minGap : 0.04;
+    const sampleRate = buf.sampleRate;
+    const channel = mixMono(buf);
+    const win = Math.max(1, Math.floor(sampleRate * 0.01));
+    const hop = Math.max(1, Math.floor(sampleRate * 5e-3));
+    const env = [];
+    for (let i = 0; i + win < channel.length; i += hop) {
+      let sum = 0;
+      for (let j = 0; j < win; j++) sum += channel[i + j] * channel[i + j];
+      env.push({ t: i / sampleRate, e: Math.sqrt(sum / win) });
+    }
+    const times = [];
+    let last = -999;
+    for (let i = 2; i < env.length - 2; i++) {
+      const e = env[i].e;
+      if (e > thr && e > env[i - 1].e && e > env[i - 2].e && e >= env[i + 1].e && e >= env[i + 2].e) {
+        if (env[i].t - last < minGap) continue;
+        times.push(env[i].t);
+        last = env[i].t;
+      }
+    }
+    return times;
+  }
+  async function peekTicks(src, tickOpts) {
+    await resumeCtx();
+    const buf = await loadBuffer(src);
+    if (!buf) return [];
+    return detectTicks(buf, tickOpts || {});
+  }
+  function getSoundDuration(src) {
+    const buf = buffers.get(src);
+    return buf && Number.isFinite(buf.duration) ? buf.duration : null;
+  }
+  function preloadSounds(srcs) {
+    (srcs || []).forEach((src) => {
+      if (!src) return;
+      void loadBuffer(src);
+      try {
+        const audio = new Audio();
+        audio.preload = "auto";
+        audio.src = src;
+      } catch (err) {
+      }
+    });
+  }
+  function armTickTimers(ticks, onTick, leadSec) {
+    const timers = [];
+    if (typeof onTick !== "function" || !ticks.length) return timers;
+    const lead = Number.isFinite(leadSec) ? leadSec : 0;
+    const origin = performance.now();
+    ticks.forEach((at, index) => {
+      const fireAt = Math.max(0, at - lead);
+      timers.push(
+        setTimeout(() => {
+          onTick(index, at);
+        }, Math.max(0, fireAt * 1e3 - (performance.now() - origin)))
+      );
+    });
+    return timers;
+  }
+  async function playWithTicks(src, tickOpts, onTick, presetTicks) {
+    const ctx = getCtx();
+    if (ctx && ctx.state === "suspended") {
+      try {
+        void ctx.resume();
+      } catch (err) {
+      }
+    }
+    const cached = buffers.get(src) || null;
+    const maxPlaySec = tickOpts && tickOpts.maxPlaySec != null ? Number(tickOpts.maxPlaySec) : null;
+    let ticks = Array.isArray(presetTicks) ? presetTicks.slice() : cached ? detectTicks(cached, tickOpts || {}) : [];
+    if (maxPlaySec != null && maxPlaySec > 0) {
+      ticks = ticks.filter((at) => at < maxPlaySec);
+    }
+    const leadSec = tickOpts && tickOpts.lead != null ? Number(tickOpts.lead) : 0;
+    function waitTicksDone() {
+      const last = ticks.length ? ticks[ticks.length - 1] : 0;
+      const durMs = maxPlaySec != null && maxPlaySec > 0 ? maxPlaySec * 1e3 : cached ? cached.duration * 1e3 : Math.max(800, last * 1e3 + 80);
+      return new Promise(
+        (resolve) => setTimeout(resolve, Math.max(durMs, last * 1e3 + 30))
+      );
+    }
+    if (!(volume > 0)) {
+      const timers2 = armTickTimers(ticks, onTick, leadSec);
+      await waitTicksDone();
+      timers2.forEach((id) => clearTimeout(id));
+      return { ok: true, mode: "silent", ticks };
+    }
+    let timers = [];
+    let result = await playHtmlFallback(src, () => {
+      timers = armTickTimers(ticks, onTick, leadSec);
+    }, maxPlaySec);
+    if (!result.ok) {
+      timers.forEach((id) => clearTimeout(id));
+      let buf = cached;
+      if (!buf) buf = await loadBuffer(src);
+      if (buf && ctx) {
+        try {
+          await resumeCtx();
+        } catch (err) {
+        }
+        const playPromise = playBuffer(buf, ctx);
+        timers = armTickTimers(ticks, onTick, leadSec);
+        result = await playPromise;
+        if (maxPlaySec != null && maxPlaySec > 0) {
+          await new Promise((resolve) => setTimeout(resolve, maxPlaySec * 1e3));
+          result = { ok: true, mode: "web-audio", cut: true };
+        }
+      }
+    }
+    if (!result.ok) {
+      timers.forEach((id) => clearTimeout(id));
+      timers = armTickTimers(ticks, onTick, leadSec);
+      await waitTicksDone();
+    }
+    timers.forEach((id) => clearTimeout(id));
+    return Object.assign({ ticks }, result || { ok: false });
+  }
+  function unlockAudio() {
     unlocked = true;
+    const ctx = getCtx();
+    if (ctx && ctx.state === "suspended") {
+      try {
+        void ctx.resume();
+      } catch (err) {
+      }
+    }
     void resumeCtx().then(() => warmCommon());
+    return resumeCtx();
   }
   function armUnlock() {
     if (unlockArmed) return;
@@ -234,12 +388,18 @@
     setVolume,
     playSound,
     playSoundAsync,
+    playWithTicks,
+    peekTicks,
+    getSoundDuration,
+    preloadSounds,
+    detectTicks,
     playMeepleSound,
     playWinSound,
     playEndFanfare,
     bindVolumeBar,
     unlockAudio,
-    getAudioDebugState
+    getAudioDebugState,
+    SOUNDS
   };
   if (typeof globalThis !== "undefined") globalThis.TileCityAudio = TileCityAudio;
   var audio_default = TileCityAudio;
@@ -454,7 +614,11 @@
       setupStartTile: "Start tile",
       setupStartTileBody: "Place the marked D tile face-up in the center. Shuffle the other 71 tiles into the deck.",
       setupFirst: "First player",
-      setupFirstBody: "The starting player is chosen at random. Turns then follow the player list order.",
+      setupFirstBody: "A roulette on the play screen picks the starting player at random. Turns then follow the player list order.",
+      rouletteTitle: "Roulette",
+      rouletteLead: "Choose the starting player.",
+      rouletteStart: "Start",
+      rouletteGoesFirst: "goes first!",
       turnTitle: "On your turn",
       turnDraw: "1. Draw a tile",
       turnDrawBody: "Take the top tile from the deck so everyone can see it.",
@@ -738,7 +902,11 @@
       setupStartTile: "\u30B9\u30BF\u30FC\u30C8\u30BF\u30A4\u30EB",
       setupStartTileBody: "\u5370\u4ED8\u304D\u306E D \u30BF\u30A4\u30EB1\u679A\u3092\u4E2D\u592E\u306B\u8868\u5411\u304D\u3067\u7F6E\u304D\u307E\u3059\u3002\u6B8B\u308A71\u679A\u3092\u3088\u304F\u6DF7\u305C\u3066\u5C71\u672D\u306B\u3057\u307E\u3059\u3002",
       setupFirst: "\u5148\u624B",
-      setupFirstBody: "\u5148\u624B\u306F\u30E9\u30F3\u30C0\u30E0\u306B\u6C7A\u307E\u308A\u307E\u3059\u3002\u4EE5\u964D\u306F\u30D7\u30EC\u30A4\u30E4\u30FC\u306E\u4E26\u3073\u9806\u306B\u624B\u756A\u304C\u56DE\u308A\u307E\u3059\u3002",
+      setupFirstBody: "\u30D7\u30EC\u30A4\u753B\u9762\u306E\u30EB\u30FC\u30EC\u30C3\u30C8\u3067\u5148\u624B\u304C\u6C7A\u307E\u308A\u307E\u3059\u3002\u4EE5\u964D\u306F\u30D7\u30EC\u30A4\u30E4\u30FC\u306E\u4E26\u3073\u9806\u306B\u624B\u756A\u304C\u56DE\u308A\u307E\u3059\u3002",
+      rouletteTitle: "\u30EB\u30FC\u30EC\u30C3\u30C8",
+      rouletteLead: "\u6700\u521D\u306E\u30D7\u30EC\u30A4\u30E4\u30FC\u3092\u6C7A\u3081\u307E\u3059\u3002",
+      rouletteStart: "\u30B9\u30BF\u30FC\u30C8",
+      rouletteGoesFirst: "\u304C\u5148\u624B\uFF01",
       turnTitle: "\u624B\u756A\u306E\u6D41\u308C",
       turnDraw: "1. \u30BF\u30A4\u30EB\u3092\u5F15\u304F",
       turnDrawBody: "\u5C71\u672D\u306E\u4E00\u756A\u4E0A\u30921\u679A\u5F15\u304D\u3001\u5168\u54E1\u306B\u898B\u3048\u308B\u3088\u3046\u306B\u3057\u307E\u3059\u3002",

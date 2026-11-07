@@ -81,6 +81,18 @@
       </aside>
     </div>
   </div>
+  <div id="first-roulette" class="first-roulette" hidden>
+    <div class="first-roulette-card" role="dialog" aria-modal="true" aria-labelledby="roulette-title">
+      <h2 id="roulette-title" data-i18n="rouletteTitle">Roulette</h2>
+      <p class="roulette-lead" data-i18n="rouletteLead">Choose the starting player.</p>
+      <div class="roulette-stage">
+        <p class="roulette-name" id="roulette-name" aria-live="polite"></p>
+      </div>
+      <p class="roulette-result" id="roulette-result" hidden></p>
+      <button type="button" id="roulette-action" class="roulette-action" data-i18n="rouletteStart">Start</button>
+    </div>
+  </div>
+
   <div id="share-sheet" class="share-sheet" hidden>
     <div class="share-sheet-card" role="dialog" aria-modal="true" aria-labelledby="share-sheet-title">
       <button type="button" id="share-sheet-close" class="share-sheet-close" data-i18n-aria="cancel" aria-label="Cancel">×</button>

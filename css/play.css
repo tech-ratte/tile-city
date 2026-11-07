@@ -2049,3 +2049,143 @@ html, body { height: 100%; overflow: hidden; }
   margin-top: 8px;
 }
 
+.first-roulette {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px 14px;
+  background: rgba(8, 14, 10, 0.72);
+  backdrop-filter: blur(5px);
+}
+
+.first-roulette[hidden] {
+  display: none;
+}
+
+.first-roulette-card {
+  width: min(22rem, 100%);
+  padding: 22px 20px 18px;
+  border-radius: 18px;
+  background: #1c2a20;
+  border: 1px solid rgba(243, 239, 230, 0.16);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
+  color: #f3efe6;
+  text-align: center;
+}
+
+.first-roulette-card h2 {
+  margin: 0;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1.45rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.roulette-lead {
+  margin: 8px 0 0;
+  color: rgba(243, 239, 230, 0.68);
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.roulette-stage {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 5.5rem;
+  margin: 18px auto 0;
+  padding: 18px 14px;
+  border-radius: 16px;
+  background: rgba(10, 18, 14, 0.45);
+  border: 1px solid rgba(243, 239, 230, 0.12);
+}
+
+.roulette-name {
+  margin: 0;
+  font-family: "Yu Gothic UI", "Yu Gothic", Meiryo, sans-serif;
+  font-size: clamp(1.35rem, 5.5vw, 1.7rem);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  line-height: 1.2;
+  transition: color 0.04s linear;
+}
+
+.roulette-name.red { color: #ff5d78; text-shadow: 0 0 8px rgba(255, 93, 120, 0.85); }
+.roulette-name.blue { color: #49c4ff; text-shadow: 0 0 8px rgba(73, 196, 255, 0.85); }
+.roulette-name.green { color: #3dff9a; text-shadow: 0 0 8px rgba(61, 255, 154, 0.75); }
+.roulette-name.yellow { color: #ffe14a; text-shadow: 0 0 8px rgba(255, 225, 74, 0.75); }
+.roulette-name.orange { color: #ff9a3d; text-shadow: 0 0 8px rgba(255, 154, 61, 0.8); }
+.roulette-name.purple { color: #7c3aed; text-shadow: 0 0 8px rgba(124, 58, 237, 0.8); }
+.roulette-name.white { color: #f4f7fb; text-shadow: 0 0 8px rgba(255, 255, 255, 0.35); }
+.roulette-name.brown { color: #a67c52; text-shadow: 0 0 8px rgba(166, 124, 82, 0.8); }
+
+.roulette-result {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 16px 0 0;
+  min-height: 1.5em;
+  color: #f3efe6;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.roulette-result[hidden] {
+  display: none;
+}
+
+.roulette-result strong {
+  font-weight: 800;
+}
+
+.roulette-winner-swatch {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--ink);
+  border: 1.5px solid rgba(243, 239, 230, 0.55);
+  box-shadow: 0 0 0 2px rgba(10, 18, 14, 0.35);
+}
+
+.roulette-action {
+  appearance: none;
+  display: block;
+  width: 100%;
+  margin-top: 16px;
+  padding: 12px 16px;
+  border-radius: 999px;
+  border: 1px solid #9e3422;
+  background: #c44732;
+  color: #fffdf8;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  box-shadow: 0 10px 24px rgba(196, 71, 50, 0.28);
+}
+
+.roulette-action:hover {
+  filter: brightness(1.05);
+}
+
+.roulette-action:disabled {
+  opacity: 0.55;
+  cursor: default;
+  filter: none;
+}
+
+.roulette-action[data-phase="ok"] {
+  border-color: rgba(243, 239, 230, 0.28);
+  background: rgba(243, 239, 230, 0.12);
+  color: #f3efe6;
+  box-shadow: none;
+}
+

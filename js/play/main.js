@@ -3,9 +3,12 @@ import Carcassonne from "../game/index.js";
 import TileCityI18n from "../i18n.js";
 import {
   clearSave,
+  clearRoulettePending,
+  isRoulettePending,
   loadRoster as loadRosterFromStorage,
   loadSetupOptions as loadSetupOptionsFromStorage,
   loadSavedGame as loadSavedGameFromStorage,
+  markRoulettePending,
   writeSave,
 } from "./storage.js";
 import {
@@ -16,6 +19,7 @@ import {
   nativeShare,
   snsLinks,
 } from "./share.js";
+import { openFirstRoulette } from "./roulette.js";
 
 const t = (key) => TileCityI18n.t(key);
 const playSound = (name) => TileCityAudio.playSound(name);
@@ -41,6 +45,7 @@ let botTimer = null;
 let botBusy = false;
 let centerAnim = null;
 let centerAnimDone = null;
+let rouletteOpen = false;
 
 function loadRoster() {
   return loadRosterFromStorage(Carcassonne);
@@ -260,12 +265,12 @@ function isBotSeat(index) {
 }
 
 function isBotTurn() {
-  if (game.finished || exitConfirmOpen) return false;
+  if (rouletteOpen || game.finished || exitConfirmOpen) return false;
   return isBotSeat(activeSeat());
 }
 
 function humanControlsLocked() {
-  return isBotTurn() || botBusy;
+  return rouletteOpen || isBotTurn() || botBusy;
 }
 
 function displayPlayerName(player) {
@@ -1776,12 +1781,53 @@ applyBoardZoom();
 syncBoardPadding();
 TileCityI18n.apply();
 TileCityAudio.unlockAudio();
-readyToPersist = true;
-if (saved) {
+
+function beginFirstRoulette() {
+  const overlay = document.getElementById("first-roulette");
+  if (!overlay) {
+    clearRoulettePending();
+    readyToPersist = true;
+    render({ center: "0,0" });
+    return;
+  }
+  rouletteOpen = true;
+  // Do not persist until the roulette finishes — otherwise a refresh skips it.
+  readyToPersist = false;
+  render({ center: "0,0", skipBot: true });
+  try {
+    openFirstRoulette({
+      overlay,
+      players: game.players,
+      winner: game.player,
+      palette: Carcassonne.COLOR_PALETTE,
+      nameOf: displayPlayerName,
+      t,
+      onSpin: () => TileCityAudio.unlockAudio(),
+      onDone: () => {
+        rouletteOpen = false;
+        clearRoulettePending();
+        readyToPersist = true;
+        TileCityAudio.unlockAudio();
+        render({ keep: true });
+      },
+    });
+  } catch (err) {
+    console.error(err);
+    rouletteOpen = false;
+    clearRoulettePending();
+    readyToPersist = true;
+    render({ center: "0,0" });
+  }
+}
+
+const needRoulette = !saved || isRoulettePending();
+if (needRoulette) {
+  if (!isRoulettePending()) markRoulettePending();
+  beginFirstRoulette();
+} else {
+  readyToPersist = true;
   render({ keep: true });
   restoreView(saved.view);
-} else {
-  render({ center: "0,0" });
 }
 window.addEventListener("resize", () => {
   syncLayoutMode();

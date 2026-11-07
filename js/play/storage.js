@@ -1,7 +1,28 @@
 const SETUP_KEY = "tile-city-setup";
 const SAVE_KEY = "tile-city-save";
+const ROULETTE_KEY = "tile-city-roulette";
 
-export { SETUP_KEY, SAVE_KEY };
+export { SETUP_KEY, SAVE_KEY, ROULETTE_KEY };
+
+export function markRoulettePending() {
+  try {
+    sessionStorage.setItem(ROULETTE_KEY, "1");
+  } catch (err) {}
+}
+
+export function clearRoulettePending() {
+  try {
+    sessionStorage.removeItem(ROULETTE_KEY);
+  } catch (err) {}
+}
+
+export function isRoulettePending() {
+  try {
+    return sessionStorage.getItem(ROULETTE_KEY) === "1";
+  } catch (err) {
+    return false;
+  }
+}
 
 /** Parse setup payload: legacy player array or { players, options }. */
 export function parseSetupPayload(Carcassonne, raw) {

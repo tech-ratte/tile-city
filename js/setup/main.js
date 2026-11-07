@@ -268,6 +268,9 @@ document.getElementById("start-game").addEventListener("click", () => {
   try {
     localStorage.removeItem("tile-city-save");
   } catch (err) {}
+  try {
+    sessionStorage.setItem("tile-city-roulette", "1");
+  } catch (err) {}
   sessionStorage.setItem(SETUP_KEY, JSON.stringify({
     players: cleaned,
     options: Carcassonne.normalizeGameOptions(options),

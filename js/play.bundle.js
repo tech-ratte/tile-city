@@ -4,7 +4,10 @@
   var SOUNDS = {
     tile: "assets/sound/tile.mp3",
     point: "assets/sound/point.mp3",
-    clear: "assets/sound/clear.mp3"
+    clear: "assets/sound/clear.mp3",
+    rouletteStart: "assets/sound/roulette/start.mp3",
+    rouletteSlow: "assets/sound/roulette/slow.mp3",
+    rouletteStop: "assets/sound/roulette/stop.mp3"
   };
   var MEEPLE_COLORS = [
     "red",
@@ -103,20 +106,34 @@
       }
     });
   }
-  function playHtmlFallback(src) {
+  function playHtmlFallback(src, onStarted, maxPlaySec) {
     return new Promise((resolve) => {
       let settled = false;
+      let cutTimer = null;
       const finish = (result) => {
         if (settled) return;
         settled = true;
+        if (cutTimer != null) clearTimeout(cutTimer);
         resolve(result);
       };
       try {
         const audio = new Audio(src);
         audio.volume = volume;
         audio.addEventListener("error", () => finish({ ok: false, mode: "html-fallback", reason: "element-error" }), { once: true });
+        audio.addEventListener("ended", () => finish({ ok: true, mode: "html-fallback", ended: true }), { once: true });
         void audio.play().then(
-          () => finish({ ok: true, mode: "html-fallback", started: true }),
+          () => {
+            if (typeof onStarted === "function") onStarted();
+            if (maxPlaySec != null && maxPlaySec > 0) {
+              cutTimer = setTimeout(() => {
+                try {
+                  audio.pause();
+                } catch (err) {
+                }
+                finish({ ok: true, mode: "html-fallback", cut: true });
+              }, maxPlaySec * 1e3);
+            }
+          },
           (err) => finish({
             ok: false,
             mode: "html-fallback",
@@ -151,13 +168,150 @@
     void loadBuffer(SOUNDS.point);
     void loadBuffer(SOUNDS.clear);
   }
-  function unlockAudio() {
-    if (unlocked) {
-      void resumeCtx();
-      return;
+  function mixMono(buf) {
+    const n = buf.length;
+    const out = new Float32Array(n);
+    const ch0 = buf.getChannelData(0);
+    if (buf.numberOfChannels < 2) {
+      out.set(ch0);
+      return out;
     }
+    const ch1 = buf.getChannelData(1);
+    for (let i = 0; i < n; i++) out[i] = (ch0[i] + ch1[i]) * 0.5;
+    return out;
+  }
+  function detectTicks(buf, opts) {
+    if (!buf) return [];
+    const thr = opts && opts.thr != null ? opts.thr : 0.05;
+    const minGap = opts && opts.minGap != null ? opts.minGap : 0.04;
+    const sampleRate = buf.sampleRate;
+    const channel = mixMono(buf);
+    const win = Math.max(1, Math.floor(sampleRate * 0.01));
+    const hop = Math.max(1, Math.floor(sampleRate * 5e-3));
+    const env = [];
+    for (let i = 0; i + win < channel.length; i += hop) {
+      let sum = 0;
+      for (let j = 0; j < win; j++) sum += channel[i + j] * channel[i + j];
+      env.push({ t: i / sampleRate, e: Math.sqrt(sum / win) });
+    }
+    const times = [];
+    let last = -999;
+    for (let i = 2; i < env.length - 2; i++) {
+      const e = env[i].e;
+      if (e > thr && e > env[i - 1].e && e > env[i - 2].e && e >= env[i + 1].e && e >= env[i + 2].e) {
+        if (env[i].t - last < minGap) continue;
+        times.push(env[i].t);
+        last = env[i].t;
+      }
+    }
+    return times;
+  }
+  async function peekTicks(src, tickOpts) {
+    await resumeCtx();
+    const buf = await loadBuffer(src);
+    if (!buf) return [];
+    return detectTicks(buf, tickOpts || {});
+  }
+  function getSoundDuration(src) {
+    const buf = buffers.get(src);
+    return buf && Number.isFinite(buf.duration) ? buf.duration : null;
+  }
+  function preloadSounds(srcs) {
+    (srcs || []).forEach((src) => {
+      if (!src) return;
+      void loadBuffer(src);
+      try {
+        const audio = new Audio();
+        audio.preload = "auto";
+        audio.src = src;
+      } catch (err) {
+      }
+    });
+  }
+  function armTickTimers(ticks, onTick, leadSec) {
+    const timers = [];
+    if (typeof onTick !== "function" || !ticks.length) return timers;
+    const lead = Number.isFinite(leadSec) ? leadSec : 0;
+    const origin = performance.now();
+    ticks.forEach((at, index) => {
+      const fireAt = Math.max(0, at - lead);
+      timers.push(
+        setTimeout(() => {
+          onTick(index, at);
+        }, Math.max(0, fireAt * 1e3 - (performance.now() - origin)))
+      );
+    });
+    return timers;
+  }
+  async function playWithTicks(src, tickOpts, onTick, presetTicks) {
+    const ctx = getCtx();
+    if (ctx && ctx.state === "suspended") {
+      try {
+        void ctx.resume();
+      } catch (err) {
+      }
+    }
+    const cached = buffers.get(src) || null;
+    const maxPlaySec = tickOpts && tickOpts.maxPlaySec != null ? Number(tickOpts.maxPlaySec) : null;
+    let ticks = Array.isArray(presetTicks) ? presetTicks.slice() : cached ? detectTicks(cached, tickOpts || {}) : [];
+    if (maxPlaySec != null && maxPlaySec > 0) {
+      ticks = ticks.filter((at) => at < maxPlaySec);
+    }
+    const leadSec = tickOpts && tickOpts.lead != null ? Number(tickOpts.lead) : 0;
+    function waitTicksDone() {
+      const last = ticks.length ? ticks[ticks.length - 1] : 0;
+      const durMs = maxPlaySec != null && maxPlaySec > 0 ? maxPlaySec * 1e3 : cached ? cached.duration * 1e3 : Math.max(800, last * 1e3 + 80);
+      return new Promise(
+        (resolve) => setTimeout(resolve, Math.max(durMs, last * 1e3 + 30))
+      );
+    }
+    if (!(volume > 0)) {
+      const timers2 = armTickTimers(ticks, onTick, leadSec);
+      await waitTicksDone();
+      timers2.forEach((id) => clearTimeout(id));
+      return { ok: true, mode: "silent", ticks };
+    }
+    let timers = [];
+    let result = await playHtmlFallback(src, () => {
+      timers = armTickTimers(ticks, onTick, leadSec);
+    }, maxPlaySec);
+    if (!result.ok) {
+      timers.forEach((id) => clearTimeout(id));
+      let buf = cached;
+      if (!buf) buf = await loadBuffer(src);
+      if (buf && ctx) {
+        try {
+          await resumeCtx();
+        } catch (err) {
+        }
+        const playPromise = playBuffer(buf, ctx);
+        timers = armTickTimers(ticks, onTick, leadSec);
+        result = await playPromise;
+        if (maxPlaySec != null && maxPlaySec > 0) {
+          await new Promise((resolve) => setTimeout(resolve, maxPlaySec * 1e3));
+          result = { ok: true, mode: "web-audio", cut: true };
+        }
+      }
+    }
+    if (!result.ok) {
+      timers.forEach((id) => clearTimeout(id));
+      timers = armTickTimers(ticks, onTick, leadSec);
+      await waitTicksDone();
+    }
+    timers.forEach((id) => clearTimeout(id));
+    return Object.assign({ ticks }, result || { ok: false });
+  }
+  function unlockAudio() {
     unlocked = true;
+    const ctx = getCtx();
+    if (ctx && ctx.state === "suspended") {
+      try {
+        void ctx.resume();
+      } catch (err) {
+      }
+    }
     void resumeCtx().then(() => warmCommon());
+    return resumeCtx();
   }
   function armUnlock() {
     if (unlockArmed) return;
@@ -234,12 +388,18 @@
     setVolume,
     playSound,
     playSoundAsync,
+    playWithTicks,
+    peekTicks,
+    getSoundDuration,
+    preloadSounds,
+    detectTicks,
     playMeepleSound,
     playWinSound,
     playEndFanfare,
     bindVolumeBar,
     unlockAudio,
-    getAudioDebugState
+    getAudioDebugState,
+    SOUNDS
   };
   if (typeof globalThis !== "undefined") globalThis.TileCityAudio = TileCityAudio;
   var audio_default = TileCityAudio;
@@ -3726,7 +3886,11 @@
       setupStartTile: "Start tile",
       setupStartTileBody: "Place the marked D tile face-up in the center. Shuffle the other 71 tiles into the deck.",
       setupFirst: "First player",
-      setupFirstBody: "The starting player is chosen at random. Turns then follow the player list order.",
+      setupFirstBody: "A roulette on the play screen picks the starting player at random. Turns then follow the player list order.",
+      rouletteTitle: "Roulette",
+      rouletteLead: "Choose the starting player.",
+      rouletteStart: "Start",
+      rouletteGoesFirst: "goes first!",
       turnTitle: "On your turn",
       turnDraw: "1. Draw a tile",
       turnDrawBody: "Take the top tile from the deck so everyone can see it.",
@@ -4010,7 +4174,11 @@
       setupStartTile: "\u30B9\u30BF\u30FC\u30C8\u30BF\u30A4\u30EB",
       setupStartTileBody: "\u5370\u4ED8\u304D\u306E D \u30BF\u30A4\u30EB1\u679A\u3092\u4E2D\u592E\u306B\u8868\u5411\u304D\u3067\u7F6E\u304D\u307E\u3059\u3002\u6B8B\u308A71\u679A\u3092\u3088\u304F\u6DF7\u305C\u3066\u5C71\u672D\u306B\u3057\u307E\u3059\u3002",
       setupFirst: "\u5148\u624B",
-      setupFirstBody: "\u5148\u624B\u306F\u30E9\u30F3\u30C0\u30E0\u306B\u6C7A\u307E\u308A\u307E\u3059\u3002\u4EE5\u964D\u306F\u30D7\u30EC\u30A4\u30E4\u30FC\u306E\u4E26\u3073\u9806\u306B\u624B\u756A\u304C\u56DE\u308A\u307E\u3059\u3002",
+      setupFirstBody: "\u30D7\u30EC\u30A4\u753B\u9762\u306E\u30EB\u30FC\u30EC\u30C3\u30C8\u3067\u5148\u624B\u304C\u6C7A\u307E\u308A\u307E\u3059\u3002\u4EE5\u964D\u306F\u30D7\u30EC\u30A4\u30E4\u30FC\u306E\u4E26\u3073\u9806\u306B\u624B\u756A\u304C\u56DE\u308A\u307E\u3059\u3002",
+      rouletteTitle: "\u30EB\u30FC\u30EC\u30C3\u30C8",
+      rouletteLead: "\u6700\u521D\u306E\u30D7\u30EC\u30A4\u30E4\u30FC\u3092\u6C7A\u3081\u307E\u3059\u3002",
+      rouletteStart: "\u30B9\u30BF\u30FC\u30C8",
+      rouletteGoesFirst: "\u304C\u5148\u624B\uFF01",
       turnTitle: "\u624B\u756A\u306E\u6D41\u308C",
       turnDraw: "1. \u30BF\u30A4\u30EB\u3092\u5F15\u304F",
       turnDrawBody: "\u5C71\u672D\u306E\u4E00\u756A\u4E0A\u30921\u679A\u5F15\u304D\u3001\u5168\u54E1\u306B\u898B\u3048\u308B\u3088\u3046\u306B\u3057\u307E\u3059\u3002",
@@ -4265,6 +4433,26 @@
   // js/play/storage.js
   var SETUP_KEY = "tile-city-setup";
   var SAVE_KEY = "tile-city-save";
+  var ROULETTE_KEY = "tile-city-roulette";
+  function markRoulettePending() {
+    try {
+      sessionStorage.setItem(ROULETTE_KEY, "1");
+    } catch (err) {
+    }
+  }
+  function clearRoulettePending() {
+    try {
+      sessionStorage.removeItem(ROULETTE_KEY);
+    } catch (err) {
+    }
+  }
+  function isRoulettePending() {
+    try {
+      return sessionStorage.getItem(ROULETTE_KEY) === "1";
+    } catch (err) {
+      return false;
+    }
+  }
   function parseSetupPayload(Carcassonne2, raw) {
     if (!raw) return null;
     let data;
@@ -5502,6 +5690,155 @@
     return "download";
   }
 
+  // js/play/roulette.js
+  var START_TICKS = { thr: 0.05, minGap: 0.04 };
+  var SLOW_TICKS = { thr: 0.09, minGap: 0.12, lead: 0.04 };
+  var START_DURATION_FALLBACK = 2.7;
+  function fallbackTicks(durationSec, kind) {
+    const dur = Math.max(0.4, durationSec || (kind === "slow" ? 2.9 : START_DURATION_FALLBACK));
+    const times = [];
+    if (kind === "slow") {
+      let t3 = 0.05;
+      let gap = 0.12;
+      while (t3 < dur - 0.05) {
+        times.push(t3);
+        gap = Math.min(0.75, gap * 1.28);
+        t3 += gap;
+      }
+      if (!times.length) times.push(dur * 0.5);
+      return times;
+    }
+    for (let t3 = 0.02; t3 < dur - 0.05; t3 += 0.052) times.push(t3);
+    return times;
+  }
+  function hexFor(palette, id) {
+    const hit = palette.find((item) => item.id === id);
+    return hit ? hit.hex : "#f4f7fb";
+  }
+  function openFirstRoulette(opts) {
+    const {
+      overlay,
+      players,
+      winner,
+      palette,
+      nameOf,
+      t: t3,
+      onSpin,
+      onDone
+    } = opts;
+    if (!overlay || !players || !players.length) {
+      if (typeof onDone === "function") onDone();
+      return { close() {
+      } };
+    }
+    const nameEl = overlay.querySelector("#roulette-name");
+    const result = overlay.querySelector("#roulette-result");
+    const actionBtn = overlay.querySelector("#roulette-action");
+    if (!nameEl || !actionBtn) {
+      if (typeof onDone === "function") onDone();
+      return { close() {
+      } };
+    }
+    const startSrc = audio_default.SOUNDS.rouletteStart;
+    const slowSrc = audio_default.SOUNDS.rouletteSlow;
+    const stopSrc = audio_default.SOUNDS.rouletteStop;
+    let spinning = false;
+    let decided = false;
+    let finished = false;
+    let startDuration = START_DURATION_FALLBACK;
+    let startTicks = fallbackTicks(startDuration, "start");
+    let slowTicks = fallbackTicks(2.9, "slow");
+    audio_default.preloadSounds([startSrc, slowSrc, stopSrc]);
+    void (async () => {
+      const detectedStart = await audio_default.peekTicks(startSrc, START_TICKS);
+      const detectedSlow = await audio_default.peekTicks(slowSrc, SLOW_TICKS);
+      if (detectedStart.length) startTicks = detectedStart;
+      if (detectedSlow.length) slowTicks = detectedSlow;
+      const dur = audio_default.getSoundDuration(startSrc);
+      if (dur && dur > 0) startDuration = dur;
+    })();
+    function paintName(index) {
+      const player = players[(index % players.length + players.length) % players.length];
+      nameEl.textContent = nameOf(player);
+      nameEl.style.color = "";
+      nameEl.className = "roulette-name " + player.id;
+    }
+    paintName(0);
+    if (result) {
+      result.hidden = true;
+      result.textContent = "";
+    }
+    actionBtn.hidden = false;
+    actionBtn.disabled = false;
+    actionBtn.dataset.phase = "start";
+    actionBtn.textContent = t3("rouletteStart");
+    overlay.hidden = false;
+    overlay.removeAttribute("hidden");
+    function finish() {
+      if (finished) return;
+      finished = true;
+      overlay.hidden = true;
+      overlay.setAttribute("hidden", "");
+      if (typeof onDone === "function") onDone();
+    }
+    function reveal() {
+      spinning = false;
+      decided = true;
+      paintName(winner);
+      const player = players[winner];
+      if (result) {
+        result.hidden = false;
+        result.innerHTML = '<span class="roulette-winner-swatch ' + player.id + '" style="--ink:' + hexFor(palette, player.id) + '"></span><strong>' + nameOf(player) + "</strong> " + t3("rouletteGoesFirst");
+      }
+      audio_default.playSound("rouletteStop");
+      actionBtn.disabled = false;
+      actionBtn.dataset.phase = "ok";
+      actionBtn.textContent = t3("ok");
+      actionBtn.focus();
+    }
+    async function runSpin() {
+      if (spinning || finished || decided) return;
+      spinning = true;
+      actionBtn.disabled = true;
+      if (typeof onSpin === "function") onSpin();
+      void audio_default.unlockAudio();
+      if (result) {
+        result.hidden = true;
+        result.textContent = "";
+      }
+      const halfStart = Math.max(0.35, startDuration * 0.5);
+      const startTicksHalf = startTicks.filter((at) => at < halfStart);
+      const activeStartTicks = startTicksHalf.length ? startTicksHalf : fallbackTicks(halfStart, "start");
+      const n = players.length;
+      const total = Math.max(1, activeStartTicks.length + slowTicks.length);
+      let flip = 0;
+      const offset = ((winner - (total - 1)) % n + n) % n;
+      const onTick = () => {
+        paintName(offset + flip);
+        flip += 1;
+      };
+      await audio_default.playWithTicks(
+        startSrc,
+        Object.assign({}, START_TICKS, { maxPlaySec: halfStart }),
+        onTick,
+        activeStartTicks
+      );
+      if (finished) return;
+      await audio_default.playWithTicks(slowSrc, SLOW_TICKS, onTick, slowTicks);
+      if (finished) return;
+      paintName(winner);
+      reveal();
+    }
+    actionBtn.addEventListener("click", () => {
+      if (actionBtn.dataset.phase === "ok") finish();
+      else void runSpin();
+    });
+    return {
+      close: finish,
+      isOpen: () => !overlay.hidden
+    };
+  }
+
   // js/play/main.js
   var t2 = (key) => i18n_default.t(key);
   var playSound2 = (name) => audio_default.playSound(name);
@@ -5526,6 +5863,7 @@
   var botBusy = false;
   var centerAnim = null;
   var centerAnimDone = null;
+  var rouletteOpen = false;
   function loadRoster2() {
     return loadRoster(game_default);
   }
@@ -5708,11 +6046,11 @@
     return game_default.isBotPlayer(game.players[index]);
   }
   function isBotTurn() {
-    if (game.finished || exitConfirmOpen) return false;
+    if (rouletteOpen || game.finished || exitConfirmOpen) return false;
     return isBotSeat(activeSeat());
   }
   function humanControlsLocked() {
-    return isBotTurn() || botBusy;
+    return rouletteOpen || isBotTurn() || botBusy;
   }
   function displayPlayerName(player) {
     if (player.bot) return game_default.botNameForColor(player.id, i18n_default.getLang());
@@ -6990,12 +7328,50 @@
   syncBoardPadding();
   i18n_default.apply();
   audio_default.unlockAudio();
-  readyToPersist = true;
-  if (saved) {
+  function beginFirstRoulette() {
+    const overlay = document.getElementById("first-roulette");
+    if (!overlay) {
+      clearRoulettePending();
+      readyToPersist = true;
+      render({ center: "0,0" });
+      return;
+    }
+    rouletteOpen = true;
+    readyToPersist = false;
+    render({ center: "0,0", skipBot: true });
+    try {
+      openFirstRoulette({
+        overlay,
+        players: game.players,
+        winner: game.player,
+        palette: game_default.COLOR_PALETTE,
+        nameOf: displayPlayerName,
+        t: t2,
+        onSpin: () => audio_default.unlockAudio(),
+        onDone: () => {
+          rouletteOpen = false;
+          clearRoulettePending();
+          readyToPersist = true;
+          audio_default.unlockAudio();
+          render({ keep: true });
+        }
+      });
+    } catch (err) {
+      console.error(err);
+      rouletteOpen = false;
+      clearRoulettePending();
+      readyToPersist = true;
+      render({ center: "0,0" });
+    }
+  }
+  var needRoulette = !saved || isRoulettePending();
+  if (needRoulette) {
+    if (!isRoulettePending()) markRoulettePending();
+    beginFirstRoulette();
+  } else {
+    readyToPersist = true;
     render({ keep: true });
     restoreView(saved.view);
-  } else {
-    render({ center: "0,0" });
   }
   window.addEventListener("resize", () => {
     syncLayoutMode();
